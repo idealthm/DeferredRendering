@@ -1,6 +1,6 @@
 #include "DeferredRendering.h"
 #include <iostream>
-#include "glut/glut.h"
+#include "gl/freeglut.h"
 
 void DRMain::PreInit()
 {
