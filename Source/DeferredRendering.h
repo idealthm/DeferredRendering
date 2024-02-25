@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include<string>
 class DRMain
 {
 public:
@@ -8,5 +8,8 @@ public:
 	static void Init();
 	static void PostInit();
 	static void MainLoop();
-	static void Terminate();
+	static void Terminate(const std::string& Msg = std::string());
+
+private:
+	static void CreateVertexBuffer();
 };

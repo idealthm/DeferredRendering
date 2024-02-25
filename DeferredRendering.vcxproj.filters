@@ -18,6 +18,15 @@
     <ClInclude Include="Source\DeferredRendering.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Source\VertexBuffer\VertexBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Window\IWindowInterface.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Window\WindowsApplication\WindowWindow.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\DeferredRendering.cpp">
@@ -27,6 +36,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Source\glad.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\VertexBuffer\VertexBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Window\IWindowInterface.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Window\WindowsApplication\WindowWindow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
