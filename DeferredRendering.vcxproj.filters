@@ -27,6 +27,18 @@
     <ClInclude Include="Source\Window\WindowsApplication\WindowWindow.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Source\IndexBuffer\IndexBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VertexArray\VertexArray.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VertexBufferLayout.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\DeferredRendering.cpp">
@@ -45,6 +57,18 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Source\Window\WindowsApplication\WindowWindow.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\IndexBuffer\IndexBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\VertexArray\VertexArray.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\VertexBufferLayout.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

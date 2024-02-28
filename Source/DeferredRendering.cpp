@@ -6,6 +6,11 @@
 #include "glm.hpp"
 #include <fstream>
 #include <sstream>
+
+#include "Renderer.h"
+#include "IndexBuffer/IndexBuffer.h"
+#include "VertexArray/VertexArray.h"
+#include "VertexBuffer/VertexBuffer.h"
 // #include "VertexBuffer/VertexBuffer.h"
 
 using namespace std;
@@ -133,27 +138,54 @@ void DRMain::MainLoop()
 
 		cout << glGetString(GL_VERSION) << endl;
 
-		float position[6] = {
+		float position[] = {
 			-0.5f, -0.5f,
-			 0.0f,  0.5f,
-			 0.5f, -0.5f
+			 0.5f,  0.5f,
+			 0.5f, -0.5f,
+			-0.5f,  0.5f
 		};
 
-		// Create a Buffer
-		GLuint buffer;
-		glGenBuffers(1, &buffer);
-		glBindBuffer(GL_ARRAY_BUFFER, buffer);
-		glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), position, GL_STATIC_DRAW);
+		float position2[] = {
+			-0.5f, -0.5f, 0.0f,
+			 0.5f,  0.5f, 0.0f,
+			 0.5f, -0.5f, 0.0f,
+			-0.5f,  0.5f, 0.0f,
+		};
 
-		// Enable This Buffer Layout with size 2.
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+		unsigned int indices[] = {
+			0, 1, 2,
+			0, 1, 3
+		};
+
+		VertexArray va;
+
+		// Create a Buffer
+		VertexBuffer vb(position, 4 * 2 * sizeof(float));
+		VertexBuffer vb2(position, 4 * 3 * sizeof(float));
+
+		VertexBufferLayout bufferLayout2;
+		bufferLayout2.Push<float>(3);
+		va.AddBuffer(vb2, bufferLayout2);
+	
+		VertexBufferLayout bufferLayout;
+		bufferLayout.Push<float>(2);
+		va.AddBuffer(vb, bufferLayout);
+
+		IndexBuffer ibo(indices, 6);
 
 		ShaderProgramSource source = ParseShader("Source/Shader/Basic.shader");
-
 		unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
+		GLCall(glUseProgram(shader));
 
-		glUseProgram(shader);
+		GLCall(int location = glGetUniformLocation(shader, "u_Color"));
+		ASSERT(location != -1);
+		GLCall(glUniform4f(location, 0.8f, 0.3f, 0.8f, 1.0f));
+
+		GLCall(glUseProgram(0));
+		GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+		GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+
+		float r = 0.0;
 
 		while(!glfwWindowShouldClose(Window))
 		{
@@ -161,7 +193,16 @@ void DRMain::MainLoop()
 			glClear(GL_COLOR_BUFFER_BIT);
 			//process_input(Window);
 
-			glDrawArrays(GL_TRIANGLES, 0, 3);
+			r += 0.05;
+
+			GLCall(glUseProgram(shader));
+			GLCall(glUniform4f(location, std::fabs(std::sin(r)), 0.3f, 0.8f, 1.0f));
+
+			va.Bind();
+
+			ibo.Bind();
+
+			GLCall(glDrawElements(GL_TRIANGLES, ibo.GetCount(), GL_UNSIGNED_INT, nullptr));
 
 			glfwSwapBuffers(Window);
 
@@ -169,8 +210,6 @@ void DRMain::MainLoop()
 		}
 
 		glDeleteProgram(shader);
-
-		Terminate();
 	}
 }
 
