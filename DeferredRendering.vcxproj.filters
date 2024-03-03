@@ -21,12 +21,6 @@
     <ClInclude Include="Source\VertexBuffer\VertexBuffer.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Window\IWindowInterface.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Window\WindowsApplication\WindowWindow.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Source\IndexBuffer\IndexBuffer.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -37,6 +31,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Source\VertexBufferLayout.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shader\Shader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\stb_images\stb_image.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -53,12 +53,6 @@
     <ClCompile Include="Source\VertexBuffer\VertexBuffer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Window\IWindowInterface.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Window\WindowsApplication\WindowWindow.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Source\IndexBuffer\IndexBuffer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -69,6 +63,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Source\VertexBufferLayout.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shader\Shader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\stb_images\stb_image.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
