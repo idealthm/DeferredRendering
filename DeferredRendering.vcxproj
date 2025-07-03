@@ -51,6 +51,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)Binaries\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>\Intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+    <AllProjectBMIsArePublic>true</AllProjectBMIsArePublic>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -58,7 +61,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Source\;$(SolutionDir)SubModule\glm\glm;$(SolutionDir)vendor\includes\glad;$(SolutionDir)vendor\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)vendor\includes\glad;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -80,7 +83,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)SubModule\glm\glm;$(SolutionDir)vendor\includes\glad;$(SolutionDir)vendor\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)vendor\includes\glad;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -93,110 +96,44 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Camera\Camera.h" />
+    <ClInclude Include="Source\Common\Core.h" />
+    <ClInclude Include="Source\Common\Keys.h" />
     <ClInclude Include="Source\DeferredRendering.h" />
     <ClInclude Include="Source\IndexBuffer\IndexBuffer.h" />
     <ClInclude Include="Source\Renderer.h" />
-    <ClInclude Include="Source\Shader\Shader.h" />
-    <ClInclude Include="Source\Texture\Texture.h" />
+    <ClInclude Include="Source\Scenes\DRApp.h" />
+    <ClInclude Include="Source\Scenes\ICallBacks.h" />
+    <ClInclude Include="Source\Scenes\Scene1\Scene.h" />
+    <ClInclude Include="Source\stb_images\stb_image.h" />
     <ClInclude Include="Source\VertexArray\VertexArray.h" />
     <ClInclude Include="Source\VertexBufferLayout.h" />
     <ClInclude Include="Source\VertexBuffer\VertexBuffer.h" />
-    <ClInclude Include="Source\stb_images\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Camera\Camera.cpp" />
+    <ClCompile Include="Source\Common\Keys.cpp" />
     <ClCompile Include="Source\DeferredRendering.cpp" />
     <ClCompile Include="Source\glad.c" />
-    <ClCompile Include="Source\IndexBuffer\IndexBuffer.cpp">
-      <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <Optimization>Disabled</Optimization>
-      <SupportJustMyCode>true</SupportJustMyCode>
-      <AssemblerOutput>NoListing</AssemblerOutput>
-      <AssemblerListingLocation>\Intermediate\x64\Debug\</AssemblerListingLocation>
-      <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
-      <BrowseInformation>false</BrowseInformation>
-      <BrowseInformationFile>\Intermediate\x64\Debug\</BrowseInformationFile>
-      <CompileAs>Default</CompileAs>
-      <ConformanceMode>true</ConformanceMode>
-      <DiagnosticsFormat>Column</DiagnosticsFormat>
-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
-      <ErrorReporting>Prompt</ErrorReporting>
-      <ExpandAttributedSource>false</ExpandAttributedSource>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <EnableASAN>false</EnableASAN>
-      <EnableFuzzer>false</EnableFuzzer>
-      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
-      <FloatingPointModel>Precise</FloatingPointModel>
-      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
-      <GenerateModuleDependencies>false</GenerateModuleDependencies>
-      <GenerateSourceDependencies>false</GenerateSourceDependencies>
-      <GenerateXMLDocumentationFiles>false</GenerateXMLDocumentationFiles>
-      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <IntrinsicFunctions>false</IntrinsicFunctions>
-      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
-      <LanguageStandard>Default</LanguageStandard>
-      <LanguageStandard_C>Default</LanguageStandard_C>
-      <MinimalRebuild>false</MinimalRebuild>
-      <ModuleDependenciesFile>\Intermediate\x64\Debug\</ModuleDependenciesFile>
-      <ModuleOutputFile>\Intermediate\x64\Debug\</ModuleOutputFile>
-      <OmitDefaultLibName>false</OmitDefaultLibName>
-      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
-      <ObjectFileName>\Intermediate\x64\Debug\</ObjectFileName>
-      <CallingConvention>Cdecl</CallingConvention>
-      <ProgramDataBaseFileName>\Intermediate\x64\Debug\vc143.pdb</ProgramDataBaseFileName>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>\Intermediate\x64\Debug\DeferredRendering.pch</PrecompiledHeaderOutputFile>
-      <PreprocessToFile>false</PreprocessToFile>
-      <PreprocessKeepComments>false</PreprocessKeepComments>
-      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
-      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
-      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
-      <ShowIncludes>false</ShowIncludes>
-      <SourceDependenciesFile>\Intermediate\x64\Debug\</SourceDependenciesFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
-      <SmallerTypeCheck>false</SmallerTypeCheck>
-      <SpectreMitigation>false</SpectreMitigation>
-      <StructMemberAlignment>Default</StructMemberAlignment>
-      <TrackerLogDirectory>\Intermediate\x64\Debug\Deferred.f072e502.tlog\</TrackerLogDirectory>
-      <TranslateIncludes>false</TranslateIncludes>
-      <MinimalRebuildFromTracking>true</MinimalRebuildFromTracking>
-      <TreatWarningAsError>false</TreatWarningAsError>
-      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <UseFullPaths>true</UseFullPaths>
-      <WarningLevel>Level3</WarningLevel>
-      <XMLDocumentationFileName>\Intermediate\x64\Debug\</XMLDocumentationFileName>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <IntelJCCErratum>false</IntelJCCErratum>
-      <TreatAngleIncludeAsExternal>false</TreatAngleIncludeAsExternal>
-      <ExternalWarningLevel>InheritWarningLevel</ExternalWarningLevel>
-      <TreatExternalTemplatesAsInternal>true</TreatExternalTemplatesAsInternal>
-      <DisableAnalyzeExternal>false</DisableAnalyzeExternal>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_UNICODE;UNICODE;</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Dev\DeferredRendering\SubModule\glm\glm;C:\Dev\DeferredRendering\vendor\includes\glad;C:\Dev\DeferredRendering\vendor\includes;</AdditionalIncludeDirectories>
-      <LinkCompiled>true</LinkCompiled>
-    </ClCompile>
+    <ClCompile Include="Source\IndexBuffer\IndexBuffer.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
-    <ClCompile Include="Source\Shader\Shader.cpp" />
-    <ClCompile Include="Source\Texture\Texture.cpp" />
+    <ClCompile Include="Source\Scenes\DRApp.cpp" />
+    <ClCompile Include="Source\Scenes\ICallBacks.cpp" />
+    <ClCompile Include="Source\Scenes\Scene1\Scene.cpp" />
+    <ClCompile Include="Source\stb_images\stb_image.cpp" />
     <ClCompile Include="Source\VertexArray\VertexArray.cpp" />
     <ClCompile Include="Source\VertexBufferLayout.cpp" />
     <ClCompile Include="Source\VertexBuffer\VertexBuffer.cpp" />
-    <ClCompile Include="Source\stb_images\stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resource\Shader\Basic.shader" />
-    <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_AmbientOcclusion.jpg" />
-    <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_BaseColor.jpg" />
-    <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_Height.png" />
-    <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_Normal.jpg" />
-    <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_Roughness.jpg" />
-    <Content Include="Resource\Textures\Gravel_001_SD\Material_2076.jpg" />
+    <Content Include="Source\Shader\Basic.glsl" />
+    <Content Include="Source\Shader\DirectionLight.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Assets" />
+    <Folder Include="Shaders" />
+    <Folder Include="Source\Model" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

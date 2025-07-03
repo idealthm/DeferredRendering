@@ -1,5 +1,7 @@
 ﻿#pragma once
-#include <vec3.hpp>
+
+#pragma message("当前工作目录: " __FILE__)
+#include "glm/vec3.hpp"
 #include <vector>
 #include <glad/glad.h>
 

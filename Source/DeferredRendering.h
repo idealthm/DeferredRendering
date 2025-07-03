@@ -1,6 +1,7 @@
 #pragma once
 
 #include<string>
+#include <glad/glad.h>
 
 class DRMain
 {
@@ -11,8 +12,8 @@ public:
 	static void MainLoop();
 	static void Terminate(const std::string& Msg = std::string());
 
-	static void OnError(unsigned int source, unsigned int type, unsigned int id, unsigned int Severity, int, const char* message, const void *userParam);
-
+	static void RenderScene(GLuint ShaderProgram);
 private:
-	static void CreateVertexBuffer();
+	static GLuint RenderCube();
+	static GLuint RenderQuad();
 };
