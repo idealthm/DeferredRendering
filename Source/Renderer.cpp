@@ -2,8 +2,10 @@
 #include <iostream>
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include "IndexBuffer/IndexBuffer.h"
+#include "RenderPass/RenderPass.h"
 #include "Shader/Shader.h"
 #include "VertexArray/VertexArray.h"
 
@@ -23,16 +25,33 @@ bool GLLogCall(const char* function, const char* file, int line)
     return true;
 }
 
+Renderer& Renderer::Get()
+{
+    static Renderer renderer;
+    return renderer;
+}
+
 void Renderer::Clear(const glm::vec4& color)
 {
     // glClearColor(color.x, color.y, color.z, color.w);
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void Renderer::Draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader)
+void Renderer::Draw()
 {
-    va.Bind();
-    ib.Bind();
-    shader.Bind();
-    GLCall(glDrawElements(GL_TRIANGLES, ib.GetCount(), GL_UNSIGNED_INT, nullptr));
+    Clear(glm::vec4(0.0));
+
+    for (const auto& pass : m_Passes)
+    {
+        pass->PrePass(m_Scene);
+
+        pass->OnPass(m_Scene);
+
+        pass->PostPass(m_Scene);
+    }
+}
+
+void Renderer::SetScene(std::shared_ptr<Scene>& scene)
+{
+    m_Scene = scene;
 }
