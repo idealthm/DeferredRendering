@@ -3,4 +3,20 @@
   <PropertyGroup>
     <ShowAllFiles>true</ShowAllFiles>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerEnvironment>PATH=D:/Dev/DeferredRendering/vendor/dll;%PATH%</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <RiderTestRunnerCommand>$(TargetPath)</RiderTestRunnerCommand>
+    <RiderTestRunnerWorkingDirectory>$(ProjectDir)</RiderTestRunnerWorkingDirectory>
+    <RiderTestRunnerEnvironment>PATH=D:/Dev/DeferredRendering/vendor/dll;%PATH%</RiderTestRunnerEnvironment>
+    <RiderTestRunnerMergeEnvironment>true</RiderTestRunnerMergeEnvironment>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerEnvironment>PATH=D:/Dev/DeferredRendering/vendor/dll;%PATH%</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <RiderTestRunnerCommand>$(TargetPath)</RiderTestRunnerCommand>
+    <RiderTestRunnerWorkingDirectory>$(ProjectDir)</RiderTestRunnerWorkingDirectory>
+    <RiderTestRunnerEnvironment>PATH=D:/Dev/DeferredRendering/vendor/dll;%PATH%</RiderTestRunnerEnvironment>
+    <RiderTestRunnerMergeEnvironment>true</RiderTestRunnerMergeEnvironment>
+  </PropertyGroup>
 </Project>
