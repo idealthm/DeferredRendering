@@ -1,26 +1,31 @@
 ﻿#pragma once
+#include <string>
+
 #include "RenderPass.h"
+
+class FrameBuffer;
 
 class DeferredPass : public RenderPass
 {
 public:
+	DeferredPass(int32 width, int32 height);
 	~DeferredPass();
 
-	virtual bool Init(std::shared_ptr<Scene>& scene) override;
+	void SetDebugMode(uint32 mode);
 
-	virtual void PrePass(std::shared_ptr<Scene>& scene);
+	virtual void OnWindowSizeChanged(int32 width, int32 height);
 
-	virtual void OnPass(std::shared_ptr<Scene>& scene);
+	virtual void PrePass(const Ref<Scene>& scene) override;
+	virtual void OnPass(const Ref<Scene>& scene) override;
+	virtual void PostPass(const Ref<Scene>& scene) override;
 
-	virtual void PostPass(std::shared_ptr<Scene>& scene);
+	void BindForReading(const std::string& name, int32 index, int32 Slot) const;
 
 private:
-	uint32 gBuffer = 0;
-	uint32 gPosition = 0;
-	uint32 gNormal = 0;
-	uint32 gAlbedo = 0;
-	uint32 rboDepth = 0;
+	uint32 DebugMode;
 
-	std::unique_ptr<Shader> GeometryShader;
-	std::unique_ptr<Shader> LightShader;
+	Ref<Shader> GeometryShader;
+	Ref<Shader> LightShader;
+
+	Ref<FrameBuffer> m_FrameBuffer;
 };

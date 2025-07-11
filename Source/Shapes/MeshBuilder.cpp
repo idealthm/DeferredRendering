@@ -1,12 +1,8 @@
-﻿#include "Shape.h"
+﻿#include "MeshBuilder.h"
 
-#include <glad/glad.h>
+#include "Model/MeshSection.h"
 
-#include "IndexBuffer/IndexBuffer.h"
-#include "Shader/Shader.h"
-#include "VertexArray/VertexArray.h"
-
-static uint32 CubeIndices[] = {
+static std::vector<uint32> CubeIndices = {
 	0, 1, 2, 1, 0, 3,
 	4, 5, 6, 6, 7, 4,
 	8, 9, 10, 10, 11, 8,
@@ -15,7 +11,7 @@ static uint32 CubeIndices[] = {
 	20, 21, 22, 21, 20, 23
 };
 
-static float CubeVertices[] = {
+static std::vector<float> CubeVertices = {
     // back face
     -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
      1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
@@ -35,7 +31,7 @@ static float CubeVertices[] = {
      1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
      1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
      1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
-     1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
+     1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left
     // bottom face
     -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
      1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
@@ -48,71 +44,37 @@ static float CubeVertices[] = {
     -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
 };
 
-static uint32 QuadIndices[] = {
+static std::vector<uint32> QuadIndices = {
 	0, 1, 2, 1, 2, 3
 };
 
-static float QuadVertices[] = {
+static std::vector<float> QuadVertices = {
  	// positions        // texture Coords
- 	-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
- 	-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
- 	 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
- 	 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+ 	-1.0f,  1.0f,
+ 	-1.0f, -1.0f,
+ 	 1.0f,  1.0f,
+ 	 1.0f, -1.0f,
 };
 
-Shape::~Shape()
+Ref<StaticMesh> MeshBuilder::BuildCube(const Ref<Texture2D>& texture)
 {
-	glDeleteVertexArrays(1, &RenderID);
+	BufferLayout layout = {
+		{ShaderDataType::Float3, "aPosition"},
+		{ShaderDataType::Float3, "aNormal"},
+		{ShaderDataType::Float2, "aTexCoords"},
+	};
+	auto section = BuildSection(CubeVertices, CubeIndices, layout);
+	if (texture) section->AddTexture(TextureType::DIFFUSE, texture);
+	return CreateRef<StaticMesh>(StaticMeshDesc{}, std::vector<Ref<MeshSection>>{section});
 }
 
-void Shape::Draw(Shader& shader)
+Ref<StaticMesh> MeshBuilder::BuildQuad(const Ref<Texture2D>& texture)
 {
-	shader.Bind();
-	m_VertexArray->Bind();
-	m_IndexBuffer->Bind();
+	BufferLayout layout = {
+		{ShaderDataType::Float2, "aPosition"},
+	};
 
-	glDrawElements(GL_TRIANGLES, m_IndexBuffer->GetCount(), GL_UNSIGNED_INT, nullptr);
-}
-
-Cube::Cube()
-{
-	m_VertexArray = std::make_unique<VertexArray>();
-	m_VertexBuffer = std::make_unique<VertexBuffer>(CubeVertices, sizeof(CubeVertices));
-	m_IndexBuffer = std::make_unique<IndexBuffer>(CubeIndices, sizeof(CubeIndices));
-
-	VertexBufferLayout layout;
-	layout.Push<float>(3);
-	layout.Push<float>(3);
-	layout.Push<float>(2);
-
-	m_VertexArray->AddBuffer(*m_VertexBuffer, layout);
-}
-
-Quad::Quad()
-{
-	m_VertexArray = std::make_unique<VertexArray>();
-	m_VertexBuffer = std::make_unique<VertexBuffer>(QuadVertices, sizeof(QuadVertices));
-	m_IndexBuffer = std::make_unique<IndexBuffer>(QuadIndices, sizeof(QuadIndices));
-
-	VertexBufferLayout layout;
-	layout.Push<float>(3);
-	layout.Push<float>(2);
-
-	m_VertexArray->AddBuffer(*m_VertexBuffer, layout);
-}
-
-
-Plane::Plane()
-	: Cube()
-{
-	m_VertexArray = std::make_unique<VertexArray>();
-	m_VertexBuffer = std::make_unique<VertexBuffer>(CubeVertices, sizeof(CubeVertices));
-	m_IndexBuffer = std::make_unique<IndexBuffer>(CubeIndices, sizeof(CubeIndices));
-
-	VertexBufferLayout layout;
-	layout.Push<float>(3);
-	layout.Push<float>(3);
-	layout.Push<float>(2);
-
-	m_VertexArray->AddBuffer(*m_VertexBuffer, layout);
+	auto section = BuildSection(QuadVertices, QuadIndices, layout);
+	if (texture) section->AddTexture(TextureType::DIFFUSE, texture);
+	return CreateRef<StaticMesh>(StaticMeshDesc{}, std::vector<Ref<MeshSection>>{section});
 }

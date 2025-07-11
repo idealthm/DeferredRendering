@@ -1,6 +1,8 @@
 ﻿#pragma once
-#include "../VertexBufferLayout.h"
-#include "../VertexBuffer/VertexBuffer.h"
+#include "VertexBuffer/VertexBufferLayout.h"
+#include "VertexBuffer/VertexBuffer.h"
+
+class IndexBuffer;
 
 class VertexArray
 {
@@ -8,11 +10,15 @@ public:
     VertexArray();
     ~VertexArray();
 
-    void AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout);
+    void AddBuffer(const Ref<VertexBuffer>& vb);
+    void SetIndexBuffer(const Ref<IndexBuffer>& ib);
 
     void Bind() const;
     void Unbind() const;
 
 private:
-    unsigned int m_RendererID;
+    uint32                          m_RendererID;
+    uint32                          m_VertexBufferIndex;
+    std::vector<Ref<VertexBuffer>>  m_VertexBuffers;
+    Ref<IndexBuffer>                m_IndexBuffer;
 };

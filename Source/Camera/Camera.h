@@ -3,11 +3,13 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+class MouseScrolledEvent;
+class MouseMovedEvent;
+class Event;
+
 class Camera
 {
 public:
-    enum Movement {FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN};
-
     glm::vec3 Position;
     glm::vec3 Front;
     glm::vec3 Up;
@@ -29,11 +31,11 @@ public:
 
     glm::mat4 GetProjectionMatrix(float AspectRatio) const;
 
-    void ProcessKeyboard(Movement direction, float deltaTime);
+	void OnUpdate(float deltaTime);
+	void OnEvent(Event& event);
 
-    void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
-
-    void ProcessMouseScroll(float YOffset);
+    bool ProcessMouseScroll(const MouseScrolledEvent& event);
+    bool ProcessMouseMovement(const MouseMovedEvent& event);
 
 private:
     void UpdateCameraVectors();

@@ -1,8 +1,16 @@
 ﻿#include "Camera.h"
 
+#include <algorithm>
 #include <iostream>
 #include <ostream>
 
+#include "Events/Event.h"
+#include "Events/Input.h"
+#include "Events/MouseEvent.h"
+#include "GLFW/glfw3.h"
+
+
+class KeyTypedEvent;
 
 Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch)
     : Front(glm::vec3(0.f, 0.f, -1.f)), MovementSpeed(5.f),
@@ -25,47 +33,49 @@ glm::mat4 Camera::GetProjectionMatrix(float AspectRatio) const
     return glm::perspective(glm::radians(Zoom), AspectRatio, 0.1f, 100.f);
 }
 
-void Camera::ProcessKeyboard(Movement direction, float deltaTime)
+void Camera::OnUpdate(float deltaTime)
 {
     float velocity = MovementSpeed * deltaTime;
-    if (direction == FORWARD)
-        Position += Front * velocity;
-    if (direction == BACKWARD)
-        Position -= Front * velocity;
-    if (direction == LEFT)
-        Position -= Right * velocity;
-    if (direction == RIGHT)
-        Position += Right * velocity;
-    if (direction == UP)
-        Position += Up * velocity;
-    if (direction == DOWN)
-        Position -= Up * velocity;
 
-    // std::cout << Position.x << " " << Position.y << " " << Position.z << std::endl;
+    if (Input::IsKeyPressed(Key::W)) Position += Front  * velocity;
+    if (Input::IsKeyPressed(Key::S)) Position -= Front  * velocity;
+    if (Input::IsKeyPressed(Key::D)) Position += Right  * velocity;
+    if (Input::IsKeyPressed(Key::A)) Position -= Right  * velocity;
+    if (Input::IsKeyPressed(Key::E)) Position += Up     * velocity;
+    if (Input::IsKeyPressed(Key::Q)) Position -= Up     * velocity;
 }
 
-void Camera::ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch)
+void Camera::OnEvent(Event& event)
 {
-    xoffset *= MouseSensitivity;
-    yoffset *= MouseSensitivity;
+    EventDispatcher dispatcher(event);
+    dispatcher.Dispatch<MouseScrolledEvent>(BIND_FUNCTION_FN(ProcessMouseScroll));
+    dispatcher.Dispatch<MouseMovedEvent>(BIND_FUNCTION_FN(ProcessMouseMovement));
+}
 
-    Yaw += xoffset;
-    Pitch += yoffset;
+bool Camera::ProcessMouseScroll(const MouseScrolledEvent& event)
+{
+    Zoom = std::clamp(Zoom - event.GetYOffset(), 1.f, 90.f);
+    return true;
+}
+
+bool Camera::ProcessMouseMovement(const MouseMovedEvent& event)
+{
+    static float lastX = event.GetX(), lastY = event.GetY();
+
+    float offsetX = event.GetX() - lastX;
+    float offsetY = lastY - event.GetY();
+
+    Yaw += offsetX * MouseSensitivity;
+    Pitch += offsetY * MouseSensitivity;
+
+    lastX = event.GetX();
+    lastY = event.GetY();
 
     // 限制俯仰角避免翻转
-    if (constrainPitch) {
-        if (Pitch > 89.0f)  Pitch = 89.0f;
-        if (Pitch < -89.0f) Pitch = -89.0f;
-    }
+    Pitch = std::clamp(Pitch, -89.f, 89.f);
 
     UpdateCameraVectors();
-}
-
-void Camera::ProcessMouseScroll(float YOffset)
-{
-    Zoom -= YOffset;
-    if (Zoom < 1.0f)  Zoom = 1.0f;
-    if (Zoom > 90.0f) Zoom = 90.0f;
+    return true;
 }
 
 void Camera::UpdateCameraVectors()

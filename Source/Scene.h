@@ -13,8 +13,8 @@ class Actor;
 class Scene
 {
 public:
-	friend class WindowsWindow;
-	Scene(uint32 width, uint32 height);
+	friend class Window;
+	Scene(uint32 width, uint32 height, const Ref<Camera>& camera);
 
 	template<typename T, std::enable_if_t<std::is_base_of<Actor, T>::value, int> = 0>
 	std::shared_ptr<T> SpawnActor(const glm::vec3& position = glm::vec3(0), const glm::vec3& rotation = glm::vec3(0)
@@ -31,10 +31,6 @@ public:
 
 	const std::set<std::shared_ptr<Actor>>& GetActors() const;
 
-	void ProcessInput(struct GLFWwindow* window, float deltaTime) const;
-	void ScrollCallback(double xoffset, double yoffset);
-	void MouseCallback(double xPos, double yPos);
-
 	glm::mat4 GetViewMatrix() const;
 	glm::mat4 GetProjectionMatrix() const;
 
@@ -42,9 +38,9 @@ public:
 	uint32 GetHeight() const;
 	
 private:
-	uint32 m_Width, m_Height;
+	Ref<Camera> m_Camera;
 
-	std::shared_ptr<Camera>				m_Camera;
+	uint32 m_Width, m_Height;
 
 	std::set<std::shared_ptr<Actor>>	Actors;
 };

@@ -1,8 +1,12 @@
 ﻿#pragma once
 #include <memory>
 #include <vector>
+#include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
+#include "common/Core.h"
+
+class StaticMesh;
 class StaticMeshComponent;
 class SceneComponent;
 class ActorComponent;
@@ -14,19 +18,21 @@ public:
 
 	void ValidateRootComponent();
 
-	std::shared_ptr<SceneComponent> GetRootComponent() const;
+	Ref<SceneComponent> GetRootComponent() const;
 
-	void SetRootComponent(const std::shared_ptr<SceneComponent>& component);
+	glm::mat4 GetModelMatrix() const;
+
+	void SetRootComponent(const Ref<SceneComponent>& component);
 
 	void SetPosition(const glm::vec3& position) const;
 	void SetRotation(const glm::vec3& rotation) const;
 	void SetScale3D(const glm::vec3& scale) const;
 
-	const std::vector<std::shared_ptr<ActorComponent>>& GetComponents() const;
+	const std::vector<Ref<ActorComponent>>& GetComponents() const;
 protected:
 	std::weak_ptr<SceneComponent>					RootComponent;
 
-	std::vector<std::shared_ptr<ActorComponent>>	Components;
+	std::vector<Ref<ActorComponent>>	Components;
 };
 
 
@@ -35,19 +41,8 @@ class StaticMeshActor : public Actor
 public:
 	StaticMeshActor();
 
+	void SetStaticMesh(const Ref<StaticMesh>& staticMesh) const;
+
 protected:
-	std::shared_ptr<StaticMeshComponent> m_StaticMeshComp;
-};
-
-class CubeActor : public StaticMeshActor
-{
-public:
-	CubeActor();
-};
-
-
-class QuadActor : public StaticMeshActor
-{
-public:
-	QuadActor();
+	Ref<StaticMeshComponent> m_StaticMeshComp;
 };

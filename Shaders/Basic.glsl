@@ -1,46 +1,56 @@
 ﻿#shader vertex
 #version 330 core
 
-layout(location = 0) in vec3 aPos;
+layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoords;
+layout(location = 3) in vec3 aTangent;
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
 
-out vec3 FragPos;
-out vec2 TexCoords;
-out vec3 Normal;
+out vec3 vPosition;
+out vec3 vNormal;
+out vec2 vTexCoords;
+out mat3 vTBN;
 
 void main()
 {
-    vec4 worldPos = model * vec4(aPos, 1.0);
-    FragPos = worldPos.xyz; 
-    TexCoords = aTexCoords;
-    
-    mat3 normalMatrix = transpose(inverse(mat3(model)));
-    Normal = normalMatrix * aNormal;
+    mat4 modelView = uView * uModel;
+    vPosition = vec3(uModel * vec4(aPosition, 1.0));
+    vNormal = mat3(modelView) * aNormal;
 
-    gl_Position = projection * view * worldPos;
+    vec3 T = normalize(mat3(modelView) * aTangent);
+    vec3 B = cross(vNormal, T);
+    vTBN = mat3(T, B, aNormal);
+
+    vTexCoords = aTexCoords;
+    gl_Position = uProjection * uView * vec4(vPosition, 1.0);
 };
 
 #shader fragment
 #version 330 core
 
+in vec3 vPosition;
+in vec3 vNormal;
+in vec2 vTexCoords;
+in mat3 vTBN;
+
 layout(location = 0) out vec3 gPosition;
 layout(location = 1) out vec3 gNormal;
 layout(location = 2) out vec3 gAlbedo;
+layout(location = 3) out vec4 gMaterial; // metallic & roughness
+layout(location = 4) out uint gObjectID;
 
-uniform sampler2D texture_diffuse0;
-
-in vec3 FragPos;
-in vec2 TexCoords;
-in vec3 Normal;
+uniform sampler2D uAlbedoMap;
+uniform sampler2D uNormalMap;
+uniform sampler2D uMetallicRoughnessMap;
 
 void main()
 {
-    gPosition = FragPos;
-    gNormal = normalize(Normal);
-    gAlbedo = vec3(1.0);// texture(texture_diffuse0, TexCoords).rgb;
+    gPosition = vPosition;
+    gNormal = normalize(vNormal);
+    gAlbedo = texture(uAlbedoMap, vTexCoords).rgb;
+    gMaterial = vec4(1.0);
 };
