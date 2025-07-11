@@ -2,7 +2,6 @@
 
 #include "Renderer.h"
 #include "Component/ActorComponent.h"
-#include "Model/Shape.h"
 
 Actor::Actor()
 {
@@ -18,12 +17,17 @@ void Actor::ValidateRootComponent()
 	}
 }
 
-std::shared_ptr<SceneComponent> Actor::GetRootComponent() const
+Ref<SceneComponent> Actor::GetRootComponent() const
 {
 	return RootComponent.lock();
 }
 
-void Actor::SetRootComponent(const std::shared_ptr<SceneComponent>& component)
+glm::mat4 Actor::GetModelMatrix() const
+{
+	return RootComponent.lock()->GetModelMatrix();
+}
+
+void Actor::SetRootComponent(const Ref<SceneComponent>& component)
 {
 	RootComponent = component;
 }
@@ -43,7 +47,7 @@ void Actor::SetScale3D(const glm::vec3& scale) const
 	RootComponent.lock()->SetScale3D(scale);
 }
 
-const std::vector<std::shared_ptr<ActorComponent>>& Actor::GetComponents() const
+const std::vector<Ref<ActorComponent>>& Actor::GetComponents() const
 {
 	return Components;
 }
@@ -55,12 +59,7 @@ StaticMeshActor::StaticMeshActor()
 	SetRootComponent(m_StaticMeshComp);
 }
 
-CubeActor::CubeActor()
+void StaticMeshActor::SetStaticMesh(const Ref<StaticMesh>& staticMesh) const
 {
-	m_StaticMeshComp->SetMesh(std::make_shared<Cube>());
-}
-
-QuadActor::QuadActor()
-{
-	m_StaticMeshComp->SetMesh(std::make_shared<Quad>());
+	m_StaticMeshComp->SetMesh(staticMesh);
 }

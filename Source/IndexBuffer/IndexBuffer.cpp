@@ -3,7 +3,7 @@
 #include "glad/glad.h"
 #include "Renderer.h"
 
-IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count)
+IndexBuffer::IndexBuffer(const uint32* data, uint32 count)
     : m_Count(count)
 {
     GLCall(glGenBuffers(1, &m_RendererID));

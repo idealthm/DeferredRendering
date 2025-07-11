@@ -9,6 +9,8 @@
 
 #include "Renderer.h"
 
+#define SET_UNIFORM(X) if (int location = GetUniformLocation(name); ~location) {GLCall(X);}
+
 struct ShaderProgramSource
 {
     std::string VertexSource;
@@ -100,7 +102,7 @@ Shader::Shader(const std::string& filepath)
 
 Shader::~Shader()
 {
-    GLCall(glDeleteProgram(m_RendererID));
+    glDeleteProgram(m_RendererID);
 }
 
 void Shader::Bind() const
@@ -115,22 +117,22 @@ void Shader::Unbind() const
 
 void Shader::SetUniform3f(const std::string& name, const glm::vec3& value)
 {
-    GLCall(glUniform3f(GetUniformLocation(name), value.x, value.y, value.z));
+    SET_UNIFORM(glUniform3f(location, value.x, value.y, value.z))
 }
 
 void Shader::SetUniform4f(const std::string& name, const glm::vec4& value)
 {
-    GLCall(glUniform4f(GetUniformLocation(name), value.x, value.y, value.z, value.w));
+    SET_UNIFORM(glUniform4f(location, value.x, value.y, value.z, value.w));
 }
 
 void Shader::SetUniform1i(const std::string& name, int32 value)
 {
-    GLCall(glUniform1i(GetUniformLocation(name), value));
+    SET_UNIFORM(glUniform1i(location, value));
 }
 
 void Shader::SetUniformMatrix4f(const std::string& name, const glm::mat4& value)
 {
-    GLCall(glUniformMatrix4fv(GetUniformLocation(name), 1, false, glm::value_ptr(value)));
+    SET_UNIFORM(glUniformMatrix4fv(location, 1, false, glm::value_ptr(value)));
 }
 
 int Shader::GetUniformLocation(const std::string& name)
@@ -141,7 +143,6 @@ int Shader::GetUniformLocation(const std::string& name)
     }
 
     GLCall(const int location = glGetUniformLocation(m_RendererID, name.c_str()));
-    ASSERT(location >= 0);
 
     m_UniformLocations.emplace(name, location);
     return location;

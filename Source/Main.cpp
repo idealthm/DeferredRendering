@@ -1,12 +1,15 @@
-#include"DeferredRendering.h"
+#include"Application.h"
 
-int main()
+int main(int argc, char** argv)
 {
-	
-	DRMain::Init();
+	ApplicationSpecification specification;
+	specification.CommandLineArgs = { argc, argv };
+	specification.Name = "DeferredRendering";
 
-	DRMain::MainLoop();
+	Application* application = new Application(specification);
 
-	DRMain::Terminate();
+	application->Run();
+
+	delete application;
 	return 0;
 }

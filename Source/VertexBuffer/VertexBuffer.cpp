@@ -2,6 +2,8 @@
 
 #include "Renderer.h"
 
+#include <glad/glad.h>
+
 
 VertexBuffer::VertexBuffer(const void* data, unsigned size)
 {
@@ -23,4 +25,9 @@ void VertexBuffer::Bind() const
 void VertexBuffer::Unbind() const
 {
     GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+}
+
+void VertexBuffer::SetLayout(const BufferLayout& Layout)
+{
+    m_Layout = Layout;
 }

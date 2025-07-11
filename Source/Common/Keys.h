@@ -1,118 +1,142 @@
 ﻿#pragma once
+#include "Core.h"
 
-enum DR_KEY
+using KeyCode = uint16;
+	
+namespace Key
 {
-    KEY_SPACE =             32,
-    KEY_APOSTROPHE =        39,
-    KEY_PLUS =              43,
-    KEY_COMMA =             44,
-    KEY_MINUS =             45,
-    KEY_PERIOD =            46,
-    KEY_SLASH =             47,
-    KEY_0 =                 48,
-    KEY_1 =                 49,
-    KEY_2 =                 50,
-    KEY_3 =                 51,
-    KEY_4 =                 52,
-    KEY_5 =                 53,
-    KEY_6 =                 54,
-    KEY_7 =                 55,
-    KEY_8 =                 56,
-    KEY_9 =                 57,
-    KEY_SEMICOLON =         58,
-    KEY_EQUAL =             61,
-    KEY_A =                 65,
-    KEY_B =                 66,
-    KEY_C =                 67,
-    KEY_D =                 68,
-    KEY_E =                 69,
-    KEY_F =                 70,
-    KEY_G =                 71,
-    KEY_H =                 72,
-    KEY_I =                 73,
-    KEY_J =                 74,
-    KEY_K =                 75,
-    KEY_L =                 76,
-    KEY_M =                 77,
-    KEY_N =                 78,
-    KEY_O =                 79,
-    KEY_P =                 80,
-    KEY_Q =                 81,
-    KEY_R =                 82,
-    KEY_S =                 83,
-    KEY_T =                 84,
-    KEY_U =                 85,
-    KEY_V =                 86,
-    KEY_W =                 87,
-    KEY_X =                 88,
-    KEY_Y =                 89,
-    KEY_Z =                 90,
-    KEY_LEFT_BRACKET =      91,
-    KEY_BACKSLASH =         92,
-    KEY_RIGHT_BRACKET =     93,
-    KEY_a =                 97,
-    KEY_b =                 98,
-    KEY_c =                 99,
-    KEY_d =                 100,
-    KEY_e =                 101,
-    KEY_f =                 102,
-    KEY_g =                 103,
-    KEY_h =                 104,
-    KEY_i =                 105,
-    KEY_j =                 106,
-    KEY_k =                 107,
-    KEY_l =                 108,
-    KEY_m =                 109,
-    KEY_n =                 110,
-    KEY_o =                 111,
-    KEY_p =                 112,
-    KEY_q =                 113,
-    KEY_r =                 114,
-    KEY_s =                 115,
-    KEY_t =                 116,
-    KEY_u =                 117,
-    KEY_v =                 118,
-    KEY_w =                 119,
-    KEY_x =                 120,
-    KEY_y =                 121,
-    KEY_z =                 122,
-    KEY_ESCAPE,
-    KEY_ENTER,          
-    KEY_TAB,            
-    KEY_BACKSPACE,      
-    KEY_INSERT,         
-    KEY_DELETE,            
-    KEY_RIGHT,             
-    KEY_LEFT,               
-    KEY_DOWN,               
-    KEY_UP,         
-    KEY_PAGE_UP,   
-    KEY_PAGE_DOWN,      
-    KEY_HOME,    
-    KEY_END,     
-    KEY_F1,        
-    KEY_F2,          
-    KEY_F3,       
-    KEY_F4,   
-    KEY_F5,      
-    KEY_F6,     
-    KEY_F7,     
-    KEY_F8,     
-    KEY_F9,    
-    KEY_F10,    
-    KEY_F11,    
-    KEY_F12,
-    KEY_UNDEFINED = 999,
-};
+	enum : KeyCode
+	{
+		// From glfw3.h
+		Space               = 32,
+		Apostrophe          = 39, /* ' */
+		Comma               = 44, /* , */
+		Minus               = 45, /* - */
+		Period              = 46, /* . */
+		Slash               = 47, /* / */
 
-enum DR_MOUSE {
-    MOUSE_BUTTON_LEFT,
-    MOUSE_BUTTON_MIDDLE,
-    MOUSE_BUTTON_RIGHT,
-    MOUSE_UNDEFINED = 999
-};
+		D0                  = 48, /* 0 */
+		D1                  = 49, /* 1 */
+		D2                  = 50, /* 2 */
+		D3                  = 51, /* 3 */
+		D4                  = 52, /* 4 */
+		D5                  = 53, /* 5 */
+		D6                  = 54, /* 6 */
+		D7                  = 55, /* 7 */
+		D8                  = 56, /* 8 */
+		D9                  = 57, /* 9 */
 
-enum DR_KEY_STATE {
-    KEY_STATE_PRESS,
-    KEY_STATE_RELEASE
-};
+		Semicolon           = 59, /* ; */
+		Equal               = 61, /* = */
+
+		A                   = 65,
+		B                   = 66,
+		C                   = 67,
+		D                   = 68,
+		E                   = 69,
+		F                   = 70,
+		G                   = 71,
+		H                   = 72,
+		I                   = 73,
+		J                   = 74,
+		K                   = 75,
+		L                   = 76,
+		M                   = 77,
+		N                   = 78,
+		O                   = 79,
+		P                   = 80,
+		Q                   = 81,
+		R                   = 82,
+		S                   = 83,
+		T                   = 84,
+		U                   = 85,
+		V                   = 86,
+		W                   = 87,
+		X                   = 88,
+		Y                   = 89,
+		Z                   = 90,
+
+		LeftBracket         = 91,  /* [ */
+		Backslash           = 92,  /* \ */
+		RightBracket        = 93,  /* ] */
+		GraveAccent         = 96,  /* ` */
+
+		World1              = 161, /* non-US #1 */
+		World2              = 162, /* non-US #2 */
+
+		/* Function keys */
+		Escape              = 256,
+		Enter               = 257,
+		Tab                 = 258,
+		Backspace           = 259,
+		Insert              = 260,
+		Delete              = 261,
+		Right               = 262,
+		Left                = 263,
+		Down                = 264,
+		Up                  = 265,
+		PageUp              = 266,
+		PageDown            = 267,
+		Home                = 268,
+		End                 = 269,
+		CapsLock            = 280,
+		ScrollLock          = 281,
+		NumLock             = 282,
+		PrintScreen         = 283,
+		Pause               = 284,
+		F1                  = 290,
+		F2                  = 291,
+		F3                  = 292,
+		F4                  = 293,
+		F5                  = 294,
+		F6                  = 295,
+		F7                  = 296,
+		F8                  = 297,
+		F9                  = 298,
+		F10                 = 299,
+		F11                 = 300,
+		F12                 = 301,
+		F13                 = 302,
+		F14                 = 303,
+		F15                 = 304,
+		F16                 = 305,
+		F17                 = 306,
+		F18                 = 307,
+		F19                 = 308,
+		F20                 = 309,
+		F21                 = 310,
+		F22                 = 311,
+		F23                 = 312,
+		F24                 = 313,
+		F25                 = 314,
+
+		/* Keypad */
+		KP0                 = 320,
+		KP1                 = 321,
+		KP2                 = 322,
+		KP3                 = 323,
+		KP4                 = 324,
+		KP5                 = 325,
+		KP6                 = 326,
+		KP7                 = 327,
+		KP8                 = 328,
+		KP9                 = 329,
+		KPDecimal           = 330,
+		KPDivide            = 331,
+		KPMultiply          = 332,
+		KPSubtract          = 333,
+		KPAdd               = 334,
+		KPEnter             = 335,
+		KPEqual             = 336,
+
+		LeftShift           = 340,
+		LeftControl         = 341,
+		LeftAlt             = 342,
+		LeftSuper           = 343,
+		RightShift          = 344,
+		RightControl        = 345,
+		RightAlt            = 346,
+		RightSuper          = 347,
+		Menu                = 348
+	};
+}

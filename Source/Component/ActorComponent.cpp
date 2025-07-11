@@ -5,7 +5,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
 
-#include "Model/Shape.h"
+#include "Model/StaticMesh.h"
 #include "Shader/Shader.h"
 
 SceneComponent::SceneComponent(const glm::vec3& location, const glm::vec3& rotation, const glm::vec3& scale3D)
@@ -52,10 +52,12 @@ glm::mat4 SceneComponent::GetModelMatrix() const
 	}
 
 	glm::quat quat = glm::angleAxis(glm::radians(m_Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f)) *  // Yaw (Y)
-					 glm::angleAxis(glm::radians(m_Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)) *  // Pitch (X)
-					 glm::angleAxis(glm::radians(m_Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));   // Roll (Z)
+				 glm::angleAxis(glm::radians(m_Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)) *  // Pitch (X)
+				 glm::angleAxis(glm::radians(m_Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));   // Roll (Z)
 
 	return glm::translate(glm::mat4(1.0), m_Location) * glm::mat4_cast(quat) * glm::scale(glm::mat4(1.0), m_scale3D) * parentModel;
+
+	// return glm::translate(glm::mat4(1.0), m_Location) * glm::mat4_cast(glm::quat(m_Rotation)) * glm::scale(glm::mat4(1.0), m_scale3D) * parentModel;
 }
 
 void SceneComponent::Draw(Shader& shader)
@@ -68,7 +70,7 @@ void SceneComponent::AttachToComponent(std::shared_ptr<SceneComponent> Comp)
 	ParentComponent = Comp;
 }
 
-void StaticMeshComponent::SetMesh(const std::shared_ptr<Shape>& shape)
+void StaticMeshComponent::SetMesh(const std::shared_ptr<StaticMesh>& shape)
 {
 	m_Model = shape;
 }

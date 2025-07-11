@@ -45,12 +45,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)Binaries\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>\Intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)Binaries\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>\Intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\</IntDir>
     <AllProjectIncludesArePublic>false</AllProjectIncludesArePublic>
     <AllProjectBMIsArePublic>false</AllProjectBMIsArePublic>
     <IncludePath>$(IncludePath)</IncludePath>
@@ -59,11 +59,12 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>DR_DEBUG;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>Default</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)vendor\includes\glad;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -124,25 +125,39 @@ endlocal</Command>
     <ClInclude Include="Source\Camera\Camera.h" />
     <ClInclude Include="Source\Common\Core.h" />
     <ClInclude Include="Source\Common\Keys.h" />
+    <ClInclude Include="Source\Common\LayerStack.h" />
+    <ClInclude Include="Source\Common\MouseCode.h" />
+    <ClInclude Include="Source\Common\Timestep.h" />
     <ClInclude Include="Source\Component\ActorComponent.h" />
-    <ClInclude Include="Source\DeferredRendering.h" />
+    <ClInclude Include="Source\Application.h" />
+    <ClInclude Include="Source\Events\ApplicationEvent.h" />
+    <ClInclude Include="Source\Events\Event.h" />
+    <ClInclude Include="Source\Events\Input.h" />
+    <ClInclude Include="Source\Events\KeyEvent.h" />
+    <ClInclude Include="Source\Events\MouseEvent.h" />
+    <ClInclude Include="Source\FrameBuffer\FrameBuffer.h" />
+    <ClInclude Include="Source\GraphicContext.h" />
+    <ClInclude Include="Source\Guid.h" />
     <ClInclude Include="Source\IndexBuffer\IndexBuffer.h" />
-    <ClInclude Include="Source\Model\Mesh.h" />
-    <ClInclude Include="Source\Model\Model.h" />
-    <ClInclude Include="Source\Model\Shape.h" />
+    <ClInclude Include="Source\Layers\ExampleLayer.h" />
+    <ClInclude Include="Source\Layers\Layer.h" />
+    <ClInclude Include="Source\MeshManger.h" />
+    <ClInclude Include="Source\Model\MeshSection.h" />
+    <ClInclude Include="Source\Model\StaticMesh.h" />
+    <ClInclude Include="Source\Model\Texture.h" />
+    <ClInclude Include="Source\Model\Util.h" />
     <ClInclude Include="Source\Renderer.h" />
     <ClInclude Include="Source\RenderPass\DeferredPass.h" />
     <ClInclude Include="Source\RenderPass\RenderPass.h" />
     <ClInclude Include="Source\Scene.h" />
-    <ClInclude Include="Source\Scenes\DRApp.h" />
-    <ClInclude Include="Source\Scenes\ICallBacks.h" />
-    <ClInclude Include="Source\Scenes\Scene1\Scene.h" />
     <ClInclude Include="Source\Shader\Shader.h" />
+    <ClInclude Include="Source\Shapes\MeshBuilder.h" />
     <ClInclude Include="Source\stb_images\stb_image.h" />
+    <ClInclude Include="Source\UnifromBuffer\UniformBuffer.h" />
     <ClInclude Include="Source\VertexArray\VertexArray.h" />
-    <ClInclude Include="Source\VertexBufferLayout.h" />
     <ClInclude Include="Source\VertexBuffer\VertexBuffer.h" />
-    <ClInclude Include="Source\Windows\IWindow.h" />
+    <ClInclude Include="Source\VertexBuffer\VertexBufferLayout.h" />
+    <ClInclude Include="Source\Windows\Window.h" />
     <ClInclude Include="vendor\includes\assimp\aabb.h" />
     <ClInclude Include="vendor\includes\assimp\ai_assert.h" />
     <ClInclude Include="vendor\includes\assimp\anim.h" />
@@ -252,32 +267,119 @@ endlocal</Command>
   <ItemGroup>
     <ClCompile Include="Source\Actor.cpp" />
     <ClCompile Include="Source\Camera\Camera.cpp" />
-    <ClCompile Include="Source\Common\Keys.cpp" />
+    <ClCompile Include="Source\Common\LayerStack.cpp" />
+    <ClCompile Include="Source\Common\Timestep.cpp" />
     <ClCompile Include="Source\Component\ActorComponent.cpp" />
-    <ClCompile Include="Source\DeferredRendering.cpp" />
+    <ClCompile Include="Source\Application.cpp" />
+    <ClCompile Include="Source\Events\Input.cpp" />
+    <ClCompile Include="Source\FrameBuffer\FrameBuffer.cpp" />
     <ClCompile Include="Source\glad.c" />
+    <ClCompile Include="Source\GraphicContext.cpp" />
+    <ClCompile Include="Source\Guid.cpp" />
     <ClCompile Include="Source\IndexBuffer\IndexBuffer.cpp" />
+    <ClCompile Include="Source\Layers\ExampleLayer.cpp" />
+    <ClCompile Include="Source\Layers\Layer.cpp" />
     <ClCompile Include="Source\Main.cpp" />
-    <ClCompile Include="Source\Model\Mesh.cpp" />
-    <ClCompile Include="Source\Model\Model.cpp" />
-    <ClCompile Include="Source\Model\Shape.cpp" />
+    <ClCompile Include="Source\MeshManger.cpp" />
+    <ClCompile Include="Source\Model\MeshSection.cpp" />
+    <ClCompile Include="Source\Model\StaticMesh.cpp" />
+    <ClCompile Include="Source\Model\Texture.cpp" />
+    <ClCompile Include="Source\Model\Util.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\RenderPass\DeferredPass.cpp" />
     <ClCompile Include="Source\RenderPass\RenderPass.cpp" />
     <ClCompile Include="Source\Scene.cpp" />
-    <ClCompile Include="Source\Scenes\DRApp.cpp" />
-    <ClCompile Include="Source\Scenes\ICallBacks.cpp" />
-    <ClCompile Include="Source\Scenes\Scene1\Scene.cpp" />
     <ClCompile Include="Source\Shader\Shader.cpp" />
+    <ClCompile Include="Source\Shapes\MeshBuilder.cpp" />
     <ClCompile Include="Source\stb_images\stb_image.cpp" />
+    <ClCompile Include="Source\UnifromBuffer\UniformBuffer.cpp" />
     <ClCompile Include="Source\VertexArray\VertexArray.cpp" />
-    <ClCompile Include="Source\VertexBufferLayout.cpp" />
     <ClCompile Include="Source\VertexBuffer\VertexBuffer.cpp" />
-    <ClCompile Include="Source\Windows\IWindow.cpp" />
+    <ClCompile Include="Source\VertexBuffer\VertexBufferLayout.cpp">
+      <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <Optimization>Disabled</Optimization>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <AssemblerListingLocation>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</AssemblerListingLocation>
+      <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
+      <BrowseInformation>false</BrowseInformation>
+      <BrowseInformationFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</BrowseInformationFile>
+      <CompileAs>Default</CompileAs>
+      <ConformanceMode>Default</ConformanceMode>
+      <DiagnosticsFormat>Column</DiagnosticsFormat>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ErrorReporting>Prompt</ErrorReporting>
+      <ExpandAttributedSource>false</ExpandAttributedSource>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <EnableASAN>false</EnableASAN>
+      <EnableFuzzer>false</EnableFuzzer>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <GenerateModuleDependencies>false</GenerateModuleDependencies>
+      <GenerateSourceDependencies>false</GenerateSourceDependencies>
+      <GenerateXMLDocumentationFiles>false</GenerateXMLDocumentationFiles>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>Default</LanguageStandard_C>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ModuleDependenciesFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</ModuleDependenciesFile>
+      <ModuleOutputFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</ModuleOutputFile>
+      <OmitDefaultLibName>false</OmitDefaultLibName>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <ObjectFileName>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</ObjectFileName>
+      <CallingConvention>Cdecl</CallingConvention>
+      <ProgramDataBaseFileName>D:\Dev\DeferredRendering\Intermediate\x64\Debug\vc143.pdb</ProgramDataBaseFileName>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\DeferredRendering.pch</PrecompiledHeaderOutputFile>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+      <ShowIncludes>false</ShowIncludes>
+      <SourceDependenciesFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</SourceDependenciesFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <SmallerTypeCheck>false</SmallerTypeCheck>
+      <SpectreMitigation>false</SpectreMitigation>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <TrackerLogDirectory>D:\Dev\DeferredRendering\Intermediate\x64\Debug\Deferred.f072e502.tlog\</TrackerLogDirectory>
+      <TranslateIncludes>false</TranslateIncludes>
+      <MinimalRebuildFromTracking>true</MinimalRebuildFromTracking>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <UseFullPaths>true</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <XMLDocumentationFileName>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</XMLDocumentationFileName>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <IntelJCCErratum>false</IntelJCCErratum>
+      <BuildStlModules>false</BuildStlModules>
+      <TreatAngleIncludeAsExternal>false</TreatAngleIncludeAsExternal>
+      <ExternalWarningLevel>InheritWarningLevel</ExternalWarningLevel>
+      <TreatExternalTemplatesAsInternal>true</TreatExternalTemplatesAsInternal>
+      <DisableAnalyzeExternal>false</DisableAnalyzeExternal>
+      <PreprocessorDefinitions>DR_DEBUG;_DEBUG;_CONSOLE;_UNICODE;UNICODE;</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>D:\Dev\DeferredRendering\Source;D:\Dev\DeferredRendering\vendor\includes\glad;D:\Dev\DeferredRendering\vendor\includes;D:\Dev\DeferredRendering\SubModule\glm;</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
+      <LinkCompiled>true</LinkCompiled>
+    </ClCompile>
+    <ClCompile Include="Source\Windows\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Shaders\Basic.glsl" />
     <Content Include="Shaders\DirectionLight.glsl" />
+    <Content Include="Shaders\GbufferDebug.glsl" />
+    <Content Include="Shaders\GeometryPass.glsl" />
+    <Content Include="Shaders\LightPass" />
+    <Content Include="Shaders\ShadowPass.glsl" />
     <Content Include="vendor\includes\assimp\.editorconfig" />
     <Content Include="vendor\includes\assimp\config.h.in" />
     <Content Include="vendor\includes\assimp\module.modulemap" />

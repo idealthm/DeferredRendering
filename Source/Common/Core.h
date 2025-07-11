@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <memory>
 #include "glm/glm.hpp"
 
 typedef signed char        int8;
@@ -33,3 +34,37 @@ typedef long long          intmax;
 typedef unsigned long long uintmax;
 
 #define ToDegree(X) (glm::pi<float>() / 180.f * (X))
+
+template <typename T> using Ref = std::shared_ptr<T>;
+template <typename T, typename ... Args>
+constexpr Ref<T> CreateRef(Args&& ... args)
+{
+	return std::make_shared<T>(std::forward<Args>(args)...);
+}
+
+template <typename T> using Scope = std::unique_ptr<T>;
+template <typename T, typename ... Args>
+constexpr Scope<T> CreateScope(Args&& ... args)
+{
+	return std::make_unique<T>(std::forward<Args>(args)...);
+}
+
+#define BIT(x) (1 << (x))
+#define ASSERT(x) if(!(x)) __debugbreak();
+
+void GLClearError();
+bool GLLogCall(const char* function, const char* file, int line);
+
+#ifdef DR_DEBUG
+#define GL_CALL_DEBUG_HEAD		GLClearError();
+#define GL_CALL_DEBUG_END(x)	ASSERT(GLLogCall(#x, __FILE__, __LINE__))
+#else
+#define GL_CALL_DEBUG_HEAD
+#define GL_CALL_DEBUG_END(x)
+#endif
+
+#define BIND_FUNCTION_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
+
+#define GLCall(x) GL_CALL_DEBUG_HEAD \
+x; \
+GL_CALL_DEBUG_END(x)

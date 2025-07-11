@@ -1,9 +1,6 @@
 ﻿#pragma once
 
-#pragma message("当前工作目录: " __FILE__)
-#include "glm/vec3.hpp"
-#include <vector>
-#include <glad/glad.h>
+#include "VertexBufferLayout.h"
 
 class VertexBuffer
 {
@@ -14,6 +11,10 @@ public:
     void Bind() const;
     void Unbind() const;
 
+    void SetLayout(const BufferLayout& Layout);
+    BufferLayout& GetLayout() {return m_Layout;}
+
 private:
     unsigned int m_RendererID;
+    BufferLayout m_Layout;
 };

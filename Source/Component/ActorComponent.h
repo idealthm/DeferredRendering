@@ -4,6 +4,7 @@
 
 #include "glm/glm.hpp"
 
+class StaticMesh;
 class Shape;
 class Shader;
 
@@ -47,11 +48,11 @@ class StaticMeshComponent : public SceneComponent
 public:
 	virtual ~StaticMeshComponent() = default;
 
-	virtual void SetMesh(const std::shared_ptr<Shape>& shape);
+	virtual void SetMesh(const std::shared_ptr<StaticMesh>& shape);
 
 	virtual void Draw(Shader& shader) override;
 
 protected:
-	std::shared_ptr<Shape> m_Model;
+	std::shared_ptr<StaticMesh> m_Model;
 };
 
