@@ -18,7 +18,6 @@ out vec4 FragColor;
 
 struct DirLight {
     vec3 direction;
-	
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
@@ -26,11 +25,9 @@ struct DirLight {
 
 struct PointLight {
     vec3 position;
-    
     float constant;
     float linear;
     float quadratic;
-	
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
@@ -51,72 +48,85 @@ uniform int uLightCount;
 uniform DirLight dirLight;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 
-uniform vec3 CamPos;
+uniform vec3 uCamPos;
 
-float near = 0.1; 
-float far  = 100.0; 
-
-float LinearizeDepth(float depth) 
-{
-    float z = depth * 2.0 - 1.0; // 转换为 NDC
-    return (2.0 * near * far) / (far + near - z * (far - near));    
-}
-
+// 计算光照贡献（返回环境光、漫反射、高光）
 mat3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
 {
     vec3 lightDir = normalize(-light.direction);
-    // diffuse shading
+    
+    // 漫反射
     float diff = max(dot(normal, lightDir), 0.0);
-    // specular shading
-    float shinness = 5.0;
+    vec3 diffuse = light.diffuse * diff;
+    
+    // 高光 - 修正反射方向
+    float shininess = 64.0;
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(reflectDir, viewDir), 0.0), shinness);
-
-    // return abmbient, diffuse, specular
-    // vec3 specular = (light.specular * vec3(texture(gSpecular, TexCoords)));
-    return mat3(light.ambient, light.diffuse * diff, light.specular * spec);
+    float spec = pow(max(dot(reflectDir, viewDir), 0.0), shininess);
+    vec3 specular = light.specular * spec;
+    
+    // 环境光
+    return mat3(light.ambient, diffuse, specular);
 }
 
 mat3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     vec3 lightDir = normalize(light.position - fragPos);
-    vec3 diffuse = max(dot(normal, lightDir), 0.1) * light.diffuse;
-
-    float shinness = 5.0;
+    
+    // 漫反射
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = light.diffuse * diff;
+    
+    // 高光
+    float shininess = 5.0;
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(reflectDir, viewDir), 0.0), shinness);
-
-    return mat3(light.ambient, diffuse, light.specular * spec);
+    float spec = pow(max(dot(reflectDir, viewDir), 0.0), shininess);
+    vec3 specular = light.specular * spec;
+    
+    // 衰减
+    float distance = length(light.position - fragPos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + 
+                             light.quadratic * (distance * distance));
+    
+    return mat3(light.ambient, diffuse * attenuation, specular * attenuation);
 }
 
-// ec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
-// 
-//    return vec3(0.0, 0.0, 0.0);
-// 
-
-vec4 CalculateLighting()
+vec4 CalculateLighting(bool withSpecular)
 {
     vec3 FragPos = texture(gPosition, vTexCoords).rgb;
-    vec3 Normal = texture(gNormal, vTexCoords).rgb;
+    vec3 Normal = normalize(texture(gNormal, vTexCoords).rgb); // 确保归一化
     vec3 Albedo = texture(gAlbedo, vTexCoords).rgb;
-
-    mat3 result = CalcDirLight(dirLight, Normal, CamPos);
+    vec3 viewDir = normalize(uCamPos - FragPos); // 统一视图方向
     
-    for (int i = 0; i < uLightCount; i++)
-        result += CalcPointLight(pointLights[i], Normal, FragPos, CamPos);
-
-    // result = CalculateSpotLight();
+    // 计算方向光
+    mat3 dirResult = CalcDirLight(dirLight, Normal, viewDir);
     
-    vec3 diffuse = Albedo * (result[0] + result[1]);
+    // 计算点光源
+    for (int i = 0; i < uLightCount; i++) {
+        dirResult += CalcPointLight(pointLights[i], Normal, FragPos, viewDir);
+    }
+    
+    // 组合光照
+    vec3 ambientColor = dirResult[0] * Albedo;
+    vec3 diffuseColor = dirResult[1] * Albedo;
+    vec3 resultColor = ambientColor + diffuseColor;
+    if (withSpecular == true)
+        resultColor += dirResult[2];
+    
+    return vec4(resultColor, 1.0);
+}
 
-    return vec4(diffuse, 1.0);
+vec4 CammeraToFragPos()
+{
+    vec3 FragPos = texture(gPosition, vTexCoords).rgb;
+    return vec4(FragPos / 100, 1.0);
 }
 
 void main()
 {
     switch (uDebugMode) {
         case 1: // 位置
-            FragColor = vec4(texture(gPosition, vTexCoords).rgb, 1.0);
+            FragColor = vec4(texture(gPosition, vTexCoords).rb, 1.0, 1.0);
             break;
         case 2: // 法线
             vec3 normal = texture(gNormal, vTexCoords).rgb;
@@ -126,11 +136,13 @@ void main()
             FragColor = vec4(texture(gAlbedo, vTexCoords).rgb, 1.0);
             break;
         case 4: // 粗糙度
-            float roughness = texture(gNormal, vTexCoords).a;
+            float roughness = texture(gMaterial, vTexCoords).g; // 假设粗糙度存储在g通道
             FragColor = vec4(vec3(roughness), 1.0);
             break;
-        // ... 其他通道
+        case 5: // Depth
+            FragColor = CalculateLighting(false);
+            break;
         default:
-            FragColor = CalculateLighting();
+            FragColor = CalculateLighting(true);
     }
 };

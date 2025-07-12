@@ -27,6 +27,8 @@ public:
            glm::vec3 up = glm::vec3(0.f, 1.f, 0.f),
            float yaw = -90.f, float pitch = 0.f);
 
+	glm::vec3 GetPosition() const;
+
     glm::mat4 GetViewMatrix() const;
 
     glm::mat4 GetProjectionMatrix(float AspectRatio) const;

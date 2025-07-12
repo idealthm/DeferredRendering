@@ -115,6 +115,16 @@ void Shader::Unbind() const
     GLCall(glUseProgram(0));
 }
 
+void Shader::SetUniform1f(const std::string& name, const float& value)
+{
+    SET_UNIFORM(glUniform1f(location, value));
+}
+
+void Shader::SetUniform2f(const std::string& name, const glm::vec2& value)
+{
+    SET_UNIFORM(glUniform2f(location, value.x, value.y));
+}
+
 void Shader::SetUniform3f(const std::string& name, const glm::vec3& value)
 {
     SET_UNIFORM(glUniform3f(location, value.x, value.y, value.z))

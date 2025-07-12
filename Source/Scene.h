@@ -31,6 +31,7 @@ public:
 
 	const std::set<std::shared_ptr<Actor>>& GetActors() const;
 
+	glm::vec3 GetCameraPosition() const;
 	glm::mat4 GetViewMatrix() const;
 	glm::mat4 GetProjectionMatrix() const;
 

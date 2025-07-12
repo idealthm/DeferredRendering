@@ -28,7 +28,7 @@ DeferredPass::DeferredPass(int32 width, int32 height)
 	FramebufferSpecification spec;
 	spec.Width = width;
 	spec.Height = height;
-	spec.Attachments = {FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::Depth};
+	spec.Attachments = {FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::Depth};
 	m_FrameBuffer = CreateScope<FrameBuffer>(spec);
 }
 
@@ -80,13 +80,23 @@ void DeferredPass::OnPass(const Ref<Scene>& scene)
 
 	LightShader->Bind();
 
+	LightShader->SetUniform3f("uCamPos", scene->GetCameraPosition());
+
 	LightShader->SetUniform1i("uDebugMode", DebugMode);
 	LightShader->SetUniform1i("uLightCount", 1);
 
-	LightShader->SetUniform3f("pointLights[0].position", {100.f, 100.f, 100.f});
+	LightShader->SetUniform3f("dirLight.direction", {1.f, -.5f, 0});
+	LightShader->SetUniform3f("dirLight.diffuse", {1.f, 1.f, 1.f});
+	LightShader->SetUniform3f("dirLight.ambient", glm::vec3{0.1f, 0.1f, 0.1f});
+	LightShader->SetUniform3f("dirLight.specular", glm::vec3(0.1f));
+
+	LightShader->SetUniform3f("pointLights[0].position", {5.f, 5.f, 5.f});
 	LightShader->SetUniform3f("pointLights[0].diffuse", {1.f, 1.f, 1.f});
 	LightShader->SetUniform3f("pointLights[0].ambient", glm::vec3{0.1f, 0.1f, 0.1f});
-	LightShader->SetUniform3f("pointLights[0].specular", {0.0f, 0.0f, 0.0f});
+	LightShader->SetUniform3f("pointLights[0].specular", glm::vec3(0.1f));
+	LightShader->SetUniform1f("pointLights[0].constant", 1.f);
+	LightShader->SetUniform1f("pointLights[0].linear", 0.09f);
+	LightShader->SetUniform1f("pointLights[0].quadratic", 0.032f);
 
 	BindForReading(std::string("gPosition"), 0, 0);
 	BindForReading(std::string("gNormal"), 1, 1);

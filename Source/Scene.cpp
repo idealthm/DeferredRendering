@@ -13,6 +13,11 @@ const std::set<std::shared_ptr<Actor>>& Scene::GetActors() const
 	return Actors;
 }
 
+glm::vec3 Scene::GetCameraPosition() const
+{
+	return m_Camera->GetPosition();
+}
+
 glm::mat4 Scene::GetViewMatrix() const
 {
 	return m_Camera->GetViewMatrix();

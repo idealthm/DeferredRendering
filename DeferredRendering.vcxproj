@@ -141,6 +141,7 @@ endlocal</Command>
     <ClInclude Include="Source\IndexBuffer\IndexBuffer.h" />
     <ClInclude Include="Source\Layers\ExampleLayer.h" />
     <ClInclude Include="Source\Layers\Layer.h" />
+    <ClInclude Include="Source\Lights\Light.h" />
     <ClInclude Include="Source\MeshManger.h" />
     <ClInclude Include="Source\Model\MeshSection.h" />
     <ClInclude Include="Source\Model\StaticMesh.h" />
@@ -279,6 +280,7 @@ endlocal</Command>
     <ClCompile Include="Source\IndexBuffer\IndexBuffer.cpp" />
     <ClCompile Include="Source\Layers\ExampleLayer.cpp" />
     <ClCompile Include="Source\Layers\Layer.cpp" />
+    <ClCompile Include="Source\Lights\Light.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\MeshManger.cpp" />
     <ClCompile Include="Source\Model\MeshSection.cpp" />
