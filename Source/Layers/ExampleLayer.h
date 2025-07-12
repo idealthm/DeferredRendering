@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "Common/Core.h"
 
+class StaticMeshActor;
 class KeyTypedEvent;
 class DeferredPass;
 class KeyPressedEvent;
@@ -26,4 +27,5 @@ private:
 	std::shared_ptr<Camera> m_Camera;
 
 	Ref<DeferredPass>		m_DeferredPass;
+	Ref<StaticMeshActor>	m_PlaneActor;
 };

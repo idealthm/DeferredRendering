@@ -17,13 +17,13 @@ out mat3 vTBN;
 
 void main()
 {
-    mat4 modelView = uView * uModel;
     vPosition = vec3(uModel * vec4(aPosition, 1.0));
-    vNormal = mat3(modelView) * aNormal;
+    vNormal = mat3(transpose(inverse(uModel))) * aNormal;
 
+    mat4 modelView = uView * uModel;
     vec3 T = normalize(mat3(modelView) * aTangent);
-    vec3 B = cross(vNormal, T);
-    vTBN = mat3(T, B, aNormal);
+    vec3 N = normalize(mat3(modelView) * vNormal);
+    vTBN = mat3(T, cross(N, T), N);
 
     vTexCoords = aTexCoords;
     gl_Position = uProjection * uView * vec4(vPosition, 1.0);
