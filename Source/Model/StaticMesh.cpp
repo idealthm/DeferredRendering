@@ -4,8 +4,8 @@
 #include "Util.h"
 
 
-StaticMesh::StaticMesh(const StaticMeshDesc& desc, std::vector<Ref<MeshSection>>& meshes)
-	: m_Desc(desc), m_LoadedMeshes(std::move(meshes))
+StaticMesh::StaticMesh(const StaticMeshDesc& desc, const std::vector<Ref<MeshSection>>& meshes)
+	: m_Desc(desc), m_LoadedMeshes(meshes)
 {
 	for (auto& mesh : m_LoadedMeshes)
 	{

@@ -7,9 +7,9 @@
 #include "Events/Event.h"
 #include "Events/KeyEvent.h"
 #include "Model/Texture.h"
-#include "RenderPass/DeferredPass.h"
 #include "Shapes/MeshBuilder.h"
 #include "glad/glad.h"
+#include "Lights/Light.h"
 #include "Model/Util.h"
 
 
@@ -36,7 +36,9 @@ ExampleLayer::ExampleLayer(uint32 width, uint32 height)
 
 	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.obj"));
 
-	m_DeferredPass = Renderer::Get().AddPass<DeferredPass>(width, height);
+	// auto DirLight = m_Scene->SpawnActor<DirectionLightActor>(glm::vec3(0.f), glm::vec3(0.f, -45.f, 0.f));
+	auto PointLight = m_Scene->SpawnActor<PointLightActor>(glm::vec3(5.f));
+	// auto SpotLight = m_Scene->SpawnActor<SpotLightActor>(glm::vec3(-5.f, 5.f, -5.f), glm::vec3(0.f, -30.f, 0.f));
 }
 
 ExampleLayer::~ExampleLayer()
@@ -62,30 +64,11 @@ void ExampleLayer::OnUpdate(Timestep ts)
 void ExampleLayer::OnImGuiRender()
 {
 	Layer::OnImGuiRender();
-	
 }
 
 void ExampleLayer::OnEvent(Event& event)
 {
 	m_Camera->OnEvent(event);
-
-	EventDispatcher dispatcher(event);
-	dispatcher.Dispatch<KeyPressedEvent>(BIND_FUNCTION_FN(ExampleLayer::OnKeyPress));
-}
-
-bool ExampleLayer::OnKeyPress(const KeyPressedEvent& event) const
-{
-	switch (event.GetKeyCode())
-	{
-		case Key::F1: m_DeferredPass->SetDebugMode(1); return true;
-		case Key::F2: m_DeferredPass->SetDebugMode(2); return true;
-		case Key::F3: m_DeferredPass->SetDebugMode(3); return true;
-		case Key::F4: m_DeferredPass->SetDebugMode(4); return true;
-		case Key::F5: m_DeferredPass->SetDebugMode(5); return true;
-		case Key::F6: m_DeferredPass->SetDebugMode(6); return true;
-		case Key::F7: m_DeferredPass->SetDebugMode(7); return true;
-	}
-	return false;
 }
 
 void ExampleLayer::OnAttach()

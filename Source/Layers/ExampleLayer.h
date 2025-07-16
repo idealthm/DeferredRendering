@@ -20,12 +20,9 @@ public:
 	void OnImGuiRender() override;
 	void OnEvent(Event& event) override;
 
-	bool OnKeyPress(const KeyPressedEvent& event) const;
-
 private:
 	Ref<Scene>				m_Scene;
 	std::shared_ptr<Camera> m_Camera;
 
-	Ref<DeferredPass>		m_DeferredPass;
 	Ref<StaticMeshActor>	m_PlaneActor;
 };

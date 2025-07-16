@@ -65,7 +65,7 @@ Ref<StaticMesh> MeshBuilder::BuildCube(const Ref<Texture2D>& texture)
 	};
 	auto section = BuildSection(CubeVertices, CubeIndices, layout);
 	if (texture) section->AddTexture(TextureType::DIFFUSE, texture);
-	return CreateRef<StaticMesh>(StaticMeshDesc{}, std::vector<Ref<MeshSection>>{section});
+	return CreateRef<StaticMesh>(StaticMeshDesc{std::string("")}, std::vector<Ref<MeshSection>>{section});
 }
 
 Ref<StaticMesh> MeshBuilder::BuildQuad(const Ref<Texture2D>& texture)
@@ -76,5 +76,5 @@ Ref<StaticMesh> MeshBuilder::BuildQuad(const Ref<Texture2D>& texture)
 
 	auto section = BuildSection(QuadVertices, QuadIndices, layout);
 	if (texture) section->AddTexture(TextureType::DIFFUSE, texture);
-	return CreateRef<StaticMesh>(StaticMeshDesc{}, std::vector<Ref<MeshSection>>{section});
+	return CreateRef<StaticMesh>(StaticMeshDesc{std::string("")}, std::vector<Ref<MeshSection>>{section});
 }

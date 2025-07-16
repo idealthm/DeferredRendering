@@ -28,6 +28,14 @@ public:
 	void SetRotation(const glm::vec3& rotation) const;
 	void SetScale3D(const glm::vec3& scale) const;
 
+	template<typename T, typename... Args>
+	Ref<T> AddComponent(Args... args)
+	{
+		auto ComponentRef =  CreateRef<T>(std::forward<Args>(args)...);
+		Components.push_back(ComponentRef);
+		return ComponentRef;
+	}
+
 	const std::vector<Ref<ActorComponent>>& GetComponents() const;
 protected:
 	std::weak_ptr<SceneComponent>					RootComponent;
