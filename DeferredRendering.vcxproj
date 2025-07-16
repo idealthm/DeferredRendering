@@ -127,6 +127,7 @@ endlocal</Command>
     <ClInclude Include="Source\Common\Keys.h" />
     <ClInclude Include="Source\Common\LayerStack.h" />
     <ClInclude Include="Source\Common\MouseCode.h" />
+    <ClInclude Include="Source\Common\StringFormat.h" />
     <ClInclude Include="Source\Common\Timestep.h" />
     <ClInclude Include="Source\Component\ActorComponent.h" />
     <ClInclude Include="Source\Application.h" />
@@ -148,8 +149,10 @@ endlocal</Command>
     <ClInclude Include="Source\Model\Texture.h" />
     <ClInclude Include="Source\Model\Util.h" />
     <ClInclude Include="Source\Renderer.h" />
-    <ClInclude Include="Source\RenderPass\DeferredPass.h" />
+    <ClInclude Include="Source\RenderPass\GBufferPass.h" />
+    <ClInclude Include="Source\RenderPass\LightingPass.h" />
     <ClInclude Include="Source\RenderPass\RenderPass.h" />
+    <ClInclude Include="Source\RenderPass\ShadowPass.h" />
     <ClInclude Include="Source\Scene.h" />
     <ClInclude Include="Source\Shader\Shader.h" />
     <ClInclude Include="Source\Shapes\MeshBuilder.h" />
@@ -269,6 +272,7 @@ endlocal</Command>
     <ClCompile Include="Source\Actor.cpp" />
     <ClCompile Include="Source\Camera\Camera.cpp" />
     <ClCompile Include="Source\Common\LayerStack.cpp" />
+    <ClCompile Include="Source\Common\StringFormat.cpp" />
     <ClCompile Include="Source\Common\Timestep.cpp" />
     <ClCompile Include="Source\Component\ActorComponent.cpp" />
     <ClCompile Include="Source\Application.cpp" />
@@ -288,8 +292,10 @@ endlocal</Command>
     <ClCompile Include="Source\Model\Texture.cpp" />
     <ClCompile Include="Source\Model\Util.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
-    <ClCompile Include="Source\RenderPass\DeferredPass.cpp" />
+    <ClCompile Include="Source\RenderPass\GBufferPass.cpp" />
+    <ClCompile Include="Source\RenderPass\LightingPass.cpp" />
     <ClCompile Include="Source\RenderPass\RenderPass.cpp" />
+    <ClCompile Include="Source\RenderPass\ShadowPass.cpp" />
     <ClCompile Include="Source\Scene.cpp" />
     <ClCompile Include="Source\Shader\Shader.cpp" />
     <ClCompile Include="Source\Shapes\MeshBuilder.cpp" />

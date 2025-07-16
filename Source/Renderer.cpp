@@ -5,9 +5,8 @@
 #include <glm/glm.hpp>
 
 #include "IndexBuffer/IndexBuffer.h"
+#include "RenderPass/GBufferPass.h"
 #include "RenderPass/RenderPass.h"
-#include "Shader/Shader.h"
-#include "VertexArray/VertexArray.h"
 
 
 namespace 
@@ -46,9 +45,8 @@ Renderer& Renderer::Get()
     return renderer;
 }
 
-void Renderer::Init()
+void Renderer::Init(uint32 width, uint32 height)
 {
-    
 #ifdef _DEBUG
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -62,6 +60,9 @@ void Renderer::Init()
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LINE_SMOOTH);
+
+    m_GBufferPass = CreateRef<GBufferPass>(width, height);
+    m_LightingPass = CreateRef<LightingPass>(width, height);
 }
 
 void Renderer::Shutdown()
@@ -84,22 +85,17 @@ void Renderer::SetClearColor(const glm::vec4& color)
     glClearColor(color.x, color.y, color.z, color.w);
 }
 
-void Renderer::Clear(const glm::vec4& color)
-{
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
 void Renderer::Draw(const Ref<Scene>& scene)
 {
-    Clear(glm::vec4(0.0));
+    RenderContext context {scene, m_RenderMode, 0};
 
-    for (const auto& pass : m_Passes)
-    {
-        pass->PrePass(scene);
+    m_GBufferPass->OnPass(context);
 
-        pass->OnPass(scene);
+    m_LightingPass->OnPass(context);
+}
 
-        pass->PostPass(scene);
-    }
+void Renderer::StartPass()
+{
+    
 }
 

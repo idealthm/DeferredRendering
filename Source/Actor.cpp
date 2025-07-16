@@ -54,8 +54,7 @@ const std::vector<Ref<ActorComponent>>& Actor::GetComponents() const
 
 StaticMeshActor::StaticMeshActor()
 {
-	m_StaticMeshComp = std::make_shared<StaticMeshComponent>();
-	Components.push_back(m_StaticMeshComp);
+	m_StaticMeshComp = AddComponent<StaticMeshComponent>();
 	SetRootComponent(m_StaticMeshComp);
 }
 

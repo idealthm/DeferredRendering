@@ -5,7 +5,7 @@
 #include <glad/glad.h>
 
 
-VertexBuffer::VertexBuffer(const void* data, unsigned size)
+VertexBuffer::VertexBuffer(const void* data, uint64 size)
 {
     GLCall(glGenBuffers(1, &m_RendererID));
     GLCall(glBindBuffer(GL_ARRAY_BUFFER, m_RendererID));

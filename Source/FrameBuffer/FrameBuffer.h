@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <string>
 #include <vector>
 #include <common/Core.h>
 
@@ -23,9 +24,10 @@ enum class FramebufferTextureFormat
 struct FramebufferTextureSpecification
 {
 	FramebufferTextureSpecification() = default;
-	FramebufferTextureSpecification(FramebufferTextureFormat format)
-		: TextureFormat(format) {}
+	FramebufferTextureSpecification(const std::string& name, FramebufferTextureFormat format)
+		: BufferName(name),TextureFormat(format) {}
 
+	std::string BufferName;
 	FramebufferTextureFormat TextureFormat = FramebufferTextureFormat::None;
 	// TODO: filtering/wrap
 };
@@ -65,6 +67,7 @@ public:
 
 	virtual void ClearAttachment(uint32 attachmentIndex, int value);
 
+	virtual uint32 GetColorAttachmentRendererID(const std::string& name) const;
 	virtual uint32 GetColorAttachmentRendererID(uint32 index = 0) const { ASSERT(index < m_ColorAttachments.size()); return m_ColorAttachments[index]; }
 
 	virtual const FramebufferSpecification& GetSpecification() const { return m_Specification; }
@@ -73,7 +76,7 @@ private:
 	FramebufferSpecification m_Specification;
 
 	std::vector<FramebufferTextureSpecification> m_ColorAttachmentSpecifications;
-	FramebufferTextureSpecification m_DepthAttachmentSpecification = FramebufferTextureFormat::None;
+	FramebufferTextureSpecification m_DepthAttachmentSpecification;
 
 	std::vector<uint32> m_ColorAttachments;
 	uint32 m_DepthAttachment = 0;

@@ -20,7 +20,7 @@ struct StaticMeshDesc
 class StaticMesh
 {
 public:
-	StaticMesh(const StaticMeshDesc& desc, std::vector<Ref<MeshSection>>& meshes);
+	StaticMesh(const StaticMeshDesc& desc, const std::vector<Ref<MeshSection>>& meshes);
 	StaticMesh(Util::MeshLoader& loader);
 
 	void Draw(Shader& shader) const;

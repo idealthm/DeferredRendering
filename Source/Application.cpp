@@ -36,14 +36,14 @@ Application::Application(const ApplicationSpecification& specification)
 		return this->OnEvent(std::forward<decltype(args)>(args)...);
 	});
 
-	Renderer::Get().Init();
+	Renderer::Get().Init(SCR_WIDTH, SCR_HEIGHT);
 
 	PushLayer(new ExampleLayer(SCR_WIDTH, SCR_HEIGHT));
 }
 
 Application::~Application()
 {
-	Renderer::Get().Shutdown();
+	Renderer::Get().Shutdown();  
 }
 
 void Application::PushLayer(Layer* layer)
@@ -75,7 +75,17 @@ void Application::OnEvent(Event& e)
 	EventDispatcher dispatcher(e);
 	dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e )
 	{
-		if (e.GetKeyCode() == GLFW_KEY_ESCAPE) {m_Running = false; return true;}
+		switch (e.GetKeyCode())
+		{
+			case Key::Escape: m_Running = false; return true;
+			case Key::F1: Renderer::Get().m_RenderMode = 1; return true;
+			case Key::F2: Renderer::Get().m_RenderMode = 2; return true;
+			case Key::F3: Renderer::Get().m_RenderMode = 3; return true;
+			case Key::F4: Renderer::Get().m_RenderMode = 4; return true;
+			case Key::F5: Renderer::Get().m_RenderMode = 5; return true;
+			case Key::F6: Renderer::Get().m_RenderMode = 6; return true;
+			case Key::F7: Renderer::Get().m_RenderMode = 7; return true;
+		}
 		return false;
 	});
 	dispatcher.Dispatch<WindowCloseEvent>(BIND_FUNCTION_FN(Application::OnWindowClose));

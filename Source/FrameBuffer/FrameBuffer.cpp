@@ -203,12 +203,10 @@ FrameBuffer::FrameBuffer(const FramebufferSpecification& spec)
 
 	int FrameBuffer::ReadPixel(uint32_t attachmentIndex, int x, int y)
 	{
-
 		glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
 		int pixelData;
 		glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
 		return pixelData;
-
 	}
 
 	void FrameBuffer::ClearAttachment(uint32_t attachmentIndex, int value)
@@ -217,3 +215,15 @@ FrameBuffer::FrameBuffer(const FramebufferSpecification& spec)
 		glClearTexImage(m_ColorAttachments[attachmentIndex], 0,
 			Utils::HazelFBTextureFormatToGL(spec.TextureFormat), GL_INT, &value);
 	}
+
+uint32 FrameBuffer::GetColorAttachmentRendererID(const std::string& name) const
+{
+	for (uint32 i = 0; i < m_ColorAttachmentSpecifications.size(); i++)
+	{
+		if (m_ColorAttachmentSpecifications[i].BufferName == name)
+		{
+			return GetColorAttachmentRendererID(i);
+		}
+	}
+	return -1;
+}

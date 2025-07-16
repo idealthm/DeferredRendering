@@ -14,7 +14,7 @@ void main()
 #shader fragment
 #version 330 core
 
-out vec4 FragColor;
+layout(location = 0) out vec4 FragColor;
 
 struct DirLight {
     vec3 direction;
@@ -33,6 +33,23 @@ struct PointLight {
     vec3 specular;
 };
 
+
+struct SpotLight {
+    vec3 position;
+    vec3 direction;
+
+    float cutoff;
+    float outerCutoff;
+
+    float constant;
+    float linear;
+    float quadratic;
+
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
 in vec2 vTexCoords;
 
 #define NR_POINT_LIGHTS 4
@@ -43,10 +60,12 @@ uniform sampler2D gAlbedo;
 uniform sampler2D gMaterial;
 
 uniform int uDebugMode;
-uniform int uLightCount;
+uniform int uPointLightCount;
+uniform int uSpotLightCount;
 
 uniform DirLight dirLight;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
+uniform SpotLight spotLights[NR_POINT_LIGHTS];
 
 uniform vec3 uCamPos;
 
@@ -91,6 +110,37 @@ mat3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     return mat3(light.ambient, diffuse * attenuation, specular * attenuation);
 }
 
+mat3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
+{
+    vec3 lightDir = normalize(-light.direction);
+
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = light.diffuse * diff;
+    
+    float shininess = 64.0;
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(reflectDir, viewDir), 0.0), shininess);
+    vec3 specular = light.specular * spec;
+
+    vec3 pixelDir = normalize(light.position - fragPos);
+    
+    float theta = dot(pixelDir, -lightDir);
+    float epsilon = light.cutoff - light.outerCutoff;
+    float intensity = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+    diffuse *= intensity;
+    specular *= intensity;
+
+    float distance = length(light.position - fragPos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+
+    vec3 ambient = light.ambient * attenuation;
+    diffuse *= attenuation;
+    specular *= attenuation;
+
+    return mat3(ambient, diffuse, specular);
+}
+
 vec4 CalculateLighting(bool withSpecular)
 {
     vec3 FragPos = texture(gPosition, vTexCoords).rgb;
@@ -102,10 +152,14 @@ vec4 CalculateLighting(bool withSpecular)
     mat3 dirResult = CalcDirLight(dirLight, Normal, viewDir);
     
     // 计算点光源
-    for (int i = 0; i < uLightCount; i++) {
+    for (int i = 0; i < uPointLightCount; i++) {
         dirResult += CalcPointLight(pointLights[i], Normal, FragPos, viewDir);
     }
-    
+
+    for (int i = 0; i < uSpotLightCount; i++) {
+        dirResult += CalcSpotLight(spotLights[i], Normal, FragPos, viewDir);
+    }
+
     // 组合光照
     vec3 ambientColor = dirResult[0] * Albedo;
     vec3 diffuseColor = dirResult[1] * Albedo;

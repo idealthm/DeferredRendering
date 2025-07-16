@@ -5,6 +5,7 @@
 #include <Shader/Shader.h>
 #include "Renderer.h"
 
+class VertexArray;
 class VertexBuffer;
 class IndexBuffer;
 class Texture2D;
