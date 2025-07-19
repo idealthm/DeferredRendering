@@ -24,5 +24,5 @@ private:
 	Ref<Scene>				m_Scene;
 	std::shared_ptr<Camera> m_Camera;
 
-	Ref<StaticMeshActor>	m_PlaneActor;
+	Ref<Actor>				m_Actor;
 };

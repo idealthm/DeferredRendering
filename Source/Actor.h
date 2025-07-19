@@ -33,7 +33,24 @@ public:
 	{
 		auto ComponentRef =  CreateRef<T>(std::forward<Args>(args)...);
 		Components.push_back(ComponentRef);
+		if (!RootComponent.expired())
+		{
+			ComponentRef->AttachToComponent(RootComponent.lock());
+		}
 		return ComponentRef;
+	}
+
+	template<typename T>
+	Ref<T> GetComponent()
+	{
+		for (const auto& component : Components)
+		{
+			if (auto TComp = std::dynamic_pointer_cast<T>(component))
+			{
+				return TComp;
+			}
+		}
+		return {};
 	}
 
 	const std::vector<Ref<ActorComponent>>& GetComponents() const;

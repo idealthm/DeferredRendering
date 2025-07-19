@@ -51,13 +51,9 @@ glm::mat4 SceneComponent::GetModelMatrix() const
 		parentModel = ParentComponent.lock()->GetModelMatrix();
 	}
 
-	glm::quat quat = glm::angleAxis(glm::radians(m_Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f)) *  // Yaw (Y)
-				 glm::angleAxis(glm::radians(m_Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)) *  // Pitch (X)
-				 glm::angleAxis(glm::radians(m_Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));   // Roll (Z)
-
-	return glm::translate(glm::mat4(1.0), m_Location) * glm::mat4_cast(quat) * glm::scale(glm::mat4(1.0), m_scale3D) * parentModel;
-
-	// return glm::translate(glm::mat4(1.0), m_Location) * glm::mat4_cast(glm::quat(m_Rotation)) * glm::scale(glm::mat4(1.0), m_scale3D) * parentModel;
+	return glm::translate(glm::mat4(1.0), m_Location) // translation
+			* glm::mat4_cast(glm::quat(glm::radians(m_Rotation)))	// rotation
+			* glm::scale(glm::mat4(1.0), m_scale3D) * parentModel;	// scale
 }
 
 void SceneComponent::Draw(Shader& shader)
@@ -77,5 +73,8 @@ void StaticMeshComponent::SetMesh(const std::shared_ptr<StaticMesh>& shape)
 
 void StaticMeshComponent::Draw(Shader& shader)
 {
-	m_Model->Draw(shader);
+	if (m_Model)
+	{
+		m_Model->Draw(shader);
+	}
 }

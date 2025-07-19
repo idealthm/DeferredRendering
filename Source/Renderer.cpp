@@ -6,7 +6,7 @@
 
 #include "IndexBuffer/IndexBuffer.h"
 #include "RenderPass/GBufferPass.h"
-#include "RenderPass/RenderPass.h"
+#include "RenderPass/ShadowPass.h"
 
 
 namespace 
@@ -62,6 +62,7 @@ void Renderer::Init(uint32 width, uint32 height)
     glEnable(GL_LINE_SMOOTH);
 
     m_GBufferPass = CreateRef<GBufferPass>(width, height);
+    m_ShadowPass = CreateRef<ShadowPass>(width, height);
     m_LightingPass = CreateRef<LightingPass>(width, height);
 }
 
@@ -73,11 +74,15 @@ void Renderer::Shutdown()
 void Renderer::OnWindowResize(int32 width, int32 height)
 {
     SetViewport(0, 0, width, height);
+
+    m_GBufferPass->OnWindowSizeChanged(width, height);
+    m_ShadowPass->OnWindowSizeChanged(width, height);
+    m_LightingPass->OnWindowSizeChanged(width, height);
 }
 
 void Renderer::SetViewport(uint32 x, uint32 y, uint32 width, uint32 height)
 {
-    glViewport(0, 0, width, height);
+    glViewport(x, y, width, height);
 }
 
 void Renderer::SetClearColor(const glm::vec4& color)
@@ -90,7 +95,7 @@ void Renderer::Draw(const Ref<Scene>& scene)
     RenderContext context {scene, m_RenderMode, 0};
 
     m_GBufferPass->OnPass(context);
-
+    m_ShadowPass->OnPass(context);
     m_LightingPass->OnPass(context);
 }
 

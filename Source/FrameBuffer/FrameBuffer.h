@@ -4,7 +4,7 @@
 #include <vector>
 #include <common/Core.h>
 
-enum class FramebufferTextureFormat
+enum class EFBTextureFormat
 {
 	None = 0,
 
@@ -12,6 +12,7 @@ enum class FramebufferTextureFormat
 	RGBA8,
 	RED_INTEGER,
 
+	RG16,
 	RGBA16F,
 
 	// Depth/stencil
@@ -21,24 +22,24 @@ enum class FramebufferTextureFormat
 	Depth = DEPTH24STENCIL8
 };
 
-struct FramebufferTextureSpecification
+struct FBTextureSpecification
 {
-	FramebufferTextureSpecification() = default;
-	FramebufferTextureSpecification(const std::string& name, FramebufferTextureFormat format)
+	FBTextureSpecification() = default;
+	FBTextureSpecification(const std::string& name, EFBTextureFormat format)
 		: BufferName(name),TextureFormat(format) {}
 
 	std::string BufferName;
-	FramebufferTextureFormat TextureFormat = FramebufferTextureFormat::None;
+	EFBTextureFormat TextureFormat = EFBTextureFormat::None;
 	// TODO: filtering/wrap
 };
 
 struct FramebufferAttachmentSpecification
 {
 	FramebufferAttachmentSpecification() = default;
-	FramebufferAttachmentSpecification(std::initializer_list<FramebufferTextureSpecification> attachments)
+	FramebufferAttachmentSpecification(std::initializer_list<FBTextureSpecification> attachments)
 		: Attachments(attachments) {}
 
-	std::vector<FramebufferTextureSpecification> Attachments;
+	std::vector<FBTextureSpecification> Attachments;
 };
 
 struct FramebufferSpecification
@@ -67,6 +68,8 @@ public:
 
 	virtual void ClearAttachment(uint32 attachmentIndex, int value);
 
+	virtual uint32 GetDepthRendererID() { return m_DepthAttachment; }
+
 	virtual uint32 GetColorAttachmentRendererID(const std::string& name) const;
 	virtual uint32 GetColorAttachmentRendererID(uint32 index = 0) const { ASSERT(index < m_ColorAttachments.size()); return m_ColorAttachments[index]; }
 
@@ -75,8 +78,8 @@ private:
 	uint32 m_RendererID = 0;
 	FramebufferSpecification m_Specification;
 
-	std::vector<FramebufferTextureSpecification> m_ColorAttachmentSpecifications;
-	FramebufferTextureSpecification m_DepthAttachmentSpecification;
+	std::vector<FBTextureSpecification> m_ColorAttachmentSpecifications;
+	FBTextureSpecification m_DepthAttachmentSpecification;
 
 	std::vector<uint32> m_ColorAttachments;
 	uint32 m_DepthAttachment = 0;

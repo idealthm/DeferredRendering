@@ -20,6 +20,7 @@ public:
 	DirectionLightComponent();
 
 	glm::vec3 GetDirection() const;
+	glm::vec3 GetUPDirection() const;
 };
 
 class PointLightComponent : public LightComponent

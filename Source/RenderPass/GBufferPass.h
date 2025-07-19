@@ -12,7 +12,8 @@ public:
 	GBufferPass(uint32 width, uint32 height);
 	virtual ~GBufferPass() = default;
 
-	uint32 GetColorAttachmentRendererID(const std::string& name) const;
+	uint32 GetColorAttachmentRendererID(const std::string& name) const override;
+	uint32 GetDepthRendererID() const override;
 
 	virtual void OnWindowSizeChanged(int32 width, int32 height) override;
 

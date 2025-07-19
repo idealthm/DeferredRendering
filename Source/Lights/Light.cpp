@@ -17,7 +17,27 @@ DirectionLightComponent::DirectionLightComponent()
 glm::vec3 DirectionLightComponent::GetDirection() const
 {
 	// default to Z
-	return glm::normalize(glm::mat3_cast(glm::quat(m_Rotation)) * glm::vec3(0.f, 0.f, 1.f));
+	glm::vec3 radians = glm::radians(m_Rotation);
+    
+	// 创建四元数 (Yaw -> Pitch -> Roll)
+	glm::quat rotation = 
+		glm::angleAxis(radians.y, glm::vec3(0, 1, 0)) * // Yaw
+		glm::angleAxis(radians.x, glm::vec3(1, 0, 0)) * // Pitch
+		glm::angleAxis(radians.z, glm::vec3(0, 0, 1)); // Roll
+    
+	return glm::normalize(rotation * glm::vec3(0.0f, 0.0f, -1.0f));
+}
+
+glm::vec3 DirectionLightComponent::GetUPDirection() const
+{
+	glm::vec3 radians = glm::radians(m_Rotation);
+    
+	// 创建四元数 (Yaw -> Pitch -> Roll)
+	glm::quat rotation = 
+		glm::angleAxis(radians.y, glm::vec3(0, 1, 0)) * // Yaw
+		glm::angleAxis(radians.x, glm::vec3(1, 0, 0)) * // Pitch
+		glm::angleAxis(radians.z, glm::vec3(0, 0, 1)); // Roll
+	return glm::normalize(rotation * glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 PointLightComponent::PointLightComponent()
