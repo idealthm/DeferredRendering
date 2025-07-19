@@ -17,10 +17,10 @@ GBufferPass::GBufferPass(uint32 width, uint32 height)
 	spec.Width = width;
 	spec.Height = height;
 	spec.Attachments = {
-		FramebufferTextureSpecification{std::string("gPosition"), FramebufferTextureFormat::RGBA16F},
-		FramebufferTextureSpecification{std::string("gNormal"), FramebufferTextureFormat::RGBA8},
-		FramebufferTextureSpecification{std::string("gAlbedo"), FramebufferTextureFormat::RGBA8},
-		FramebufferTextureSpecification{std::string("Depth"), FramebufferTextureFormat::Depth}
+		FBTextureSpecification{std::string("gPosition"), EFBTextureFormat::RGBA16F},
+		FBTextureSpecification{std::string("gNormal"), EFBTextureFormat::RG16},
+		FBTextureSpecification{std::string("gAlbedo"), EFBTextureFormat::RGBA8},
+		FBTextureSpecification{std::string("Depth"), EFBTextureFormat::Depth}
 	};
 	m_GBufferFBO = CreateScope<FrameBuffer>(spec);
 }
@@ -28,6 +28,11 @@ GBufferPass::GBufferPass(uint32 width, uint32 height)
 uint32 GBufferPass::GetColorAttachmentRendererID(const std::string& name) const
 {
 	return m_GBufferFBO->GetColorAttachmentRendererID(name);
+}
+
+uint32 GBufferPass::GetDepthRendererID() const
+{
+	return m_GBufferFBO->GetDepthRendererID();
 }
 
 void GBufferPass::OnWindowSizeChanged(int32 width, int32 height)

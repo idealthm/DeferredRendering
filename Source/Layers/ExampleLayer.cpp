@@ -19,8 +19,8 @@ ExampleLayer::ExampleLayer(uint32 width, uint32 height)
 	m_Camera = CreateRef<Camera>();
 
 	m_Scene = CreateRef<Scene>(width, height, m_Camera);
-	auto Cube = m_Scene->SpawnActor<StaticMeshActor>(glm::vec3(0.0f, 5.0f, 0.0f));
-	m_PlaneActor = m_Scene->SpawnActor<StaticMeshActor>(glm::vec3(0.0f, -5.0f, 0.0f), glm::vec3(0), glm::vec3(100.f, 0.1f, 100.f));
+	auto Cube = m_Scene->SpawnActor<StaticMeshActor>(glm::vec3(1.0f, 5.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(2.0f, 2.0f, 2.0f));
+	auto PlaneActor = m_Scene->SpawnActor<StaticMeshActor>(glm::vec3(0.0f, -5.0f, 0.0f), glm::vec3(0, 0, 0), glm::vec3(100.f, 0.1f, 100.f));
 	auto ModelA = m_Scene->SpawnActor<StaticMeshActor>();
 
 	uint32 white = 0xffffffff, red = 0xff0000ff;
@@ -32,12 +32,13 @@ ExampleLayer::ExampleLayer(uint32 width, uint32 height)
 	Cube->SetStaticMesh(CubeMesh);
 
 	Ref<StaticMesh> PlaneMesh = MeshBuilder::BuildCube(Texture2D::Create(Desc, &white));
-	m_PlaneActor->SetStaticMesh(PlaneMesh);
+	PlaneActor->SetStaticMesh(PlaneMesh);
 
 	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.obj"));
 
-	// auto DirLight = m_Scene->SpawnActor<DirectionLightActor>(glm::vec3(0.f), glm::vec3(0.f, -45.f, 0.f));
-	auto PointLight = m_Scene->SpawnActor<PointLightActor>(glm::vec3(5.f));
+	m_Actor = m_Scene->SpawnActor<DirectionLightActor>(glm::vec3(0.f, 0.f, 0.f), glm::vec3(-30.f, 0.f, 0.f));
+	// m_Actor->AddComponent<StaticMeshComponent>()->SetMesh(CubeMesh);
+	// auto PointLight = m_Scene->SpawnActor<PointLightActor>(glm::vec3(5.f));
 	// auto SpotLight = m_Scene->SpawnActor<SpotLightActor>(glm::vec3(-5.f, 5.f, -5.f), glm::vec3(0.f, -30.f, 0.f));
 }
 
@@ -54,9 +55,12 @@ void ExampleLayer::OnUpdate(Timestep ts)
 {
 	m_Camera->OnUpdate(ts);
 
-	// static float CachedTime = 0.f;
-	// CachedTime += ts;
-	// m_PlaneActor->SetRotation(glm::vec3(0, 90.f * CachedTime, 0));
+	static float CachedTime = 0.f;
+	CachedTime += ts;
+	m_Actor->SetRotation(glm::vec3(- 10 * CachedTime, 0, 0));
+	CachedTime = CachedTime > 18 ? CachedTime - 18 : CachedTime;
+
+	std::cout << CachedTime * 10 << std::endl;
 
 	Renderer::Get().Draw(m_Scene);
 }

@@ -38,7 +38,7 @@ in vec2 vTexCoords;
 in mat3 vTBN;
 
 layout(location = 0) out vec3 gPosition;
-layout(location = 1) out vec3 gNormal;
+layout(location = 1) out vec2 gNormal;
 layout(location = 2) out vec3 gAlbedo;
 layout(location = 3) out vec4 gMaterial; // metallic & roughness
 layout(location = 4) out uint gObjectID;
@@ -47,10 +47,26 @@ uniform sampler2D uAlbedoMap;
 uniform sampler2D uNormalMap;
 uniform sampler2D uMetallicRoughnessMap;
 
+vec2 NormalEncode(vec3 n)
+{
+    n = normalize(n); // 确保单位向量
+    float l1 = abs(n.x) + abs(n.y) + abs(n.z);
+    vec2 uv = n.xy / l1;
+    
+    if (n.z < 0.0) {
+        float x = uv.x;
+        float y = uv.y;
+        uv.x = (1.0 - abs(y)) * (x >= 0.0 ? 1.0 : -1.0);
+        uv.y = (1.0 - abs(x)) * (y >= 0.0 ? 1.0 : -1.0);
+    }
+
+    return uv * 0.5 + 0.5;
+}
+
 void main()
 {
     gPosition = vPosition;
-    gNormal = normalize(vNormal);
+    gNormal = NormalEncode(vNormal);
     gAlbedo = texture(uAlbedoMap, vTexCoords).rgb;
     gMaterial = vec4(1.0);
 };

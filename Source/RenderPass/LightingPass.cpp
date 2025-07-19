@@ -1,7 +1,10 @@
 ﻿#include "LightingPass.h"
 
+#include <glm/gtc/quaternion.hpp>
+
 #include "GBufferPass.h"
 #include "Scene.h"
+#include "ShadowPass.h"
 #include "Common/StringFormat.h"
 #include "FrameBuffer/FrameBuffer.h"
 #include "glad/glad.h"
@@ -33,13 +36,23 @@ void LightingPass::OnPass(RenderContext& context)
 	m_LightingShader->Bind();
 
 	int32 pointlightIndex = 0, spotlightIndex = 0;
+	const float Shaowwidth = 16.f;
+	const float Shaowheight = 9.f;
 	for (const auto& Actor : context.scene->GetActors())
 	{
 		for (auto& Comp : Actor->GetComponents())
 		{
 			if (auto Light = std::dynamic_pointer_cast<DirectionLightComponent>(Comp))
 			{
-				m_LightingShader->SetUniform3f("dirLight.direction", Light->GetDirection());
+				// 创建四元数 (Yaw -> Pitch -> Roll)
+				glm::quat rotation = glm::quat(glm::radians(Light->GetRotation()));
+				glm::vec3 location = Light->GetLocation();
+				glm::vec3 direction = rotation * glm::vec3(0.f, 0.f, -1.f);
+				glm::vec3 Up = rotation * glm::vec3(0.f, 1.f, 0.f);
+
+				m_LightingShader->SetUniformMatrix4f("uLightSpaceVP", glm::ortho<float>(-Shaowwidth, Shaowwidth, -Shaowheight, Shaowheight, -150.f, 150.f) * glm::lookAt(location, location + direction, Up));
+
+				m_LightingShader->SetUniform3f("dirLight.direction", direction);
 				m_LightingShader->SetUniform3f("dirLight.diffuse", Light->m_Diffuse);
 				m_LightingShader->SetUniform3f("dirLight.ambient", Light->m_Ambient);
 				m_LightingShader->SetUniform3f("dirLight.specular", Light->m_Specular);
@@ -79,6 +92,7 @@ void LightingPass::OnPass(RenderContext& context)
 	m_LightingShader->SetUniform1i("uSpotLightCount", spotlightIndex);
 
 	Ref<GBufferPass> GBufferPass = Renderer::Get().GetGBufferPass();
+	Ref<ShadowPass> ShadowPass = Renderer::Get().GetShadowPass();
 
 	auto BindForReading = [this, GBufferPass](const std::string& name, uint32 slot)
 	{
@@ -89,6 +103,10 @@ void LightingPass::OnPass(RenderContext& context)
 	BindForReading(std::string("gPosition"), context.usedTextureSlot++);
 	BindForReading(std::string("gNormal"), context.usedTextureSlot++);
 	BindForReading(std::string("gAlbedo"), context.usedTextureSlot++);
+
+	m_LightingShader->SetUniform1i(std::string("gShadowMap"), context.usedTextureSlot);
+	GLCall(glBindTextureUnit(context.usedTextureSlot, ShadowPass->GetDepthRendererID()))
+	context.usedTextureSlot++;
 
 	StaticMeshActor quadActor;
 	quadActor.SetStaticMesh(MeshBuilder::BuildQuad());
