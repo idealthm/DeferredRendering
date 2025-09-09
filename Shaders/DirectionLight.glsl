@@ -174,13 +174,13 @@ float calculateShadowAttenuation(vec4 fragPosLightSpace, vec3 normal, vec3 light
 
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(gShadowMap, 0);
-    for(int x = -1; x <= 1; ++x) {
-        for(int y = -1; y <= 1; ++y) {
+    for(int x = -3; x <= 3; ++x) {
+        for(int y = -3; y <= 3; ++y) {
             float closest = texture(gShadowMap, ProjCoord.xy + vec2(x,y) * texelSize).r; 
             shadow += currentDepth - bias > closest ? 1.0 : 0.0;
         }
     }
-    shadow /= 9.0;
+    shadow /= 49.0;
 
     // if ( ProjCoord.z > 1.0)
     //     shadow = 0.0;
