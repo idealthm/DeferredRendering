@@ -131,6 +131,7 @@ endlocal</Command>
     <ClInclude Include="Source\Common\Timestep.h" />
     <ClInclude Include="Source\Component\ActorComponent.h" />
     <ClInclude Include="Source\Application.h" />
+    <ClInclude Include="Source\Delegates\DelegateBase.h" />
     <ClInclude Include="Source\Events\ApplicationEvent.h" />
     <ClInclude Include="Source\Events\Event.h" />
     <ClInclude Include="Source\Events\Input.h" />
@@ -276,6 +277,7 @@ endlocal</Command>
     <ClCompile Include="Source\Common\Timestep.cpp" />
     <ClCompile Include="Source\Component\ActorComponent.cpp" />
     <ClCompile Include="Source\Application.cpp" />
+    <ClCompile Include="Source\Delegates\DelegateBase.cpp" />
     <ClCompile Include="Source\Events\Input.cpp" />
     <ClCompile Include="Source\FrameBuffer\FrameBuffer.cpp" />
     <ClCompile Include="Source\glad.c" />
