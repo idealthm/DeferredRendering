@@ -4,6 +4,20 @@
 #include <vector>
 #include <common/Core.h>
 
+#include "Model/Texture.h"
+
+enum class ECompareFunc {
+	Never, Less, Equal, LEqual, Greater, NotEqual, GEqual, Always
+};
+
+uint32 GetGLCompareFunc(ECompareFunc func);
+
+struct DepthStencilState {
+	bool depthTest = true;
+	bool depthWrite = true;
+	ECompareFunc compareFunc = ECompareFunc::Less;
+};
+
 enum class EFBTextureFormat
 {
 	None = 0,
@@ -22,66 +36,114 @@ enum class EFBTextureFormat
 	Depth = DEPTH24STENCIL8
 };
 
-struct FBTextureSpecification
+enum class FBTextureLoadAction
 {
-	FBTextureSpecification() = default;
-	FBTextureSpecification(const std::string& name, EFBTextureFormat format)
-		: BufferName(name),TextureFormat(format) {}
+	Load,
+	Clear,
+};
 
-	std::string BufferName;
-	EFBTextureFormat TextureFormat = EFBTextureFormat::None;
+
+enum class FBTextureStoreAction
+{
+	Store,
+	Discard,
+};
+
+struct FBTextureDesc
+{
+	uint32 Width, Height;
+	EFBTextureFormat		TextureFormat;
+	FBTextureLoadAction		LoadAction;
+	FBTextureStoreAction	StoreAction;
+
+	Ref<Texture2D>*			TargetTexture;
 	// TODO: filtering/wrap
+};
+
+
+
+enum class FBAttachmentType
+{
+	Color,
+	Depth,
+};
+
+struct FBTextureAttachment
+{
+	Ref<Texture2D>*			Texture;
+	TextureDescription		Desc;
+	FBTextureLoadAction		LoadAction;
+	FBTextureStoreAction	StoreAction;
+
+	FBTextureAttachment()
+	{
+		Texture = nullptr;
+		LoadAction = FBTextureLoadAction::Load;
+		StoreAction = FBTextureStoreAction::Store;
+	}
+
+	FBTextureAttachment(Ref<Texture2D>* texture, const TextureDescription& desc, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction)
+	{
+		Texture = texture;
+		Desc = desc;
+		LoadAction = loadAction;
+		StoreAction = storeAction;
+	}
+
+	FBTextureAttachment(const FBTextureAttachment& other)
+	{
+		Texture = other.Texture;
+		Desc = other.Desc;
+		LoadAction = other.LoadAction;
+		StoreAction = other.StoreAction;
+	}
+
+	operator bool () const {return Texture != nullptr;}
+	Ref<Texture2D> GetTexture() const {return *Texture;}
+	uint32 GetTextureID() const {return GetTexture() ? GetTexture()->GetRendererID() : 0;}
+};
+
+struct FBAttachmentInfo
+{
+	uint32 Width, Height;
+	uint32 NumSamples;
+
+	DepthStencilState DSS;
+
+	FBTextureAttachment Depth;
+	std::vector<FBTextureAttachment> Attachments;
 };
 
 struct FramebufferAttachmentSpecification
 {
 	FramebufferAttachmentSpecification() = default;
-	FramebufferAttachmentSpecification(std::initializer_list<FBTextureSpecification> attachments)
+	FramebufferAttachmentSpecification(std::initializer_list<FBTextureDesc> attachments)
 		: Attachments(attachments) {}
 
-	std::vector<FBTextureSpecification> Attachments;
+	std::vector<FBTextureDesc> Attachments;
 };
-
-struct FramebufferSpecification
-{
-	uint32 Width = 0, Height = 0;
-	FramebufferAttachmentSpecification Attachments;
-	uint32 Samples = 1;
-
-	bool SwapChainTarget = false;
-};
-
 
 class FrameBuffer
 {
 public:
-	FrameBuffer(const FramebufferSpecification& spec);
+	FrameBuffer();
 	virtual ~FrameBuffer();
 
-	void Invalidate();
+	void Attach(FBAttachmentInfo& info);
+
+	void Clear();
 
 	virtual void Bind();
 	virtual void Unbind();
 
-	virtual void Resize(uint32 width, uint32 height) ;
 	virtual int ReadPixel(uint32 attachmentIndex, int x, int y);
 
-	virtual void ClearAttachment(uint32 attachmentIndex, int value);
+	virtual uint32 GetDepthRendererID() { return m_Info.Depth.Texture ? m_Info.Depth.GetTextureID() : 0; }
 
-	virtual uint32 GetDepthRendererID() { return m_DepthAttachment; }
+	virtual uint32 GetColorAttachmentRendererID(uint32 index);
 
-	virtual uint32 GetColorAttachmentRendererID(const std::string& name) const;
-	virtual uint32 GetColorAttachmentRendererID(uint32 index = 0) const { ASSERT(index < m_ColorAttachments.size()); return m_ColorAttachments[index]; }
-
-	virtual const FramebufferSpecification& GetSpecification() const { return m_Specification; }
 private:
 	uint32 m_RendererID = 0;
-	FramebufferSpecification m_Specification;
-
-	std::vector<FBTextureSpecification> m_ColorAttachmentSpecifications;
-	FBTextureSpecification m_DepthAttachmentSpecification;
-
-	std::vector<uint32> m_ColorAttachments;
-	uint32 m_DepthAttachment = 0;
+	FBAttachmentInfo m_Info;
 };
 

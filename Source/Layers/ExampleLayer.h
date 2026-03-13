@@ -19,6 +19,7 @@ public:
 	void OnUpdate(Timestep ts) override;
 	void OnImGuiRender() override;
 	void OnEvent(Event& event) override;
+	void OnWindowResize(uint32 width, uint32 height) override;
 
 private:
 	Ref<Scene>				m_Scene;

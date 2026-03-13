@@ -7,6 +7,10 @@ Actor::Actor()
 {
 }
 
+void Actor::OnSpawn()
+{
+}
+
 void Actor::ValidateRootComponent()
 {
 	if (RootComponent.expired())

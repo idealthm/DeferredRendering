@@ -2,7 +2,21 @@
 #include <iostream>
 
 #include "MeshSection.h"
+
+#include <vector>
+#include <string>
+#include <fstream>
+#include <map>
+
+// Assimp includes
 #include "assimp/material.h"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+#include <nlohmann/json.hpp>
+
+#include "VertexBuffer/VertexBufferLayout.h"
 
 
 struct aiMaterial;
@@ -12,28 +26,27 @@ struct aiNode;
 class StaticMesh;
 class MeshSection;
 
-namespace Util
-{
-	class MeshLoader
-	{
-		friend class StaticMesh;
-	public:
-		static Ref<StaticMesh> LoadAsset(const string& path);
-	private:
-		MeshLoader(const string& path);
+namespace Util {
 
-		void LoadMesh(const std::string& path);
+    using json = nlohmann::json;
 
-		void ProcessNode(aiNode* node, const aiScene* scene);
+    class MeshLoader {
+        friend class StaticMesh;
+    public:
+        MeshLoader(const std::string& path);
+        // 最终加载出来的结果存放处
+        std::vector<Ref<MeshSection>> LoadedSections;
 
-		Ref<MeshSection> ProcessNode(aiMesh* mesh, const aiScene* scene);
+        void LoadFromConfig(const std::string& configPath);
 
-		void loadMaterialTextures(aiMaterial* mat, aiTextureType type, vector<Ref<Texture2D>>& outTextures);
-	private:
-		std::string m_Directory;
-		std::string m_Path;
+        static Ref<StaticMesh> LoadAsset(const string& path);
 
-		std::vector<Ref<MeshSection>>			m_LoadedMeshes;
-		std::map<std::string, Ref<Texture2D>>	m_PathToTexture;
-	};
+    private:
+        void LoadModelGeometry(const std::string& path);
+
+        Ref<MeshSection> ProcessMesh(aiMesh* mesh, const aiScene* scene);
+
+        void ProcessNode(aiNode* node, const aiScene* scene);
+    };
+
 }

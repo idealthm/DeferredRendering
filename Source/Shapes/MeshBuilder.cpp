@@ -2,46 +2,52 @@
 
 #include "Model/MeshSection.h"
 
-static std::vector<uint32> CubeIndices = {
-	0, 1, 2, 1, 0, 3,
-	4, 5, 6, 6, 7, 4,
-	8, 9, 10, 10, 11, 8,
-	12, 13, 14, 13, 12, 15,
-	16, 17, 18, 18, 19, 16,
-	20, 21, 22, 21, 20, 23
+static std::vector<uint32> cubeIndices = {
+	0, 2, 1,    0, 3, 2,    // Back
+	4, 5, 6,    4, 6, 7,    // Front
+	8, 9, 10,   8, 10, 11,  // Left
+	12, 14, 13, 12, 15, 14, // Right
+	16, 17, 18, 16, 18, 19, // Bottom
+	20, 22, 21, 20, 23, 22  // Top
 };
 
-static std::vector<float> CubeVertices = {
-    // back face
-    -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-     1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-     1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
-    -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
-    // front face
-    -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-     1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
-     1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-    -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
-    // left face
-    -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-    -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
-    -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-    -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-    // right face
-     1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-     1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-     1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
-     1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left
-    // bottom face
-    -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-     1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
-     1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-    -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-    // top face
-    -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-     1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-     1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
-    -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
+static std::vector<float> cubeVertices = {
+    // Position(3)         Normal(3)            UV(2)       Tangent(3)
+    // Back face (0-3)
+    -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+     1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+     1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+    -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+
+    // Front face (4-7)
+    -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+     1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+     1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+    -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+
+    // Left face (8-11)
+    -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+
+    // Right face (12-15)
+     1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,  0.0f,  0.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,  0.0f,  0.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,  0.0f,  0.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,  0.0f,  0.0f,  1.0f,
+
+    // Bottom face (16-19)
+    -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+     1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+     1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+    -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+
+    // Top face (20-23)
+    -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+     1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+     1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+    -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f
 };
 
 static std::vector<uint32> QuadIndices = {
@@ -56,25 +62,27 @@ static std::vector<float> QuadVertices = {
  	 1.0f, -1.0f,
 };
 
-Ref<StaticMesh> MeshBuilder::BuildCube(const Ref<Texture2D>& texture)
+Ref<StaticMesh> MeshBuilder::BuildCube(const Ref<Material>& material)
 {
 	BufferLayout layout = {
 		{ShaderDataType::Float3, "aPosition"},
 		{ShaderDataType::Float3, "aNormal"},
 		{ShaderDataType::Float2, "aTexCoords"},
+		{ShaderDataType::Float3, "aTangent"},
 	};
-	auto section = BuildSection(CubeVertices, CubeIndices, layout);
-	if (texture) section->AddTexture(TextureType::DIFFUSE, texture);
-	return CreateRef<StaticMesh>(StaticMeshDesc{std::string("")}, std::vector<Ref<MeshSection>>{section});
+
+	auto section = BuildSection(cubeVertices, cubeIndices, layout);
+	section->SetMaterial(material);
+	return CreateRef<StaticMesh>(StaticMeshDesc{}, std::vector<Ref<MeshSection>>{section});
 }
 
-Ref<StaticMesh> MeshBuilder::BuildQuad(const Ref<Texture2D>& texture)
+Ref<StaticMesh> MeshBuilder::BuildQuad(const Ref<Material>& material)
 {
 	BufferLayout layout = {
 		{ShaderDataType::Float2, "aPosition"},
 	};
 
 	auto section = BuildSection(QuadVertices, QuadIndices, layout);
-	if (texture) section->AddTexture(TextureType::DIFFUSE, texture);
-	return CreateRef<StaticMesh>(StaticMeshDesc{std::string("")}, std::vector<Ref<MeshSection>>{section});
+	section->SetMaterial(material);
+	return CreateRef<StaticMesh>(StaticMeshDesc{}, std::vector<Ref<MeshSection>>{section});
 }

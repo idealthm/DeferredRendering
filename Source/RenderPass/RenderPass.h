@@ -1,14 +1,22 @@
 ﻿#pragma once
-#include <memory>
-#include <string>
 #include <vector>
 
 #include "Common/Core.h"
 
 
+struct FBAttachmentInfo;
+struct FBTextureDesc;
+class FrameBuffer;
 struct RenderContext;
 class Scene;
 class Shader;
+
+enum class RenderPassType
+{
+	GBuffer,
+	ShadowMap,
+	Blur,
+};
 
 class RenderPass
 {
@@ -18,14 +26,9 @@ public:
 
 	virtual ~RenderPass() = default;
 
-	virtual uint32 GetDepthRendererID() const { return 0; }
-	virtual uint32 GetColorAttachmentRendererID(const std::string& name) const { return 0; }
+	virtual void Setup(RenderContext& ctx, FBAttachmentInfo & info);
 
-	virtual void OnWindowSizeChanged(int32 width, int32 height) {}
-
-	virtual void PrePass(RenderContext& context) {}
-	virtual void OnPass(RenderContext& context) {}
-	virtual void PostPass(RenderContext& context) {}
+	virtual void Execute(Ref<Scene> scene);
 protected:
 	uint32 m_Width, m_Height;
 };

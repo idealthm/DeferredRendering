@@ -1,0 +1,10 @@
+{
+    "model_path": "backpack.obj",
+    "textures": {
+        "uAlbedo": "diffuse.jpg",
+        "uNormal": "normal.png",
+        "uRoughness": "roughness.jpg",
+        "uMetallic" : "specular.jpg",
+        "uAO": "ao.jpg"
+    }
+}

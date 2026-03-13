@@ -4,20 +4,57 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "Scene.h"
 #include "RenderPass/LightingPass.h"
+#include "UnifromBuffer/ParamBuffer.h"
 
+struct LightData;
+struct FBAttachmentInfo;
+class UniformBuffer;
+enum class EShaderType;
+class TextureCube;
+class Texture2D;
+class ERPPass;
 class ShadowPass;
 class GBufferPass;
 class RenderPass;
 class Shader;
 
+struct FrameData
+{
+    glm::mat4 m_ViewProjection;
+    glm::mat4 m_Projection;
+    glm::mat4 m_InvViewProjection;
+    glm::mat4 m_InvProjection;
+    glm::vec3 m_CameraPosition;
+    float times;
+};
+
 struct RenderContext
 {
-    Ref<Scene> scene;
-
     uint32 renderMode;
     uint32 usedTextureSlot;
+
+    Ref<Texture2D> GBuffer_Position;
+    Ref<Texture2D> GBuffer_Normal;
+    Ref<Texture2D> GBuffer_Albedo;
+    Ref<Texture2D> GBuffer_Material;
+    Ref<Texture2D> GBuffer_Depth;
+
+    Ref<Texture2D> ShadowMap_Depth;
+
+    Ref<Texture2D> LightMap_SceneColor;
+    Ref<Texture2D> LightMap_SceneDepth;
+
+    Ref<TextureCube> ERP_Cubemap;
+
+    Ref<Texture2D> Sky_SceneColor;
+
+    Ref<FrameBuffer> FrameBuffer;
+
+    Ref<Texture2D> Final_SceneColor;
+
+    Ref<ParamBuffer<FrameData>> FrameDataUB;
+    Ref<ParamBuffer<LightData>> LightDataUB;
 };
 
 class Renderer
@@ -35,30 +72,14 @@ public:
 
     void SetClearColor(const glm::vec4& color);
 
-    Ref<GBufferPass> GetGBufferPass() const { return m_GBufferPass;}
-    Ref<ShadowPass> GetShadowPass() const { return m_ShadowPass;}
-    Ref<LightingPass> GetLightingPass() const { return m_LightingPass;}
+    void PostRendererInit();
 
-    template<typename T, typename ...Args, std::enable_if_t<std::is_base_of_v<RenderPass, T>, int> = 0>
-    std::shared_ptr<T> AddPass(Args... args)
-    {
-        auto Ref = std::make_shared<T>(std::forward<Args>(args)...);
-        m_Passes.push_back(Ref);
-        return Ref;
-    }
+    void Render(Ref<Scene>& scene);
 
-    void Draw(const Ref<Scene>& scene);
+    void StartPass(Ref<Scene>& scene, Ref<RenderPass> renderPass);
 
-    void StartPass();
+    static void BuildTextures(FBAttachmentInfo& info);
 
 public:
     uint32 m_RenderMode = 0;
-
-private:
-
-    std::vector<Ref<RenderPass>> m_Passes;
-
-    Ref<GBufferPass>    m_GBufferPass;
-    Ref<ShadowPass>     m_ShadowPass;
-    Ref<LightingPass>   m_LightingPass;
 };

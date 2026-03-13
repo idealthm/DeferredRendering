@@ -4,9 +4,15 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
+#include "Scene.h"
+#include "FrameBuffer/FrameBuffer.h"
 #include "IndexBuffer/IndexBuffer.h"
+#include "Model/Texture.h"
+#include "RenderPass/ERPPass.h"
 #include "RenderPass/GBufferPass.h"
 #include "RenderPass/ShadowPass.h"
+#include "RenderPass/SkyLightPass.h"
+#include "RenderPass/ToneMapping.h"
 
 
 namespace 
@@ -51,33 +57,28 @@ void Renderer::Init(uint32 width, uint32 height)
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(OpenGLMessageCallback, nullptr);
-		
+
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
 #endif
 
-    glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glEnable(GL_DEPTH_TEST);
     glEnable(GL_LINE_SMOOTH);
 
-    m_GBufferPass = CreateRef<GBufferPass>(width, height);
-    m_ShadowPass = CreateRef<ShadowPass>(width, height);
-    m_LightingPass = CreateRef<LightingPass>(width, height);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    PostRendererInit();
 }
 
 void Renderer::Shutdown()
 {
-    m_Passes.empty();
+    GDefaultTextures.White = nullptr;
+    GDefaultTextures.Black = nullptr;
+    GDefaultTextures.Gray = nullptr;
+    GDefaultTextures.Normal = nullptr;
 }
 
 void Renderer::OnWindowResize(int32 width, int32 height)
 {
     SetViewport(0, 0, width, height);
-
-    m_GBufferPass->OnWindowSizeChanged(width, height);
-    m_ShadowPass->OnWindowSizeChanged(width, height);
-    m_LightingPass->OnWindowSizeChanged(width, height);
 }
 
 void Renderer::SetViewport(uint32 x, uint32 y, uint32 width, uint32 height)
@@ -90,17 +91,55 @@ void Renderer::SetClearColor(const glm::vec4& color)
     glClearColor(color.x, color.y, color.z, color.w);
 }
 
-void Renderer::Draw(const Ref<Scene>& scene)
+void Renderer::PostRendererInit()
 {
-    RenderContext context {scene, m_RenderMode, 0};
-
-    m_GBufferPass->OnPass(context);
-    m_ShadowPass->OnPass(context);
-    m_LightingPass->OnPass(context);
+    GDefaultTextures.White  = Texture2D::Create(0xFFFFFFFF);
+    GDefaultTextures.Black  = Texture2D::Create(0xFF000000);
+    GDefaultTextures.Gray   = Texture2D::Create(0xFF808080);
+    GDefaultTextures.Normal = Texture2D::Create(0xFFFF8080);
 }
 
-void Renderer::StartPass()
+void Renderer::Render(Ref<Scene>& scene)
 {
-    
+    Ref<GBufferPass> gBufferPass = CreateRef<GBufferPass>(scene->GetWidth(), scene->GetHeight());
+    Ref<ShadowPass> shadowPass = CreateRef<ShadowPass>(scene->GetWidth(), scene->GetHeight());
+    Ref<LightingPass> lightPass = CreateRef<LightingPass>(scene->GetWidth(), scene->GetHeight());
+    Ref<SkyLightPass> skyLightPass = CreateRef<SkyLightPass>(scene->GetWidth(), scene->GetHeight());
+    Ref<ToneMapping> toneMappingPass = CreateRef<ToneMapping>(scene->GetWidth(), scene->GetHeight());
+
+    StartPass(scene, gBufferPass);
+    StartPass(scene, lightPass);
+    StartPass(scene, toneMappingPass);
+}
+
+void Renderer::StartPass(Ref<Scene>& scene, Ref<RenderPass> renderPass)
+{
+    RenderContext& ctx = scene->GetRenderContext();
+    FBAttachmentInfo FBInfo;
+    renderPass->Setup(ctx, FBInfo);
+    BuildTextures(FBInfo);
+    ctx.FrameBuffer->Attach(FBInfo);
+    renderPass->Execute(scene);
+}
+
+void Renderer::BuildTextures(FBAttachmentInfo& info)
+{
+    auto TextureValidate = [](FBTextureAttachment& desc)
+    {
+        if (!desc.Texture)
+            return;
+
+        if (!desc.GetTexture() || desc.GetTexture()->GetDesc() != desc.Desc)
+            *desc.Texture = CreateScope<Texture2D>(desc.Desc);
+        else
+            desc.GetTexture()->SetTextureParameter(desc.Desc);
+    };
+
+    TextureValidate(info.Depth);
+
+    for (auto& desc : info.Attachments)
+    {
+        TextureValidate(desc);
+    }
 }
 
