@@ -4,13 +4,13 @@
 #include "Renderer.h"
 #include <Camera/Camera.h>
 
-#include "Events/Event.h"
-#include "Events/KeyEvent.h"
 #include "Model/Texture.h"
 #include "Shapes/MeshBuilder.h"
 #include "glad/glad.h"
 #include "Lights/Light.h"
+#include "Material/Material.h"
 #include "Model/Util.h"
+#include "RenderPass/ERPPass.h"
 
 
 ExampleLayer::ExampleLayer(uint32 width, uint32 height)
@@ -19,27 +19,20 @@ ExampleLayer::ExampleLayer(uint32 width, uint32 height)
 	m_Camera = CreateRef<Camera>();
 
 	m_Scene = CreateRef<Scene>(width, height, m_Camera);
-	auto Cube = m_Scene->SpawnActor<StaticMeshActor>(glm::vec3(1.0f, 5.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(2.0f, 2.0f, 2.0f));
+	auto Cube = m_Scene->SpawnActor<StaticMeshActor>(glm::vec3(1.0f, 5.0f, 0.0f), glm::vec3(-90.f, 0.0f, 0.0f), glm::vec3(2.0f, 2.0f, 2.0f));
 	auto PlaneActor = m_Scene->SpawnActor<StaticMeshActor>(glm::vec3(0.0f, -5.0f, 0.0f), glm::vec3(0, 0, 0), glm::vec3(100.f, 0.1f, 100.f));
 	auto ModelA = m_Scene->SpawnActor<StaticMeshActor>();
 
-	uint32 white = 0xffffffff, red = 0xff0000ff;
-	TextureDescription Desc;
-	Desc.width = Desc.height = 1;
-	Desc.format = GL_RGBA;
-	Desc.bpp = 4;
-	Ref<StaticMesh> CubeMesh = MeshBuilder::BuildCube(Texture2D::Create(Desc, &red));
-	Cube->SetStaticMesh(CubeMesh);
+	Cube->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/TreeStump/TreeStump.json"));
 
-	Ref<StaticMesh> PlaneMesh = MeshBuilder::BuildCube(Texture2D::Create(Desc, &white));
+	Ref<StaticMesh> PlaneMesh = MeshBuilder::BuildCube(Material::CreateDefault());
 	PlaneActor->SetStaticMesh(PlaneMesh);
 
-	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.obj"));
+	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.json"));
 
 	m_Actor = m_Scene->SpawnActor<DirectionLightActor>(glm::vec3(0.f, 0.f, 0.f), glm::vec3(-30.f, 0.f, 0.f));
-	// m_Actor->AddComponent<StaticMeshComponent>()->SetMesh(CubeMesh);
-	// auto PointLight = m_Scene->SpawnActor<PointLightActor>(glm::vec3(5.f));
-	// auto SpotLight = m_Scene->SpawnActor<SpotLightActor>(glm::vec3(-5.f, 5.f, -5.f), glm::vec3(0.f, -30.f, 0.f));
+
+	
 }
 
 ExampleLayer::~ExampleLayer()
@@ -55,14 +48,17 @@ void ExampleLayer::OnUpdate(Timestep ts)
 {
 	m_Camera->OnUpdate(ts);
 
-	static float CachedTime = 0.f;
-	CachedTime += ts;
-	m_Actor->SetRotation(glm::vec3(- 10 * CachedTime, 0, 0));
-	CachedTime = CachedTime > 18 ? CachedTime - 18 : CachedTime;
+	RenderContext& ctx = m_Scene->GetRenderContext();
+	auto& FrameData = ctx.FrameDataUB->Data;
+	FrameData.m_Projection = m_Scene->GetProjectionMatrix();
+	FrameData.m_ViewProjection = m_Camera->GetViewMatrix();
+	FrameData.m_CameraPosition = m_Camera->GetPosition();
+	FrameData.m_InvProjection = glm::inverse(m_Scene->GetProjectionMatrix());
+	FrameData.m_InvViewProjection = glm::inverse(m_Scene->GetViewMatrix());
 
-	std::cout << CachedTime * 10 << std::endl;
+	ctx.FrameDataUB->Update();
 
-	Renderer::Get().Draw(m_Scene);
+	Renderer::Get().Render(m_Scene);
 }
 
 void ExampleLayer::OnImGuiRender()
@@ -73,6 +69,12 @@ void ExampleLayer::OnImGuiRender()
 void ExampleLayer::OnEvent(Event& event)
 {
 	m_Camera->OnEvent(event);
+}
+
+void ExampleLayer::OnWindowResize(uint32 width, uint32 height)
+{
+	m_Scene->SetWidth(width);
+	m_Scene->SetHeight(height);
 }
 
 void ExampleLayer::OnAttach()

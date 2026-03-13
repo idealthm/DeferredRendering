@@ -81,6 +81,8 @@ public:
 	uint32_t GetStride() const { return m_Stride; }
 	const std::vector<BufferElement>& GetElements() const { return m_Elements; }
 
+	void AddElement(const BufferElement& element){ m_Elements.push_back(element); CalculateOffsetsAndStride();}
+
 	std::vector<BufferElement>::iterator begin() { return m_Elements.begin(); }
 	std::vector<BufferElement>::iterator end() { return m_Elements.end(); }
 	std::vector<BufferElement>::const_iterator begin() const { return m_Elements.begin(); }

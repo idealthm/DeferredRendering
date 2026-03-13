@@ -11,6 +11,7 @@
 #include "Model/StaticMesh.h"
 #include "Windows/Window.h"
 #include "GLFW/glfw3.h"
+#include "stb_images/stb_image.h"
 
 using namespace std;
 
@@ -23,6 +24,8 @@ Application* Application::s_Instance = nullptr;
 Application::Application(const ApplicationSpecification& specification)
 	: m_Specification(specification)
 {
+	stbi_set_flip_vertically_on_load(true);
+
 	ASSERT(!s_Instance);
 	s_Instance = this;
 
@@ -31,10 +34,7 @@ Application::Application(const ApplicationSpecification& specification)
 		std::filesystem::current_path(m_Specification.WorkingDirectory);
 
 	m_Window = CreateScope<Window>(WindowProperties{m_Specification.Name, SCR_WIDTH, SCR_HEIGHT});
-	m_Window->SetEventCallback([this](auto&&... args) -> decltype(auto)
-	{
-		return this->OnEvent(std::forward<decltype(args)>(args)...);
-	});
+	m_Window->SetEventCallback(BIND_FUNCTION_FN(Application::OnEvent));
 
 	Renderer::Get().Init(SCR_WIDTH, SCR_HEIGHT);
 

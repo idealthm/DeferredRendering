@@ -3,18 +3,7 @@
 #include <glm/detail/type_quat.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-LightComponent::LightComponent()
-{
-	m_Ambient = glm::vec3(0.1f);
-	m_Diffuse = glm::vec3(1.f);
-	m_Specular = glm::vec3(0.3f);
-}
-
-DirectionLightComponent::DirectionLightComponent()
-{
-}
-
-glm::vec3 DirectionLightComponent::GetDirection() const
+glm::vec3 LightComponent::GetDirection() const
 {
 	// default to Z
 	glm::vec3 radians = glm::radians(m_Rotation);
@@ -42,9 +31,7 @@ glm::vec3 DirectionLightComponent::GetUPDirection() const
 
 PointLightComponent::PointLightComponent()
 {
-	m_Constant = 1.f;
-	m_Linear = 0.014f;
-	m_Quadratic = 0.0007f;
+	m_Range = 10.f;
 }
 
 SpotLightComponent::SpotLightComponent()

@@ -5,6 +5,7 @@
 #include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
+#include "Renderer.h"
 #include "Common/Core.h"
 
 class Camera;
@@ -35,8 +36,13 @@ public:
 	glm::mat4 GetViewMatrix() const;
 	glm::mat4 GetProjectionMatrix() const;
 
-	uint32 GetWidth() const;
-	uint32 GetHeight() const;
+	uint32 GetWidth() const {return m_Width;}
+	void SetWidth(uint32 width) {m_Width = width;}
+	uint32 GetHeight() const {return m_Height;}
+	void SetHeight(uint32 height) {m_Height = height;}
+
+	RenderContext& GetRenderContext() {return m_RenderContext;}
+	const RenderContext& GetRenderContext() const {return m_RenderContext;}
 	
 private:
 	Ref<Camera> m_Camera;
@@ -44,4 +50,6 @@ private:
 	uint32 m_Width, m_Height;
 
 	std::set<Ref<Actor>>	Actors;
+
+	RenderContext	m_RenderContext;
 };

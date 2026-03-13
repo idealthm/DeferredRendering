@@ -10,13 +10,10 @@ public:
 	LightingPass(uint32 width, uint32 height);
 	virtual ~LightingPass() = default;
 
-	virtual void OnWindowSizeChanged(int32 width, int32 height) override;
+	void Setup(RenderContext& ctx, FBAttachmentInfo & info) override;
 
-	virtual void PrePass(RenderContext& context) override;
-	virtual void OnPass(RenderContext& context) override;
-	virtual void PostPass(RenderContext& context) override;
+	void Execute(Ref<Scene> scene) override;
 
 private:
-	Ref<Shader>			m_LightingShader;
-	Ref<FrameBuffer>	m_LightingFBO;
+	Ref<Shader> m_Shader;
 };

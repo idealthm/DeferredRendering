@@ -5,70 +5,75 @@
 #include "Scene.h"
 #include "Component/ActorComponent.h"
 #include "FrameBuffer/FrameBuffer.h"
-#include "glad/glad.h"
+#include "Material/Material.h"
+#include "Model/StaticMesh.h"
 #include "Shader/Shader.h"
 
 GBufferPass::GBufferPass(uint32 width, uint32 height)
 	: RenderPass(width, height)
 {
-	m_GBufferShader = CreateScope<Shader>("Shaders/Basic.glsl");
+	// CreateScope<Shader>("Shaders/Basic", 10);
+}
 
-	FramebufferSpecification spec;
-	spec.Width = width;
-	spec.Height = height;
-	spec.Attachments = {
-		FBTextureSpecification{std::string("gPosition"), EFBTextureFormat::RGBA16F},
-		FBTextureSpecification{std::string("gNormal"), EFBTextureFormat::RG16},
-		FBTextureSpecification{std::string("gAlbedo"), EFBTextureFormat::RGBA8},
-		FBTextureSpecification{std::string("Depth"), EFBTextureFormat::Depth}
+void GBufferPass::Setup(RenderContext& ctx, FBAttachmentInfo& info)
+{
+	info.Width = m_Width;
+	info.Height = m_Height;
+	info.NumSamples = 1;
+
+	info.DSS.depthTest = true;
+	info.DSS.depthWrite = true;
+	info.DSS.compareFunc = ECompareFunc::Less;
+
+	// 深度：Clear 以开始新的一帧，Store 供后续 Skybox 或 Transparency 使用
+	info.Depth = {
+		&ctx.GBuffer_Depth, 
+		CreateDepth(m_Width, m_Height), 
+		FBTextureLoadAction::Clear, 
+		FBTextureStoreAction::Store 
 	};
-	m_GBufferFBO = CreateScope<FrameBuffer>(spec);
+
+	info.Attachments = {
+		// Slot 0: World Position (可选，如果内存紧张可通过深度重建)
+		{ &ctx.GBuffer_Position, CreateGBuffer(m_Width, m_Height, ETextureFormat::RGBA16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		// Slot 1: Normal (RG16F 高精度)
+		{ &ctx.GBuffer_Normal,   CreateGBuffer(m_Width, m_Height, ETextureFormat::RG16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		// Slot 2: Albedo (sRGB 开启)
+		{ &ctx.GBuffer_Albedo,   CreateGBuffer(m_Width, m_Height, ETextureFormat::SRGB8, true),  FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		// Slot 3: Material (PBR 参数: Roughness, Metalness, AO)
+		{ &ctx.GBuffer_Material, CreateGBuffer(m_Width, m_Height, ETextureFormat::RGBA8, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+	};
 }
 
-uint32 GBufferPass::GetColorAttachmentRendererID(const std::string& name) const
+void GBufferPass::Execute(Ref<Scene> scene)
 {
-	return m_GBufferFBO->GetColorAttachmentRendererID(name);
-}
+	struct RenderItem
+	{
+		Ref<Shader> shader;
+		Ref<MeshSection> Section;
+		glm::mat4 ModelTransform;
+	};
 
-uint32 GBufferPass::GetDepthRendererID() const
-{
-	return m_GBufferFBO->GetDepthRendererID();
-}
-
-void GBufferPass::OnWindowSizeChanged(int32 width, int32 height)
-{
-	m_GBufferFBO->Resize(width, height);
-}
-
-void GBufferPass::PrePass(RenderContext& context)
-{
-	RenderPass::PrePass(context);
-}
-
-void GBufferPass::OnPass(RenderContext& context)
-{
-	m_GBufferFBO->Bind();
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	m_GBufferShader->Bind();
-
-	m_GBufferShader->SetUniformMatrix4f("uView", context.scene->GetViewMatrix());
-	m_GBufferShader->SetUniformMatrix4f("uProjection", context.scene->GetProjectionMatrix());
-
-	for (const auto& Actor : context.scene->GetActors())
+	std::vector<RenderItem> renderItems;
+	for (const auto& Actor : scene->GetActors())
 	{
 		for (auto& Comp : Actor->GetComponents())
 		{
-			if (auto MeshComp = std::dynamic_pointer_cast<SceneComponent>(Comp))
+			if (auto MeshComp = std::dynamic_pointer_cast<StaticMeshComponent>(Comp))
 			{
-				m_GBufferShader->SetUniformMatrix4f("uModel", MeshComp->GetModelMatrix());
-				MeshComp->Draw(*m_GBufferShader);
+				for (auto& section : MeshComp->GetMesh()->GetMeshSections())
+				{
+					renderItems.emplace_back(RenderItem{section->GetMaterial()->GetShader(RenderPassType::GBuffer), section, MeshComp->GetModelMatrix()});
+				}
 			}
 		}
 	}
-}
 
-void GBufferPass::PostPass(RenderContext& context)
-{
-	RenderPass::PostPass(context);
+	for (auto renderItem : renderItems)
+	{
+		renderItem.shader->Bind();
+		renderItem.shader->SetUniformMatrix4f("uModel", renderItem.ModelTransform);
+		renderItem.Section->GetMaterial()->ApplyMaterial(renderItem.shader);
+		renderItem.Section->Draw();
+	}
 }

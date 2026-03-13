@@ -2,24 +2,44 @@
 #include "Actor.h"
 #include "Component/ActorComponent.h"
 
+struct LightInfo {
+	glm::vec3 position;   // w: 影响半径 (Range / Attenuation Radius)
+	float range;
+
+	glm::vec3 color;     // w: 强度 (Intensity)
+	float intensity;
+
+	glm::vec3 direction; // w: 光源类型 (0: 方向光, 1: 点光源, 2: 聚光灯)
+	int32 type;
+
+	glm::vec4 params;    // x: 聚光灯内角, y: 聚光灯外角, z: 是否产生阴影, w: 预留
+}; 
+
+struct LightData
+{
+	LightInfo lights[16];
+	int32 NumLights;
+};
+
 class LightComponent : public SceneComponent
 {
 public:
-	LightComponent();
+	LightComponent() = default;
 
+	glm::vec3 GetColor() const {return m_Color;}
+	float GetIntensity() const {return m_Intensity;}
+	glm::vec3 GetDirection() const;
 public:
-	glm::vec3 m_Ambient;
-	glm::vec3 m_Diffuse;
-	glm::vec3 m_Specular;
+	float m_Intensity = 1.0f;
+	glm::vec3 m_Color = glm::vec3(1.0f, 1.0f, 1.0f);
 };
 
 
 class DirectionLightComponent : public LightComponent
 {
 public:
-	DirectionLightComponent();
+	DirectionLightComponent() = default;
 
-	glm::vec3 GetDirection() const;
 	glm::vec3 GetUPDirection() const;
 };
 
@@ -29,9 +49,7 @@ public:
 	PointLightComponent();
 
 public:
-	float m_Constant;
-	float m_Linear;
-	float m_Quadratic;
+	float m_Range;
 };
 
 class SpotLightComponent : public PointLightComponent

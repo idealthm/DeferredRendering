@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "Common/Core.h"
 #include "glm/glm.hpp"
 
 class StaticMesh;
@@ -30,7 +31,6 @@ public:
 	const glm::vec3& GetScale3D() const;
 
 	glm::mat4 GetModelMatrix() const;
-	virtual void Draw(Shader& shader);
 
 	void AttachToComponent(std::shared_ptr<SceneComponent> Comp);
 
@@ -48,11 +48,10 @@ class StaticMeshComponent : public SceneComponent
 public:
 	virtual ~StaticMeshComponent() = default;
 
-	virtual void SetMesh(const std::shared_ptr<StaticMesh>& shape);
-
-	virtual void Draw(Shader& shader) override;
+	virtual void SetMesh(const Ref<StaticMesh>& shape);
+	virtual Ref<StaticMesh> GetMesh() { return m_Model; }
 
 protected:
-	std::shared_ptr<StaticMesh> m_Model;
+	Ref<StaticMesh> m_Model;
 };
 

@@ -21,11 +21,10 @@ class StaticMesh
 {
 public:
 	StaticMesh(const StaticMeshDesc& desc, const std::vector<Ref<MeshSection>>& meshes);
-	StaticMesh(Util::MeshLoader& loader);
 
-	void Draw(Shader& shader) const;
+	std::vector<Ref<MeshSection>>& GetMeshSections() {return m_LoadedMeshes;}
+	const std::vector<Ref<MeshSection>>& GetMeshSections() const {return m_LoadedMeshes;}
 private:
 	StaticMeshDesc					m_Desc;
 	std::vector<Ref<MeshSection>>	m_LoadedMeshes;
-	std::vector<Ref<Texture2D>>		m_LoadedTextures;
 };

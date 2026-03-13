@@ -33,7 +33,7 @@ glm::mat4 Camera::GetViewMatrix() const
     return glm::lookAt(Position, Position + Front, Up);
 }
 
-glm::mat4 Camera::GetProjectionMatrix(float AspectRatio) const
+glm::mat4 Camera:: GetProjectionMatrix(float AspectRatio) const
 {
     return glm::perspective(glm::radians(Zoom), AspectRatio, 0.1f, 100.f);
 }

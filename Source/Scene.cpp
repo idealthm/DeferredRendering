@@ -1,11 +1,17 @@
 ﻿#include "Scene.h"
 
 #include "Camera/Camera.h"
+#include "Renderer.h"
+#include "FrameBuffer/FrameBuffer.h"
+#include "Lights/Light.h"
 
 
 Scene::Scene(uint32 width, uint32 height, const Ref<Camera>& camera)
 	: m_Camera(camera), m_Width(width), m_Height(height)
 {
+	m_RenderContext.FrameBuffer = CreateScope<FrameBuffer>();
+	m_RenderContext.FrameDataUB = CreateScope<ParamBuffer<FrameData>>(0);
+	m_RenderContext.LightDataUB = CreateScope<ParamBuffer<LightData>>(1);
 }
 
 const std::set<std::shared_ptr<Actor>>& Scene::GetActors() const
@@ -26,14 +32,4 @@ glm::mat4 Scene::GetViewMatrix() const
 glm::mat4 Scene::GetProjectionMatrix() const
 {
 	return m_Camera->GetProjectionMatrix(1.f * m_Width / m_Height);
-}
-
-uint32 Scene::GetWidth() const
-{
-	return m_Width;
-}
-
-uint32 Scene::GetHeight() const
-{
-	return m_Height;
 }

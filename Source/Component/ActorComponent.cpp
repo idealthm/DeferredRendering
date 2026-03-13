@@ -56,11 +56,6 @@ glm::mat4 SceneComponent::GetModelMatrix() const
 			* glm::scale(glm::mat4(1.0), m_scale3D) * parentModel;	// scale
 }
 
-void SceneComponent::Draw(Shader& shader)
-{
-	// Do nothing.
-}
-
 void SceneComponent::AttachToComponent(std::shared_ptr<SceneComponent> Comp)
 {
 	ParentComponent = Comp;
@@ -69,12 +64,4 @@ void SceneComponent::AttachToComponent(std::shared_ptr<SceneComponent> Comp)
 void StaticMeshComponent::SetMesh(const std::shared_ptr<StaticMesh>& shape)
 {
 	m_Model = shape;
-}
-
-void StaticMeshComponent::Draw(Shader& shader)
-{
-	if (m_Model)
-	{
-		m_Model->Draw(shader);
-	}
 }

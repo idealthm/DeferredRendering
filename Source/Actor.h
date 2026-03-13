@@ -16,6 +16,8 @@ class Actor
 public:
 	Actor();
 
+	virtual void OnSpawn();
+
 	void ValidateRootComponent();
 
 	Ref<SceneComponent> GetRootComponent() const;
@@ -28,7 +30,7 @@ public:
 	void SetRotation(const glm::vec3& rotation) const;
 	void SetScale3D(const glm::vec3& scale) const;
 
-	template<typename T, typename... Args>
+	template<typename T, typename... Args, typename = std::enable_if_t<std::is_base_of_v<ActorComponent, T>>>
 	Ref<T> AddComponent(Args... args)
 	{
 		auto ComponentRef =  CreateRef<T>(std::forward<Args>(args)...);
@@ -40,7 +42,7 @@ public:
 		return ComponentRef;
 	}
 
-	template<typename T>
+	template<typename T, typename = std::enable_if_t<std::is_base_of_v<ActorComponent, T>>>
 	Ref<T> GetComponent()
 	{
 		for (const auto& component : Components)
@@ -55,7 +57,7 @@ public:
 
 	const std::vector<Ref<ActorComponent>>& GetComponents() const;
 protected:
-	std::weak_ptr<SceneComponent>					RootComponent;
+	std::weak_ptr<SceneComponent>		RootComponent;
 
 	std::vector<Ref<ActorComponent>>	Components;
 };

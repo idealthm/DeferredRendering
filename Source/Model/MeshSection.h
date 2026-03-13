@@ -5,6 +5,7 @@
 #include <Shader/Shader.h>
 #include "Renderer.h"
 
+class Material;
 class VertexArray;
 class VertexBuffer;
 class IndexBuffer;
@@ -33,30 +34,32 @@ struct Vertex {
 
 enum class TextureType : uint8
 {
-    DIFFUSE,
-    SPECULAR,
+    ALBEDO,
     NORMAL,
+    ROUGHNESS,
+    METALLIC,
+    AO,
     HEIGHT,
 };
 
-using MeshTextureMap = map<TextureType, vector<Ref<Texture2D>>>; 
+extern std::array<std::string, 6> TypeToUniform;
+
+using MeshTextureMap = std::map<TextureType, Ref<Texture2D>>;
 
 class MeshSection {
 public:
     // constructor
-    MeshSection(const Ref<VertexArray>& vertexArr, const Ref<IndexBuffer>& indexBuf, const MeshTextureMap& textures = {});
+    MeshSection(const Ref<VertexArray>& vertexArr, const Ref<IndexBuffer>& indexBuf, Ref<Material> material = nullptr);
 
-    void SetTexture(const MeshTextureMap& textures);
-    void AddTexture(TextureType type, const Ref<Texture2D>& texture);
-    void DeleteTexture(TextureType type, const Ref<Texture2D>& texture);
-    const MeshTextureMap& GetTextures() const { return m_Textures; }
+    void SetMaterial(const Ref<Material>& material);
+    Ref<Material> GetMaterial();
 
     // render the mesh
-    void Draw(Shader &shader);
+    void Draw() const;
 
 private:
     // mesh Data
     Ref<VertexArray>    m_VertexArray;
     Ref<IndexBuffer>    m_IndexBuffer;
-    MeshTextureMap      m_Textures;
+    Ref<Material>       m_Material;
 };
