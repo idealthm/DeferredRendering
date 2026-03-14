@@ -1,4 +1,6 @@
 ﻿#include "FrameBuffer.h"
+
+#include <iostream>
 #include <glad/glad.h>
 
 #include "Model/Texture.h"
@@ -31,9 +33,22 @@ FrameBuffer::~FrameBuffer()
 
 void FrameBuffer::Attach(FBAttachmentInfo& info)
 {
+	if (!info.Depth && info.Attachments.size() == 0)
+	{
+		return;
+	}
+
 	glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
 
-	m_Info = std::move(info);
+	for (int i = 0; i < 8; ++i) {
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
+	}
+	// 清除深度/模板附件（使用你之前绑定的点）
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+
+
+	m_Info = info;
+	glViewport(0, 0, m_Info.Width, m_Info.Height);
 
 	if (m_Info.Depth)
 	{
@@ -43,6 +58,10 @@ void FrameBuffer::Attach(FBAttachmentInfo& info)
 			uint32 color = 0xFFFFFF00;
 			glClearTexImage(m_Info.Depth.GetTextureID(), 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, &color);
 		}
+	}
+	else
+	{
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
 	}
 
 	for (int32 i = 0; i < m_Info.Attachments.size(); i++)
@@ -68,10 +87,9 @@ void FrameBuffer::Attach(FBAttachmentInfo& info)
 	else if (m_Info.Attachments.empty())
 	{
 		// Only depth-pass
+		glReadBuffer(GL_NONE);
 		glDrawBuffer(GL_NONE);
 	}
-
-	glViewport(0, 0, m_Info.Width, m_Info.Height);
 
 	if (m_Info.DSS.depthTest)
 		glEnable(GL_DEPTH_TEST);

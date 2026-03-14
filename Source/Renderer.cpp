@@ -83,7 +83,7 @@ void Renderer::OnWindowResize(int32 width, int32 height)
 
 void Renderer::SetViewport(uint32 x, uint32 y, uint32 width, uint32 height)
 {
-    glViewport(x, y, width, height);
+    // glViewport(x, y, width, height);
 }
 
 void Renderer::SetClearColor(const glm::vec4& color)
@@ -102,11 +102,12 @@ void Renderer::PostRendererInit()
 void Renderer::Render(Ref<Scene>& scene)
 {
     Ref<GBufferPass> gBufferPass = CreateRef<GBufferPass>(scene->GetWidth(), scene->GetHeight());
-    Ref<ShadowPass> shadowPass = CreateRef<ShadowPass>(scene->GetWidth(), scene->GetHeight());
+    Ref<ShadowPass> shadowPass = CreateRef<ShadowPass>(2048.f, 2048.f);
     Ref<LightingPass> lightPass = CreateRef<LightingPass>(scene->GetWidth(), scene->GetHeight());
     Ref<SkyLightPass> skyLightPass = CreateRef<SkyLightPass>(scene->GetWidth(), scene->GetHeight());
     Ref<ToneMapping> toneMappingPass = CreateRef<ToneMapping>(scene->GetWidth(), scene->GetHeight());
 
+    StartPass(scene, shadowPass);
     StartPass(scene, gBufferPass);
     StartPass(scene, lightPass);
     StartPass(scene, toneMappingPass);

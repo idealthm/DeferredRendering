@@ -17,6 +17,28 @@ glm::vec3 LightComponent::GetDirection() const
 	return glm::normalize(rotation * glm::vec3(0.0f, 0.0f, -1.0f));
 }
 
+glm::mat4 DirectionLightComponent::GetViewProjectMatrix(float range) const
+{
+
+	// glm::mat4 testView = glm::lookAt(glm::vec3(0, 0, 20), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	// glm::mat4 testProj = glm::ortho(-7.0f, 7.0f, -7.0f, 7.0f, 0.1f, 100.0f);
+	// return testProj * testView;
+
+	glm::vec3 dir = GetDirection();
+	// 虚拟位置：从原点往回退
+	glm::vec3 pos = -dir * (range * 2.0f); 
+    
+	// 找一个不与 dir 平行的世界向上向量
+	glm::vec3 worldUp = glm::vec3(0, 1, 0);
+	if (glm::abs(glm::dot(dir, worldUp)) > 0.99f) {
+		worldUp = glm::vec3(0, 0, 1); // 如果太阳直射头顶，改用 Z 轴作为参考
+	}
+
+	glm::mat4 view = glm::lookAt(pos, pos + dir, worldUp);
+    
+	return glm::ortho(-range, range, -range, range, 0.1f, 100.0f) * view;
+}
+
 glm::vec3 DirectionLightComponent::GetUPDirection() const
 {
 	glm::vec3 radians = glm::radians(m_Rotation);
