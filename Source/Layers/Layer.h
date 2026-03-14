@@ -9,7 +9,7 @@ class Event;
 class Layer
 {
 public:
-	Layer(uint32 width, uint32 height, const std::string& name = "Layer");
+	Layer(const std::string& name);
 	virtual ~Layer() = default;
 
 	virtual void OnAttach() {}

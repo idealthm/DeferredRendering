@@ -9,6 +9,7 @@
 #include "Model/Texture.h"
 #include "Shapes/MeshBuilder.h"
 #include "glad/glad.h"
+#include "ImGui/imgui.h"
 #include "Lights/Light.h"
 #include "Material/Material.h"
 #include "Model/Util.h"
@@ -16,7 +17,7 @@
 
 
 ExampleLayer::ExampleLayer(uint32 width, uint32 height)
-	: Layer(width, height, "ExampleLayer")
+	: Layer("ExampleLayer")
 {
 	m_Camera = CreateRef<Camera>();
 
@@ -63,7 +64,8 @@ void ExampleLayer::OnUpdate(Timestep ts)
 
 void ExampleLayer::OnImGuiRender()
 {
-	Layer::OnImGuiRender();
+	bool show_demo_window = true;
+	ImGui::ShowDemoWindow(&show_demo_window);
 }
 
 void ExampleLayer::OnEvent(Event& event)

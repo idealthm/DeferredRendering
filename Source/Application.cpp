@@ -11,6 +11,7 @@
 #include "Model/StaticMesh.h"
 #include "Windows/Window.h"
 #include "GLFW/glfw3.h"
+#include "Layers/ImGuiLayer.h"
 #include "stb_images/stb_image.h"
 
 using namespace std;
@@ -39,6 +40,9 @@ Application::Application(const ApplicationSpecification& specification)
 	Renderer::Get().Init(SCR_WIDTH, SCR_HEIGHT);
 
 	PushLayer(new ExampleLayer(SCR_WIDTH, SCR_HEIGHT));
+
+	m_ImGuiLayer = new ImGuiLayer();
+	PushLayer(new ImGuiLayer());
 }
 
 Application::~Application()
@@ -108,6 +112,13 @@ void Application::Run()
 				for (Layer* layer : m_LayerStack)
 					layer->OnUpdate(timestep);
 			}
+
+			m_ImGuiLayer->Begin();
+			{
+				for (Layer* layer : m_LayerStack)
+					layer->OnImGuiRender();
+			}
+			m_ImGuiLayer->End();
 		}
 
 		m_Window->Update();

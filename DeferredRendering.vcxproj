@@ -147,6 +147,7 @@ endlocal</Command>
     <ClInclude Include="Source\Guid.h" />
     <ClInclude Include="Source\IndexBuffer\IndexBuffer.h" />
     <ClInclude Include="Source\Layers\ExampleLayer.h" />
+    <ClInclude Include="Source\Layers\ImGuiLayer.h" />
     <ClInclude Include="Source\Layers\Layer.h" />
     <ClInclude Include="Source\Lights\Light.h" />
     <ClInclude Include="Source\Material\Material.h" />
@@ -283,12 +284,22 @@ endlocal</Command>
     <ClInclude Include="vendor\includes\GL\glut.h" />
     <ClInclude Include="vendor\includes\GL\glxew.h" />
     <ClInclude Include="vendor\includes\GL\wglew.h" />
+    <ClInclude Include="vendor\includes\ImGui\GraphEditor.h" />
     <ClInclude Include="vendor\includes\ImGui\imconfig.h" />
+    <ClInclude Include="vendor\includes\ImGui\ImCurveEdit.h" />
+    <ClInclude Include="vendor\includes\ImGui\ImGradient.h" />
     <ClInclude Include="vendor\includes\ImGui\imgui.h" />
+    <ClInclude Include="vendor\includes\ImGui\ImGuizmo.h" />
+    <ClInclude Include="vendor\includes\ImGui\imgui_impl_glfw.h" />
     <ClInclude Include="vendor\includes\ImGui\imgui_impl_opengl3.h" />
     <ClInclude Include="vendor\includes\ImGui\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="vendor\includes\ImGui\imgui_impl_win32.h" />
     <ClInclude Include="vendor\includes\ImGui\imgui_internal.h" />
+    <ClInclude Include="vendor\includes\ImGui\ImLightRig.h" />
+    <ClInclude Include="vendor\includes\ImGui\ImSequencer.h" />
+    <ClInclude Include="vendor\includes\ImGui\imstb_rectpack.h" />
+    <ClInclude Include="vendor\includes\ImGui\imstb_textedit.h" />
+    <ClInclude Include="vendor\includes\ImGui\imstb_truetype.h" />
+    <ClInclude Include="vendor\includes\ImGui\ImZoomSlider.h" />
     <ClInclude Include="vendor\includes\nlohmann\adl_serializer.hpp" />
     <ClInclude Include="vendor\includes\nlohmann\byte_container_with_subtype.hpp" />
     <ClInclude Include="vendor\includes\nlohmann\detail\abi_macros.hpp" />
@@ -355,6 +366,8 @@ endlocal</Command>
     <ClCompile Include="Source\Guid.cpp" />
     <ClCompile Include="Source\IndexBuffer\IndexBuffer.cpp" />
     <ClCompile Include="Source\Layers\ExampleLayer.cpp" />
+    <ClCompile Include="Source\Layers\ImGuiBuild.cpp" />
+    <ClCompile Include="Source\Layers\ImGuiLayer.cpp" />
     <ClCompile Include="Source\Layers\Layer.cpp" />
     <ClCompile Include="Source\Lights\Light.cpp" />
     <ClCompile Include="Source\Main.cpp" />
@@ -462,163 +475,16 @@ endlocal</Command>
       <LinkCompiled>true</LinkCompiled>
     </ClCompile>
     <ClCompile Include="Source\Windows\Window.cpp" />
+    <ClCompile Include="vendor\includes\ImGui\GraphEditor.cpp" />
+    <ClCompile Include="vendor\includes\ImGui\ImCurveEdit.cpp" />
+    <ClCompile Include="vendor\includes\ImGui\ImGradient.cpp" />
     <ClCompile Include="vendor\includes\ImGui\imgui.cpp" />
+    <ClCompile Include="vendor\includes\ImGui\ImGuizmo.cpp" />
     <ClCompile Include="vendor\includes\ImGui\imgui_demo.cpp" />
     <ClCompile Include="vendor\includes\ImGui\imgui_draw.cpp" />
-    <ClCompile Include="vendor\includes\ImGui\imgui_impl_opengl3.cpp">
-      <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <Optimization>Disabled</Optimization>
-      <SupportJustMyCode>false</SupportJustMyCode>
-      <AssemblerOutput>NoListing</AssemblerOutput>
-      <AssemblerListingLocation>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</AssemblerListingLocation>
-      <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
-      <BrowseInformation>false</BrowseInformation>
-      <BrowseInformationFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</BrowseInformationFile>
-      <CompileAs>Default</CompileAs>
-      <ConformanceMode>Default</ConformanceMode>
-      <DiagnosticsFormat>Column</DiagnosticsFormat>
-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
-      <ErrorReporting>Prompt</ErrorReporting>
-      <ExpandAttributedSource>false</ExpandAttributedSource>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <EnableASAN>false</EnableASAN>
-      <EnableFuzzer>false</EnableFuzzer>
-      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
-      <FloatingPointModel>Precise</FloatingPointModel>
-      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
-      <GenerateModuleDependencies>false</GenerateModuleDependencies>
-      <GenerateSourceDependencies>false</GenerateSourceDependencies>
-      <GenerateXMLDocumentationFiles>false</GenerateXMLDocumentationFiles>
-      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <IntrinsicFunctions>false</IntrinsicFunctions>
-      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <LanguageStandard_C>Default</LanguageStandard_C>
-      <MinimalRebuild>false</MinimalRebuild>
-      <ModuleDependenciesFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</ModuleDependenciesFile>
-      <ModuleOutputFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</ModuleOutputFile>
-      <OmitDefaultLibName>false</OmitDefaultLibName>
-      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
-      <ObjectFileName>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</ObjectFileName>
-      <CallingConvention>Cdecl</CallingConvention>
-      <ProgramDataBaseFileName>D:\Dev\DeferredRendering\Intermediate\x64\Debug\vc143.pdb</ProgramDataBaseFileName>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\DeferredRendering.pch</PrecompiledHeaderOutputFile>
-      <PreprocessToFile>false</PreprocessToFile>
-      <PreprocessKeepComments>false</PreprocessKeepComments>
-      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
-      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
-      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
-      <ShowIncludes>false</ShowIncludes>
-      <SourceDependenciesFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</SourceDependenciesFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
-      <SmallerTypeCheck>false</SmallerTypeCheck>
-      <SpectreMitigation>false</SpectreMitigation>
-      <StructMemberAlignment>Default</StructMemberAlignment>
-      <TrackerLogDirectory>D:\Dev\DeferredRendering\Intermediate\x64\Debug\Deferred.f072e502.tlog\</TrackerLogDirectory>
-      <TranslateIncludes>false</TranslateIncludes>
-      <MinimalRebuildFromTracking>true</MinimalRebuildFromTracking>
-      <TreatWarningAsError>false</TreatWarningAsError>
-      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <UseFullPaths>true</UseFullPaths>
-      <WarningLevel>Level3</WarningLevel>
-      <XMLDocumentationFileName>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</XMLDocumentationFileName>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <IntelJCCErratum>false</IntelJCCErratum>
-      <BuildStlModules>false</BuildStlModules>
-      <TreatAngleIncludeAsExternal>false</TreatAngleIncludeAsExternal>
-      <ExternalWarningLevel>InheritWarningLevel</ExternalWarningLevel>
-      <TreatExternalTemplatesAsInternal>true</TreatExternalTemplatesAsInternal>
-      <DisableAnalyzeExternal>false</DisableAnalyzeExternal>
-      <PreprocessorDefinitions>DR_DEBUG;_DEBUG;_CONSOLE;_UNICODE;UNICODE;</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>D:\Dev\DeferredRendering\Source;D:\Dev\DeferredRendering\vendor\includes\glad;D:\Dev\DeferredRendering\vendor\includes;D:\Dev\DeferredRendering\SubModule\glm;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
-      <LinkCompiled>true</LinkCompiled>
-    </ClCompile>
-    <ClCompile Include="vendor\includes\ImGui\imgui_impl_win32.cpp">
-      <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <Optimization>Disabled</Optimization>
-      <SupportJustMyCode>false</SupportJustMyCode>
-      <AssemblerOutput>NoListing</AssemblerOutput>
-      <AssemblerListingLocation>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</AssemblerListingLocation>
-      <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
-      <BrowseInformation>false</BrowseInformation>
-      <BrowseInformationFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</BrowseInformationFile>
-      <CompileAs>Default</CompileAs>
-      <ConformanceMode>Default</ConformanceMode>
-      <DiagnosticsFormat>Column</DiagnosticsFormat>
-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
-      <ErrorReporting>Prompt</ErrorReporting>
-      <ExpandAttributedSource>false</ExpandAttributedSource>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <EnableASAN>false</EnableASAN>
-      <EnableFuzzer>false</EnableFuzzer>
-      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
-      <FloatingPointModel>Precise</FloatingPointModel>
-      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
-      <GenerateModuleDependencies>false</GenerateModuleDependencies>
-      <GenerateSourceDependencies>false</GenerateSourceDependencies>
-      <GenerateXMLDocumentationFiles>false</GenerateXMLDocumentationFiles>
-      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <IntrinsicFunctions>false</IntrinsicFunctions>
-      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <LanguageStandard_C>Default</LanguageStandard_C>
-      <MinimalRebuild>false</MinimalRebuild>
-      <ModuleDependenciesFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</ModuleDependenciesFile>
-      <ModuleOutputFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</ModuleOutputFile>
-      <OmitDefaultLibName>false</OmitDefaultLibName>
-      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
-      <ObjectFileName>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</ObjectFileName>
-      <CallingConvention>Cdecl</CallingConvention>
-      <ProgramDataBaseFileName>D:\Dev\DeferredRendering\Intermediate\x64\Debug\vc143.pdb</ProgramDataBaseFileName>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\DeferredRendering.pch</PrecompiledHeaderOutputFile>
-      <PreprocessToFile>false</PreprocessToFile>
-      <PreprocessKeepComments>false</PreprocessKeepComments>
-      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
-      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
-      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
-      <ShowIncludes>false</ShowIncludes>
-      <SourceDependenciesFile>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</SourceDependenciesFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
-      <SmallerTypeCheck>false</SmallerTypeCheck>
-      <SpectreMitigation>false</SpectreMitigation>
-      <StructMemberAlignment>Default</StructMemberAlignment>
-      <TrackerLogDirectory>D:\Dev\DeferredRendering\Intermediate\x64\Debug\Deferred.f072e502.tlog\</TrackerLogDirectory>
-      <TranslateIncludes>false</TranslateIncludes>
-      <MinimalRebuildFromTracking>true</MinimalRebuildFromTracking>
-      <TreatWarningAsError>false</TreatWarningAsError>
-      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <UseFullPaths>true</UseFullPaths>
-      <WarningLevel>Level3</WarningLevel>
-      <XMLDocumentationFileName>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</XMLDocumentationFileName>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <IntelJCCErratum>false</IntelJCCErratum>
-      <BuildStlModules>false</BuildStlModules>
-      <TreatAngleIncludeAsExternal>false</TreatAngleIncludeAsExternal>
-      <ExternalWarningLevel>InheritWarningLevel</ExternalWarningLevel>
-      <TreatExternalTemplatesAsInternal>true</TreatExternalTemplatesAsInternal>
-      <DisableAnalyzeExternal>false</DisableAnalyzeExternal>
-      <PreprocessorDefinitions>DR_DEBUG;_DEBUG;_CONSOLE;_UNICODE;UNICODE;</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>D:\Dev\DeferredRendering\Source;D:\Dev\DeferredRendering\vendor\includes\glad;D:\Dev\DeferredRendering\vendor\includes;D:\Dev\DeferredRendering\SubModule\glm;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
-      <LinkCompiled>true</LinkCompiled>
-    </ClCompile>
     <ClCompile Include="vendor\includes\ImGui\imgui_tables.cpp" />
     <ClCompile Include="vendor\includes\ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="vendor\includes\ImGui\ImSequencer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\audio\bleep.mp3" />
