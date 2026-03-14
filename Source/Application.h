@@ -7,6 +7,7 @@
 #include "Common/Core.h"
 #include "Common/LayerStack.h"
 
+class ImGuiLayer;
 class Window;
 class WindowResizeEvent;
 class WindowCloseEvent;
@@ -66,6 +67,8 @@ private:
 	bool m_Minimized = false;
 	LayerStack m_LayerStack;
 	float m_LastFrameTime = 0.0f;
+
+	ImGuiLayer* m_ImGuiLayer;
 
 	std::vector<std::function<void()>> m_MainThreadQueue;
 	std::mutex m_MainThreadQueueMutex;
