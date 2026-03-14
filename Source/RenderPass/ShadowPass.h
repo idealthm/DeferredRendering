@@ -11,4 +11,7 @@ public:
 
 	void Setup(RenderContext& ctx, FBAttachmentInfo & info) override;
 	void Execute(Ref<Scene> scene) override;
+
+private:
+	Ref<Shader> m_Shader;
 };

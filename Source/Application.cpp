@@ -78,13 +78,6 @@ void Application::OnEvent(Event& e)
 		switch (e.GetKeyCode())
 		{
 			case Key::Escape: m_Running = false; return true;
-			case Key::F1: Renderer::Get().m_RenderMode = 1; return true;
-			case Key::F2: Renderer::Get().m_RenderMode = 2; return true;
-			case Key::F3: Renderer::Get().m_RenderMode = 3; return true;
-			case Key::F4: Renderer::Get().m_RenderMode = 4; return true;
-			case Key::F5: Renderer::Get().m_RenderMode = 5; return true;
-			case Key::F6: Renderer::Get().m_RenderMode = 6; return true;
-			case Key::F7: Renderer::Get().m_RenderMode = 7; return true;
 		}
 		return false;
 	});

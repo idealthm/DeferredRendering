@@ -26,7 +26,7 @@ struct FrameData
     glm::mat4 m_InvViewProjection;
     glm::mat4 m_InvProjection;
     glm::vec3 m_CameraPosition;
-    float times;
+    int RenderMode;
 };
 
 struct RenderContext
@@ -34,11 +34,15 @@ struct RenderContext
     uint32 renderMode;
     uint32 usedTextureSlot;
 
+    float ShadowWidth, ShadowHeight;
+
     Ref<Texture2D> GBuffer_Position;
     Ref<Texture2D> GBuffer_Normal;
     Ref<Texture2D> GBuffer_Albedo;
     Ref<Texture2D> GBuffer_Material;
     Ref<Texture2D> GBuffer_Depth;
+
+    Ref<Texture2D> Test;
 
     Ref<Texture2D> ShadowMap_Depth;
 

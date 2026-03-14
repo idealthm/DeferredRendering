@@ -14,8 +14,6 @@ uniform sampler2D gAlbedo;
 uniform sampler2D gMaterial;
 uniform sampler2D gShadowMap;
 
-// uniform mat4 uLightSpaceVP;
-
 uniform int uDebugMode;
 
 vec3 NormalDecode(vec2 e)
@@ -132,32 +130,32 @@ vec3 NormalDecode(vec2 e)
 // }
 // 
 
-// float calculateShadowAttenuation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
-// {
-//     // depth in light
-//     vec3 ProjCoord = fragPosLightSpace.xyz / fragPosLightSpace.w;
-//     ProjCoord = ProjCoord * 0.5 + 0.5;
-// 
-//     float currentDepth = ProjCoord.z;
-// 
-//     float theta = max(dot(normal, lightDir), 0.0);
-//     float bias = max(0.01 * (1.0 - theta), 0.001);
-// 
-//     float shadow = 0.0;
-//     vec2 texelSize = 1.0 / textureSize(gShadowMap, 0);
-//     for(int x = -3; x <= 3; ++x) {
-//         for(int y = -3; y <= 3; ++y) {
-//             float closest = texture(gShadowMap, ProjCoord.xy + vec2(x,y) * texelSize).r; 
-//             shadow += currentDepth - bias > closest ? 1.0 : 0.0;
-//         }
-//     }
-//     shadow /= 49.0;
-// 
-//     // if ( ProjCoord.z > 1.0)
-//     //     shadow = 0.0;
-// 
-//     return shadow;
-// }
+float calculateShadowAttenuation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
+{
+    // depth in light
+    vec3 ProjCoord = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    ProjCoord = ProjCoord * 0.5 + 0.5;
+
+    float currentDepth = ProjCoord.z;
+
+    float theta = max(dot(normal, lightDir), 0.0);
+    float bias = max(0.01 * (1.0 - theta), 0.001);
+
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(gShadowMap, 0);
+    for(int x = -3; x <= 3; ++x) {
+        for(int y = -3; y <= 3; ++y) {
+            float closest = texture(gShadowMap, ProjCoord.xy + vec2(x,y) * texelSize).r; 
+            shadow += currentDepth - bias > closest ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 49.0;
+
+    // if ( ProjCoord.z > 1.0)
+    //     shadow = 0.0;
+
+    return shadow;
+}
 
 vec3 CalculateLighting_PBR(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness, float metallic, vec3 irradiance)
 {
@@ -181,47 +179,12 @@ vec3 CalculateLighting_PBR(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness,
 
     float NDotL = max(dot(N, L), 0.0);
     vec3 Lo = (kd * albedo / PI + specular) * NDotL;
+    
     return Lo * irradiance;
 }
 
 
-// vec4 CalculateLighting()
-// {
-//     vec3 FragPos = texture(gPosition, vTexCoords).rgb;
-//     vec3 Normal = NormalDecode(texture(gNormal, vTexCoords).rg); // 确保归一化
-//     vec3 Albedo = texture(gAlbedo, vTexCoords).rgb;
-//     vec3 viewDir = normalize(uCamPos - FragPos); // 统一视图方向
-//     
-//     // 计算方向光
-//     mat3 dirResult = CalcDirLight(dirLight, Normal, viewDir);
-//     
-//     // 计算点光源
-//     for (int i = 0; i < uPointLightCount; i++) {
-//         dirResult += CalcPointLight(pointLights[i], Normal, FragPos, viewDir);
-//     }
-// 
-//     for (int i = 0; i < uSpotLightCount; i++) {
-//         dirResult += CalcSpotLight(spotLights[i], Normal, FragPos, viewDir);
-//     }
-// 
-//     float shadowAttenuation = calculateShadowAttenuation(uLightSpaceVP * vec4(FragPos, 1.0), Normal, normalize(dirLight.direction));
-// 
-//     // 组合光照
-//     vec3 resultColor = vec3(0.0, 0.0, 0.0);
-//     resultColor += dirResult[0] * Albedo;
-//     resultColor += dirResult[1] * (1 - shadowAttenuation) * Albedo;
-//     resultColor += dirResult[2];
-// 
-//     return vec4(resultColor, 1.0);
-// }
-
-vec4 CammeraToFragPos()
-{
-    vec3 FragPos = texture(gPosition, vTexCoords).rgb;
-    return vec4(FragPos / 100, 1.0);
-}
-
-void main()
+vec3 CalculateLighting()
 {
     vec3 FragPos = texture(gPosition, vTexCoords).xyz;
     vec3 N = NormalDecode(texture(gNormal, vTexCoords).rg);
@@ -241,9 +204,39 @@ void main()
         if (int(lights[i].position.w) == 0)
         {
             vec3 L = -normalize(lights[i].direction.xyz);
-            color += CalculateLighting_PBR(L, N, V, albedo, roughness, metallic, lights[i].color.xyz * lights[i].color.w) * AO;
+            float shadowAttenuation = 1 - calculateShadowAttenuation(uLightVP * vec4(FragPos, 1.0), N, L);
+            color += shadowAttenuation * CalculateLighting_PBR(L, N, V, albedo, roughness, metallic, lights[i].color.xyz * lights[i].color.w);
         }
     }
+    return color;
+}
 
-    FragColor = vec4(color, 1.0);
+vec4 CammeraToFragPos()
+{
+    vec3 FragPos = texture(gPosition, vTexCoords).rgb;
+    return vec4(FragPos / 100, 1.0);
+}
+
+void main()
+{
+    switch (RenderMode) {
+        case 1: // diffuseColor
+            FragColor = vec4(CalculateLighting(), 1.0);
+            break;
+        case 2: // 位置
+            FragColor = vec4(texture(gPosition, vTexCoords).rgb, 1.0);
+            break;
+        case 3: // 法线
+            vec3 normal = NormalDecode(texture(gNormal, vTexCoords).rg);
+            FragColor = vec4(normal * 0.5 + 0.5, 1.0);
+            break;
+        case 4: // 反照率
+            FragColor = vec4(texture(gAlbedo, vTexCoords).rgb, 1.0);
+            break;
+        case 5: // Depth
+            FragColor = vec4(vec3(texture(gShadowMap, vTexCoords).r), 1.0);
+            break;
+        default:
+            FragColor = vec4(CalculateLighting(), 1.0);
+    }
 };

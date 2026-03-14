@@ -5,12 +5,13 @@
 #include "FrameBuffer/FrameBuffer.h"
 #include "glad/glad.h"
 #include "Model/MeshSection.h"
+#include "Shader/ShaderLibrary.h"
 #include "Shapes/MeshBuilder.h"
 
 ToneMapping::ToneMapping(uint32 width, uint32 height)
 	: RenderPass(width, height)
 {
-	m_Shader = CreateRef<Shader>("Shaders/Passes/ToneMapping", 0);
+	m_Shader = ShaderLibrary::Get().GetShader("Shaders/Passes/ToneMapping", nullptr);
 }
 
 void ToneMapping::Setup(RenderContext& ctx, FBAttachmentInfo& info)
@@ -32,6 +33,7 @@ void ToneMapping::Execute(Ref<Scene> scene)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, m_Width, m_Height);
 
 	m_Shader->Bind();
 

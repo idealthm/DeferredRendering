@@ -1,5 +1,7 @@
 ﻿#include "LightingPass.h"
 
+#include <glm/detail/type_quat.hpp>
+
 #include "GBufferPass.h"
 #include "Scene.h"
 #include "FrameBuffer/FrameBuffer.h"
@@ -8,11 +10,12 @@
 #include "Shader/Shader.h"
 #include "Shapes/MeshBuilder.h"
 #include "glad/glad.h"
+#include "Shader/ShaderLibrary.h"
 
 LightingPass::LightingPass(uint32 width, uint32 height)
 	: RenderPass(width, height)
 {
-	m_Shader = CreateScope<Shader>("Shaders/DirectionLight", 10);
+	m_Shader = ShaderLibrary::Get().GetShader("Shaders/DirectionLight", nullptr);
 }
 
 /*void LightingPass::Setup(RenderContext& ctx, FBAttachmentInfo & info)
@@ -44,7 +47,7 @@ void LightingPass::Setup(RenderContext& ctx, FBAttachmentInfo& info)
 
 void LightingPass::Execute(Ref<Scene> scene)
 {
-	RenderContext ctx = scene->GetRenderContext();
+	RenderContext& ctx = scene->GetRenderContext();
 
 	int32 index = 0;
 	for (auto lightActor : scene->GetActors())
@@ -80,10 +83,10 @@ void LightingPass::Execute(Ref<Scene> scene)
 	ctx.GBuffer_Material->Bind(freeSlot);
 	m_Shader->SetUniform1i("gMaterial", freeSlot++);
 
-	// ctx.ShadowMap_Depth->Bind(freeSlot);
-	// m_Shader->SetUniform1i("gShadowMap", freeSlot++);
+	ctx.ShadowMap_Depth->Bind(freeSlot);
+	m_Shader->SetUniform1i("gShadowMap", freeSlot++);
 
-	std::vector<uint32> indices = {0, 1, 2, 1, 2, 3};
+	std::vector<uint32> indices = {0, 1, 2, 2, 1, 3};
 	std::vector<float> vertices = {-1.0f,  1.0f, -1.0f, -1.0f, 1.0f,  1.0f, 1.0f, -1.0f,};
 	Ref<MeshSection> section = MeshBuilder::BuildSection(vertices, indices, BufferLayout{BufferElement{ShaderDataType::Float2, "aPosition"}});
 	section->Draw();

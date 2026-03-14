@@ -61,9 +61,12 @@ void GBufferPass::Execute(Ref<Scene> scene)
 		{
 			if (auto MeshComp = std::dynamic_pointer_cast<StaticMeshComponent>(Comp))
 			{
-				for (auto& section : MeshComp->GetMesh()->GetMeshSections())
+				if (MeshComp->GetMesh())
 				{
-					renderItems.emplace_back(RenderItem{section->GetMaterial()->GetShader(RenderPassType::GBuffer), section, MeshComp->GetModelMatrix()});
+					for (auto& section : MeshComp->GetMesh()->GetMeshSections())
+					{
+						renderItems.emplace_back(RenderItem{section->GetMaterial()->GetShader(RenderPassType::GBuffer), section, MeshComp->GetModelMatrix()});
+					}
 				}
 			}
 		}

@@ -56,7 +56,11 @@ public:
 	}
 
 	const std::vector<Ref<ActorComponent>>& GetComponents() const;
+	bool IsCastShadow() const {return bCastShadow;}
+	void SetCastShadow(bool value) {bCastShadow = value;}
 protected:
+	bool bCastShadow = true;
+
 	std::weak_ptr<SceneComponent>		RootComponent;
 
 	std::vector<Ref<ActorComponent>>	Components;

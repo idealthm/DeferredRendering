@@ -12,10 +12,11 @@ layout (std140, binding = 0) uniform FrameData {
     mat4 uInvView;
     mat4 uInvProjection;
     vec3 uCamPos;
-    float uTime;
+    int RenderMode;
 };
 
 layout (std140, binding = 1) uniform LightData {
     Light lights[16];
+    mat4 uLightVP;
 	int NumLights;
 };

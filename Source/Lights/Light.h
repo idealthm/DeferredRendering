@@ -2,7 +2,7 @@
 #include "Actor.h"
 #include "Component/ActorComponent.h"
 
-struct LightInfo {
+struct alignas(16) LightInfo {
 	glm::vec3 position;   // w: 影响半径 (Range / Attenuation Radius)
 	float range;
 
@@ -15,9 +15,10 @@ struct LightInfo {
 	glm::vec4 params;    // x: 聚光灯内角, y: 聚光灯外角, z: 是否产生阴影, w: 预留
 }; 
 
-struct LightData
+struct alignas(16) LightData
 {
 	LightInfo lights[16];
+	glm::mat4 uLightVP;
 	int32 NumLights;
 };
 
@@ -39,6 +40,8 @@ class DirectionLightComponent : public LightComponent
 {
 public:
 	DirectionLightComponent() = default;
+
+	glm::mat4 GetViewProjectMatrix(float range) const;
 
 	glm::vec3 GetUPDirection() const;
 };
