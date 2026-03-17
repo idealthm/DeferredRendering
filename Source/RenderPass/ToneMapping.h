@@ -4,9 +4,9 @@
 class ToneMapping : public RenderPass
 {
 public:
-	ToneMapping(uint32 width, uint32 height);
+	ToneMapping();
 
-	void Setup(RenderContext& ctx, FBAttachmentInfo& info) override;
+	void Setup(FBAttachmentInfo& info) override;
 	void Execute(Ref<Scene> scene) override;
 
 private:

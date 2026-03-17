@@ -105,7 +105,7 @@ struct FBTextureAttachment
 
 struct FBAttachmentInfo
 {
-	uint32 Width, Height;
+	uint32 Width = 0, Height = 0;
 	uint32 NumSamples;
 
 	DepthStencilState DSS;

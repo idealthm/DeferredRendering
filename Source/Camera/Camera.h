@@ -10,6 +10,9 @@ class Event;
 class Camera
 {
 public:
+	bool bSkipEvent = true;
+	double lastX, lastY;
+
     glm::vec3 Position;
     glm::vec3 Front;
     glm::vec3 Up;
@@ -38,7 +41,6 @@ public:
 
     bool ProcessMouseScroll(const MouseScrolledEvent& event);
     bool ProcessMouseMovement(const MouseMovedEvent& event);
-
 private:
     void UpdateCameraVectors();
 };

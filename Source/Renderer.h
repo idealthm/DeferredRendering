@@ -4,9 +4,13 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "RenderPass/LightingPass.h"
+#include "FrameBuffer/FrameBuffer.h"
 #include "UnifromBuffer/ParamBuffer.h"
 
+class LightingPass;
+class Scene;
+class ToneMapping;
+class SkyLightPass;
 struct LightData;
 struct FBAttachmentInfo;
 class UniformBuffer;
@@ -34,6 +38,7 @@ struct RenderContext
     uint32 renderMode;
     uint32 usedTextureSlot;
 
+    glm::u32vec2 viewportSize;
     float ShadowWidth, ShadowHeight;
 
     Ref<Texture2D> GBuffer_Position;
@@ -61,6 +66,8 @@ struct RenderContext
     Ref<ParamBuffer<LightData>> LightDataUB;
 };
 
+extern RenderContext g_ctx;
+
 class Renderer
 {
 public:
@@ -78,12 +85,18 @@ public:
 
     void PostRendererInit();
 
-    void Render(Ref<Scene>& scene);
+    void Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize);
 
-    void StartPass(Ref<Scene>& scene, Ref<RenderPass> renderPass);
+    void StartPass(Ref<Scene>& scene, Ref<RenderPass> renderPass, const glm::u32vec2& viewportSize);
 
     static void BuildTextures(FBAttachmentInfo& info);
 
 public:
     uint32 m_RenderMode = 0;
+
+    Ref<GBufferPass> m_GBufferPass;
+    Ref<ShadowPass> m_ShadowPass;
+    Ref<LightingPass> m_LightPass;
+    Ref<SkyLightPass> m_SkyLightPass;
+    Ref<ToneMapping> m_ToneMappingPass;
 };

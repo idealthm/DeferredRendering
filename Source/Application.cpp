@@ -7,10 +7,10 @@
 #include "Renderer.h"
 #include "Events/ApplicationEvent.h"
 #include "Events/KeyEvent.h"
-#include "Layers/ExampleLayer.h"
 #include "Model/StaticMesh.h"
 #include "Windows/Window.h"
 #include "GLFW/glfw3.h"
+#include "Layers/EditorLayer.h"
 #include "Layers/ImGuiLayer.h"
 #include "stb_images/stb_image.h"
 
@@ -39,10 +39,10 @@ Application::Application(const ApplicationSpecification& specification)
 
 	Renderer::Get().Init(SCR_WIDTH, SCR_HEIGHT);
 
-	PushLayer(new ExampleLayer(SCR_WIDTH, SCR_HEIGHT));
-
 	m_ImGuiLayer = new ImGuiLayer();
 	PushLayer(new ImGuiLayer());
+
+	PushLayer(new EditorLayer());
 }
 
 Application::~Application()
@@ -76,12 +76,21 @@ void Application::SubmitToMainThread(const std::function<void()>& function)
 
 void Application::OnEvent(Event& e)
 {
+	// std::cout << e.ToString() << std::endl;
+
 	EventDispatcher dispatcher(e);
 	dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e )
 	{
 		switch (e.GetKeyCode())
 		{
 			case Key::Escape: m_Running = false; return true;
+			case Key::F1: g_ctx.FrameDataUB->Data.RenderMode = 1; return true;
+			case Key::F2: g_ctx.FrameDataUB->Data.RenderMode = 2; return true;
+			case Key::F3: g_ctx.FrameDataUB->Data.RenderMode = 3; return true;
+			case Key::F4: g_ctx.FrameDataUB->Data.RenderMode = 4; return true;
+			case Key::F5: g_ctx.FrameDataUB->Data.RenderMode = 5; return true;
+			case Key::F6: g_ctx.FrameDataUB->Data.RenderMode = 6; return true;
+			case Key::F7: g_ctx.FrameDataUB->Data.RenderMode = 7; return true;
 		}
 		return false;
 	});

@@ -1,12 +1,13 @@
 #include"Application.h"
 #include "Delegates/DelegateBase.h"
+#include "windows.h"
 
-int main(int argc, char** argv)
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Delegate::Test();
 
 	ApplicationSpecification specification;
-	specification.CommandLineArgs = { argc, argv };
+	// specification.CommandLineArgs = { nCmdShow, lpCmdLine};
 	specification.Name = "DeferredRendering";
 
 	Application* application = new Application(specification);

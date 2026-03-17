@@ -25,5 +25,5 @@ public:
 
 	uint32 GetActiveWidgetID() const;
 private:
-	bool m_BlockEvents = true;
+	bool m_BlockEvents = false;
 };

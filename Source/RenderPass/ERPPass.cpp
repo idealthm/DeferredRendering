@@ -16,7 +16,6 @@
 #include "Shapes/MeshBuilder.h"
 
 ERPPass::ERPPass(const std::string& hdrFilePath, uint32 size)
-	: RenderPass(size, size)
 {
 	m_Shader = CreateRef<Shader>("Shaders/Passes/ERPToCubeMap", 0, nullptr);
 	
@@ -38,11 +37,8 @@ ERPPass::~ERPPass()
 {
 }
 
-void ERPPass::Setup(RenderContext& ctx, FBAttachmentInfo& info)
+void ERPPass::Setup(FBAttachmentInfo& info)
 {
-	// TODO: fix it.
-	info.Width = m_Width;
-	info.Height = m_Height;
 }
 
 void ERPPass::Execute(Ref<Scene> scene)

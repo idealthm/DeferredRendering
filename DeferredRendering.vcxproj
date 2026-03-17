@@ -68,7 +68,7 @@
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)vendor\lib;$(SolutionDir)vendor\dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>assimp-vc143-mtd.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -100,7 +100,7 @@ endlocal</Command>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -126,9 +126,11 @@ endlocal</Command>
     <ClInclude Include="Shaders\Passes\ERPToCubeMap.frag.glsl" />
     <ClInclude Include="Source\Actor.h" />
     <ClInclude Include="Source\Camera\Camera.h" />
+    <ClInclude Include="Source\Camera\CameraController.h" />
     <ClInclude Include="Source\Common\Core.h" />
     <ClInclude Include="Source\Common\Keys.h" />
     <ClInclude Include="Source\Common\LayerStack.h" />
+    <ClInclude Include="Source\Common\Math.h" />
     <ClInclude Include="Source\Common\MouseCode.h" />
     <ClInclude Include="Source\Common\StringFormat.h" />
     <ClInclude Include="Source\Common\Timestep.h" />
@@ -146,7 +148,7 @@ endlocal</Command>
     <ClInclude Include="Source\GraphicContext.h" />
     <ClInclude Include="Source\Guid.h" />
     <ClInclude Include="Source\IndexBuffer\IndexBuffer.h" />
-    <ClInclude Include="Source\Layers\ExampleLayer.h" />
+    <ClInclude Include="Source\Layers\EditorLayer.h" />
     <ClInclude Include="Source\Layers\ImGuiLayer.h" />
     <ClInclude Include="Source\Layers\Layer.h" />
     <ClInclude Include="Source\Lights\Light.h" />
@@ -156,6 +158,10 @@ endlocal</Command>
     <ClInclude Include="Source\Model\StaticMesh.h" />
     <ClInclude Include="Source\Model\Texture.h" />
     <ClInclude Include="Source\Model\Util.h" />
+    <ClInclude Include="Source\Panel\EditorPanel.h" />
+    <ClInclude Include="Source\Panel\OutlinePanel.h" />
+    <ClInclude Include="Source\Panel\PropertyPanel.h" />
+    <ClInclude Include="Source\Panel\ScenePanel.h" />
     <ClInclude Include="Source\Renderer.h" />
     <ClInclude Include="Source\RenderPass\ERPPass.h" />
     <ClInclude Include="Source\RenderPass\GBufferPass.h" />
@@ -351,7 +357,9 @@ endlocal</Command>
   <ItemGroup>
     <ClCompile Include="Source\Actor.cpp" />
     <ClCompile Include="Source\Camera\Camera.cpp" />
+    <ClCompile Include="Source\Camera\CameraController.cpp" />
     <ClCompile Include="Source\Common\LayerStack.cpp" />
+    <ClCompile Include="Source\Common\Math.cpp" />
     <ClCompile Include="Source\Common\StringFormat.cpp" />
     <ClCompile Include="Source\Common\Timestep.cpp" />
     <ClCompile Include="Source\Common\Utils.cpp" />
@@ -365,7 +373,7 @@ endlocal</Command>
     <ClCompile Include="Source\GraphicContext.cpp" />
     <ClCompile Include="Source\Guid.cpp" />
     <ClCompile Include="Source\IndexBuffer\IndexBuffer.cpp" />
-    <ClCompile Include="Source\Layers\ExampleLayer.cpp" />
+    <ClCompile Include="Source\Layers\EditorLayer.cpp" />
     <ClCompile Include="Source\Layers\ImGuiBuild.cpp" />
     <ClCompile Include="Source\Layers\ImGuiLayer.cpp" />
     <ClCompile Include="Source\Layers\Layer.cpp" />
@@ -377,6 +385,10 @@ endlocal</Command>
     <ClCompile Include="Source\Model\StaticMesh.cpp" />
     <ClCompile Include="Source\Model\Texture.cpp" />
     <ClCompile Include="Source\Model\Util.cpp" />
+    <ClCompile Include="Source\Panel\EditorPanel.cpp" />
+    <ClCompile Include="Source\Panel\OutlinePanel.cpp" />
+    <ClCompile Include="Source\Panel\PropertyPanel.cpp" />
+    <ClCompile Include="Source\Panel\ScenePanel.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\RenderPass\ERPPass.cpp" />
     <ClCompile Include="Source\RenderPass\GBufferPass.cpp" />

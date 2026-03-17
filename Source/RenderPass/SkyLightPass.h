@@ -4,9 +4,9 @@
 class SkyLightPass : public RenderPass
 {
 public:
-	SkyLightPass(int width, int height);
+	SkyLightPass();
 
-	void Setup(RenderContext& ctx, FBAttachmentInfo& info) override;
+	void Setup(FBAttachmentInfo& info) override;
 	void Execute(Ref<Scene> scene) override;
 
 private:

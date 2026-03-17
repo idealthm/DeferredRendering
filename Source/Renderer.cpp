@@ -13,7 +13,11 @@
 #include "RenderPass/ShadowPass.h"
 #include "RenderPass/SkyLightPass.h"
 #include "RenderPass/ToneMapping.h"
+#include "RenderPass/LightingPass.h"
+#include "Lights/Light.h"
 
+
+RenderContext g_ctx;
 
 namespace 
 {
@@ -66,6 +70,12 @@ void Renderer::Init(uint32 width, uint32 height)
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     PostRendererInit();
+
+    m_GBufferPass = CreateRef<GBufferPass>();
+    m_ShadowPass = CreateRef<ShadowPass>();
+    m_LightPass = CreateRef<LightingPass>();
+    m_SkyLightPass = CreateRef<SkyLightPass>();
+    m_ToneMappingPass = CreateRef<ToneMapping>();
 }
 
 void Renderer::Shutdown()
@@ -74,6 +84,8 @@ void Renderer::Shutdown()
     GDefaultTextures.Black = nullptr;
     GDefaultTextures.Gray = nullptr;
     GDefaultTextures.Normal = nullptr;
+
+    g_ctx = {};
 }
 
 void Renderer::OnWindowResize(int32 width, int32 height)
@@ -93,33 +105,36 @@ void Renderer::SetClearColor(const glm::vec4& color)
 
 void Renderer::PostRendererInit()
 {
+    g_ctx.FrameBuffer = CreateScope<FrameBuffer>();
+    g_ctx.FrameDataUB = CreateScope<ParamBuffer<FrameData>>(0);
+    g_ctx.LightDataUB = CreateScope<ParamBuffer<LightData>>(1);
+    g_ctx.ShadowWidth = 2048.f * 1;
+    g_ctx.ShadowHeight = 2048.f * 1;
+
     GDefaultTextures.White  = Texture2D::Create(0xFFFFFFFF);
     GDefaultTextures.Black  = Texture2D::Create(0xFF000000);
     GDefaultTextures.Gray   = Texture2D::Create(0xFF808080);
     GDefaultTextures.Normal = Texture2D::Create(0xFFFF8080);
 }
 
-void Renderer::Render(Ref<Scene>& scene)
+void Renderer::Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize)
 {
-    Ref<GBufferPass> gBufferPass = CreateRef<GBufferPass>(scene->GetWidth(), scene->GetHeight());
-    Ref<ShadowPass> shadowPass = CreateRef<ShadowPass>(2048.f, 2048.f);
-    Ref<LightingPass> lightPass = CreateRef<LightingPass>(scene->GetWidth(), scene->GetHeight());
-    Ref<SkyLightPass> skyLightPass = CreateRef<SkyLightPass>(scene->GetWidth(), scene->GetHeight());
-    Ref<ToneMapping> toneMappingPass = CreateRef<ToneMapping>(scene->GetWidth(), scene->GetHeight());
+    StartPass(scene, m_ShadowPass, viewportSize);
+    StartPass(scene, m_GBufferPass, viewportSize);
+    StartPass(scene, m_LightPass, viewportSize);
+    StartPass(scene, m_ToneMappingPass, viewportSize);
 
-    StartPass(scene, shadowPass);
-    StartPass(scene, gBufferPass);
-    StartPass(scene, lightPass);
-    StartPass(scene, toneMappingPass);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::StartPass(Ref<Scene>& scene, Ref<RenderPass> renderPass)
+void Renderer::StartPass(Ref<Scene>& scene, Ref<RenderPass> renderPass, const glm::u32vec2& viewportSize)
 {
-    RenderContext& ctx = scene->GetRenderContext();
     FBAttachmentInfo FBInfo;
-    renderPass->Setup(ctx, FBInfo);
+    FBInfo.Width = viewportSize.x;
+    FBInfo.Height = viewportSize.y;
+    renderPass->Setup(FBInfo);
     BuildTextures(FBInfo);
-    ctx.FrameBuffer->Attach(FBInfo);
+    g_ctx.FrameBuffer->Attach(FBInfo);
     renderPass->Execute(scene);
 }
 

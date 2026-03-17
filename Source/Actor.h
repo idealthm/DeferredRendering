@@ -5,6 +5,7 @@
 #include <glm/vec3.hpp>
 
 #include "common/Core.h"
+#include "Common/Math.h"
 
 class StaticMesh;
 class StaticMeshComponent;
@@ -26,9 +27,16 @@ public:
 
 	void SetRootComponent(const Ref<SceneComponent>& component);
 
-	void SetPosition(const glm::vec3& position) const;
+	void SetLocation(const glm::vec3& position) const;
 	void SetRotation(const glm::vec3& rotation) const;
 	void SetScale3D(const glm::vec3& scale) const;
+
+	const glm::vec3& GetLocation() const;
+	const glm::vec3& GetRotation() const;
+	const glm::vec3& GetScale3D() const ;
+
+	void SetTransform(const Math::Transform& transform) const;
+	Math::Transform GetTransform() const;
 
 	template<typename T, typename... Args, typename = std::enable_if_t<std::is_base_of_v<ActorComponent, T>>>
 	Ref<T> AddComponent(Args... args)

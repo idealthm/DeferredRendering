@@ -36,7 +36,7 @@ void Actor::SetRootComponent(const Ref<SceneComponent>& component)
 	RootComponent = component;
 }
 
-void Actor::SetPosition(const glm::vec3& position) const
+void Actor::SetLocation(const glm::vec3& position) const
 {
 	RootComponent.lock()->SetLocation(position);
 }
@@ -49,6 +49,31 @@ void Actor::SetRotation(const glm::vec3& rotation) const
 void Actor::SetScale3D(const glm::vec3& scale) const
 {
 	RootComponent.lock()->SetScale3D(scale);
+}
+
+const glm::vec3& Actor::GetLocation() const
+{
+	return RootComponent.lock()->GetLocation();
+};
+
+const glm::vec3& Actor::GetRotation() const
+{
+	return RootComponent.lock()->GetRotation();
+};
+
+const glm::vec3& Actor::GetScale3D() const
+{
+	return RootComponent.lock()->GetScale3D();
+}
+
+void Actor::SetTransform(const Math::Transform& transform) const
+{
+	RootComponent.lock()->SetTransform(transform);
+};
+
+Math::Transform Actor::GetTransform() const
+{
+	return RootComponent.lock()->GetTransform();
 }
 
 const std::vector<Ref<ActorComponent>>& Actor::GetComponents() const
