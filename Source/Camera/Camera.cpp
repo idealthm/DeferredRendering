@@ -65,21 +65,27 @@ bool Camera::ProcessMouseScroll(const MouseScrolledEvent& event)
 
 bool Camera::ProcessMouseMovement(const MouseMovedEvent& event)
 {
-    static float lastX = event.GetX(), lastY = event.GetY();
+    if (!bSkipEvent)
+    {
+        float offsetX = event.GetX() - lastX;
+        float offsetY = lastY - event.GetY();
 
-    float offsetX = event.GetX() - lastX;
-    float offsetY = lastY - event.GetY();
+        Yaw += offsetX * MouseSensitivity;
+        Pitch += offsetY * MouseSensitivity;
 
-    Yaw += offsetX * MouseSensitivity;
-    Pitch += offsetY * MouseSensitivity;
+        // 限制俯仰角避免翻转
+        Pitch = std::clamp(Pitch, -89.f, 89.f);
+
+        UpdateCameraVectors();
+    }
+    else
+    {
+        bSkipEvent = false;
+    }
 
     lastX = event.GetX();
     lastY = event.GetY();
-
-    // 限制俯仰角避免翻转
-    Pitch = std::clamp(Pitch, -89.f, 89.f);
-
-    UpdateCameraVectors();
+    
     return true;
 }
 

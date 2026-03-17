@@ -7,10 +7,10 @@ class FrameBuffer;
 class LightingPass : public RenderPass
 {
 public:
-	LightingPass(uint32 width, uint32 height);
+	LightingPass();
 	virtual ~LightingPass() = default;
 
-	void Setup(RenderContext& ctx, FBAttachmentInfo & info) override;
+	void Setup(FBAttachmentInfo & info) override;
 
 	void Execute(Ref<Scene> scene) override;
 

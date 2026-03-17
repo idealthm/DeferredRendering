@@ -12,8 +12,7 @@
 #include "Shader/Shader.h"
 #include "Shader/ShaderLibrary.h"
 
-ShadowPass::ShadowPass(uint32 width, uint32 height)
-	: RenderPass(width, height)
+ShadowPass::ShadowPass()
 {
 	m_Shader = ShaderLibrary::Get().GetShader("Shaders/ShadowPass", nullptr);
 }
@@ -22,10 +21,10 @@ ShadowPass::~ShadowPass()
 {
 }
 
-void ShadowPass::Setup(RenderContext& ctx, FBAttachmentInfo& info)
+void ShadowPass::Setup(FBAttachmentInfo& info)
 {
-	info.Width = ctx.ShadowWidth; 
-	info.Height = ctx.ShadowHeight;
+	info.Width = g_ctx.ShadowWidth; 
+	info.Height = g_ctx.ShadowHeight;
 	info.NumSamples = 1;
 
 	info.DSS.depthTest =true;
@@ -33,14 +32,14 @@ void ShadowPass::Setup(RenderContext& ctx, FBAttachmentInfo& info)
 	info.DSS.compareFunc = ECompareFunc::Less;
 
 	info.Depth = { 
-		&ctx.ShadowMap_Depth, 
-		CreateShadowMap(ctx.ShadowWidth), 
+		&g_ctx.ShadowMap_Depth, 
+		CreateShadowMap(g_ctx.ShadowWidth), 
 		FBTextureLoadAction::Clear, 
 		FBTextureStoreAction::Store 
 	};
 
 	// info.Attachments = {
-	// 	{ &ctx.Test, CreateGBuffer(ctx.ShadowWidth, ctx.ShadowHeight, ETextureFormat::RGBA16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+	// 	{ &g_ctx.Test, CreateGBuffer(ctx.ShadowWidth, ctx.ShadowHeight, ETextureFormat::RGBA16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
 	// }; 
 }
 
@@ -48,8 +47,7 @@ void ShadowPass::Execute(Ref<Scene> scene)
 {
 	m_Shader->Bind();
 
-	RenderContext& ctx = scene->GetRenderContext();
-	LightData& data = ctx.LightDataUB->Data;
+	LightData& data = g_ctx.LightDataUB->Data;
 
 	for (const auto& Actor : scene->GetActors())
 	{
@@ -62,7 +60,7 @@ void ShadowPass::Execute(Ref<Scene> scene)
 			}  
 		}
 	}
-	ctx.LightDataUB->Update();
+	g_ctx.LightDataUB->Update();
 
 	for (const auto& Actor : scene->GetActors())
 	{

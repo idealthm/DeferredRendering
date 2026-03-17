@@ -9,16 +9,13 @@
 #include "Model/StaticMesh.h"
 #include "Shader/Shader.h"
 
-GBufferPass::GBufferPass(uint32 width, uint32 height)
-	: RenderPass(width, height)
+GBufferPass::GBufferPass()
 {
 	// CreateScope<Shader>("Shaders/Basic", 10);
 }
 
-void GBufferPass::Setup(RenderContext& ctx, FBAttachmentInfo& info)
+void GBufferPass::Setup(FBAttachmentInfo& info)
 {
-	info.Width = m_Width;
-	info.Height = m_Height;
 	info.NumSamples = 1;
 
 	info.DSS.depthTest = true;
@@ -27,21 +24,21 @@ void GBufferPass::Setup(RenderContext& ctx, FBAttachmentInfo& info)
 
 	// 深度：Clear 以开始新的一帧，Store 供后续 Skybox 或 Transparency 使用
 	info.Depth = {
-		&ctx.GBuffer_Depth, 
-		CreateDepth(m_Width, m_Height), 
+		&g_ctx.GBuffer_Depth, 
+		CreateDepth(info.Width, info.Height), 
 		FBTextureLoadAction::Clear, 
 		FBTextureStoreAction::Store 
 	};
 
 	info.Attachments = {
 		// Slot 0: World Position (可选，如果内存紧张可通过深度重建)
-		{ &ctx.GBuffer_Position, CreateGBuffer(m_Width, m_Height, ETextureFormat::RGBA16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		{ &g_ctx.GBuffer_Position, CreateGBuffer(info.Width, info.Height, ETextureFormat::RGBA16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
 		// Slot 1: Normal (RG16F 高精度)
-		{ &ctx.GBuffer_Normal,   CreateGBuffer(m_Width, m_Height, ETextureFormat::RG16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		{ &g_ctx.GBuffer_Normal,   CreateGBuffer(info.Width, info.Height, ETextureFormat::RG16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
 		// Slot 2: Albedo (sRGB 开启)
-		{ &ctx.GBuffer_Albedo,   CreateGBuffer(m_Width, m_Height, ETextureFormat::SRGB8, true),  FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		{ &g_ctx.GBuffer_Albedo,   CreateGBuffer(info.Width, info.Height, ETextureFormat::SRGB8, true),  FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
 		// Slot 3: Material (PBR 参数: Roughness, Metalness, AO)
-		{ &ctx.GBuffer_Material, CreateGBuffer(m_Width, m_Height, ETextureFormat::RGBA8, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		{ &g_ctx.GBuffer_Material, CreateGBuffer(info.Width, info.Height, ETextureFormat::RGBA8, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
 	};
 }
 

@@ -10,15 +10,13 @@
 #include "Model/Texture.h"
 #include "Shapes/MeshBuilder.h"
 
-SkyLightPass::SkyLightPass(int width, int height)
-	: RenderPass(width, height)
+SkyLightPass::SkyLightPass()
 {
 	// CreateRef<Shader>("Shaders/Passes/SkyLightPass", 1);
 }
 
-void SkyLightPass::Setup(RenderContext& ctx, FBAttachmentInfo& info)
+void SkyLightPass::Setup(FBAttachmentInfo& info)
 {
-	RenderPass::Setup(ctx, info);
 }
 
 void SkyLightPass::Execute(Ref<Scene> scene)

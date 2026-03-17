@@ -10,9 +10,9 @@ class FrameBuffer;
 class GBufferPass : public RenderPass
 {
 public:
-	GBufferPass(uint32 width, uint32 height);
+	GBufferPass();
 	virtual ~GBufferPass() = default;
 
-	void Setup(RenderContext& ctx, FBAttachmentInfo & info) override;
+	void Setup(FBAttachmentInfo & info) override;
 	virtual void Execute(Ref<Scene> scene);
 };

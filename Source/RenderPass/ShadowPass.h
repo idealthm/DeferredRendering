@@ -6,10 +6,10 @@ class FrameBuffer;
 class ShadowPass: public RenderPass
 {
 public:
-	ShadowPass(uint32 width, uint32 height);
-	~ShadowPass();
+	ShadowPass();
+	~ShadowPass() override;
 
-	void Setup(RenderContext& ctx, FBAttachmentInfo & info) override;
+	void Setup(FBAttachmentInfo & info) override;
 	void Execute(Ref<Scene> scene) override;
 
 private:
