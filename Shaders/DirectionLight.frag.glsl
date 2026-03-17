@@ -132,27 +132,35 @@ vec3 NormalDecode(vec2 e)
 
 float calculateShadowAttenuation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 {
-    // depth in light
+    // 背光面直接返回无阴影
+    float theta = dot(normal, lightDir);
+    if (theta <= 0.0) return 0.0;
+
+    // 透视除法并映射到 [0,1]
     vec3 ProjCoord = fragPosLightSpace.xyz / fragPosLightSpace.w;
     ProjCoord = ProjCoord * 0.5 + 0.5;
 
-    float currentDepth = ProjCoord.z;
+    // 检查是否在光源视锥体内
+    if (ProjCoord.z < 0.0 || ProjCoord.z > 1.0 ||
+        ProjCoord.x < 0.0 || ProjCoord.x > 1.0 ||
+        ProjCoord.y < 0.0 || ProjCoord.y > 1.0) {
+        return 0.0;
+    }
 
-    float theta = max(dot(normal, lightDir), 0.0);
+    float currentDepth = ProjCoord.z;
     float bias = max(0.01 * (1.0 - theta), 0.001);
 
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(gShadowMap, 0);
     for(int x = -3; x <= 3; ++x) {
         for(int y = -3; y <= 3; ++y) {
-            float closest = texture(gShadowMap, ProjCoord.xy + vec2(x,y) * texelSize).r; 
-            shadow += currentDepth - bias > closest ? 1.0 : 0.0;
+            vec2 sampleCoord = ProjCoord.xy + vec2(x, y) * texelSize;
+            // 可选：对 sampleCoord 进行 clamp，但一般纹理寻址模式已处理
+            float closest = texture(gShadowMap, sampleCoord).r;
+            shadow += (currentDepth - bias > closest) ? 1.0 : 0.0;
         }
     }
     shadow /= 49.0;
-
-    // if ( ProjCoord.z > 1.0)
-    //     shadow = 0.0;
 
     return shadow;
 }

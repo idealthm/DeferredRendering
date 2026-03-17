@@ -5,7 +5,7 @@
 
 glm::vec3 LightComponent::GetDirection() const
 {
-	return glm::normalize(m_Transform.GetRotationQuat() * glm::vec3(0.0f, 0.0f, 1.0f));
+	return glm::normalize(m_Transform.GetRotationQuat() * glm::vec3(0.0f, 0.0f, -1.0f));
 }
 
 glm::mat4 DirectionLightComponent::GetViewProjectMatrix(float range) const
@@ -27,7 +27,7 @@ glm::mat4 DirectionLightComponent::GetViewProjectMatrix(float range) const
 
 	glm::mat4 view = glm::lookAt(pos, pos + dir, worldUp);
     
-	return glm::ortho(-range, range, -range, range, 0.1f, 100.0f) * view;
+	return glm::ortho(-range, range, -range, range, 1.f, 1000.0f) * view;
 }
 
 glm::vec3 DirectionLightComponent::GetUPDirection() const

@@ -55,7 +55,7 @@ void ShadowPass::Execute(Ref<Scene> scene)
 		{
 			if (auto Light = std::dynamic_pointer_cast<DirectionLightComponent>(Comp))
 			{
-				data.uLightVP = Light->GetViewProjectMatrix(10);
+				data.uLightVP = Light->GetViewProjectMatrix(50);
 				break;
 			}  
 		}
