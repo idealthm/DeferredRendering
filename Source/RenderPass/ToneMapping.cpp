@@ -13,19 +13,21 @@ ToneMapping::ToneMapping()
 	m_Shader = ShaderLibrary::Get().GetShader("Shaders/Passes/ToneMapping", nullptr);
 }
 
-void ToneMapping::Setup(FBAttachmentInfo& info)
+void ToneMapping::Setup(FBAttachmentInfo& info, uint32 step)
 {
 	info.Depth = {};
  
 	info.DSS.depthTest = false;
 	info.DSS.depthWrite = false;
+
+	CreateResource(g_ctx.Final_SceneColor, CreateFinalColor(info.Width, info.Height));
  
 	info.Attachments = {
-		{&g_ctx.Final_SceneColor, CreateFinalColor(info.Width, info.Height), FBTextureLoadAction::Clear, FBTextureStoreAction::Store},
+		{g_ctx.Final_SceneColor->GetRendererID(), FBTextureLoadAction::Clear, FBTextureStoreAction::Store},
 	};
 }
 
-void ToneMapping::Execute(Ref<Scene> scene)
+void ToneMapping::Execute(Ref<Scene> scene, uint32 step)
 {
 	m_Shader->Bind();
 

@@ -21,6 +21,21 @@ uint32 GetGLCompareFunc(ECompareFunc func)
 	}
 }
 
+uint32 GetGLTexTarget(ETextureTarget target)
+{
+	switch (target)
+	{
+	case ETextureTarget::Texture2D: return GL_TEXTURE_2D;
+
+	case ETextureTarget::Positive_X: return GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+	case ETextureTarget::Negative_X: return GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
+	case ETextureTarget::Positive_Y: return GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
+	case ETextureTarget::Negative_Y: return GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
+	case ETextureTarget::Positive_Z: return GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
+	case ETextureTarget::Negative_Z: return GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
+	}
+}
+
 FrameBuffer::FrameBuffer()
 {
 	GLCall(glCreateFramebuffers(1, &m_RendererID));
@@ -52,11 +67,11 @@ void FrameBuffer::Attach(FBAttachmentInfo& info)
 
 	if (m_Info.Depth)
 	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_Info.Depth.GetTextureID(), 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GetGLTexTarget(m_Info.Depth.Target), m_Info.Depth.RendererID, 0);
 		if (m_Info.Depth.LoadAction == FBTextureLoadAction::Clear)
 		{
 			uint32 color = 0xFFFFFF00;
-			glClearTexImage(m_Info.Depth.GetTextureID(), 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, &color);
+			glClearTexImage(m_Info.Depth.RendererID, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, &color);
 		}
 	}
 	else
@@ -67,11 +82,11 @@ void FrameBuffer::Attach(FBAttachmentInfo& info)
 	for (int32 i = 0; i < m_Info.Attachments.size(); i++)
 	{
 		auto& attachment = m_Info.Attachments[i];
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, attachment.GetTextureID(), 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GetGLTexTarget(attachment.Target), attachment.RendererID, 0);
 
 		if (attachment.LoadAction == FBTextureLoadAction::Clear)
 		{
-			glClearTexImage(attachment.GetTextureID(), 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			glClearTexImage(attachment.RendererID, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 		}
 	}
 
@@ -124,10 +139,3 @@ int FrameBuffer::ReadPixel(uint32_t attachmentIndex, int x, int y)
 	glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
 	return pixelData;
 }
-
-uint32 FrameBuffer::GetColorAttachmentRendererID(uint32 index)
-{
-	ASSERT(index < m_Info.Attachments.size());
-	return m_Info.Attachments[index].GetTextureID();
-}
-

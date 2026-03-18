@@ -13,8 +13,6 @@ public:
 	~SkyLightActor() = default;
 
 	void OnSpawn() override;
-
-	void SetCubeMapTexture(Ref<TextureCube> cubeMapTexture) const;
 private:
 	Ref<SkyComponent> m_SkyComponent;
 	Ref<ERPPass>	  m_ERPPass;

@@ -25,7 +25,9 @@ public:
 
 	virtual ~RenderPass() = default;
 
-	virtual void Setup(FBAttachmentInfo & info);
+	virtual uint32 GetRenderTimes() {return 1;}
 
-	virtual void Execute(Ref<Scene> scene);
+	virtual void Setup(FBAttachmentInfo& info, uint32 step);
+
+	virtual void Execute(Ref<Scene> scene, uint32 step);
 };

@@ -61,46 +61,70 @@ struct FBTextureDesc
 };
 
 
-
 enum class FBAttachmentType
 {
 	Color,
 	Depth,
 };
 
+enum class ETextureTarget
+{
+	// Texture2D
+	Texture2D,
+
+	// CubeMap
+	Positive_X,
+	Negative_X,
+	Positive_Y,
+	Negative_Y,
+	Positive_Z,
+	Negative_Z,
+
+	//
+};
+
+uint32 GetGLTexTarget(ETextureTarget target);
+
 struct FBTextureAttachment
 {
-	Ref<Texture2D>*			Texture;
-	TextureDescription		Desc;
+	uint32					RendererID;
+	ETextureTarget			Target = ETextureTarget::Texture2D;
 	FBTextureLoadAction		LoadAction;
 	FBTextureStoreAction	StoreAction;
 
 	FBTextureAttachment()
 	{
-		Texture = nullptr;
+		RendererID = 0xFFFFFFFF;
+		Target = ETextureTarget::Texture2D;
 		LoadAction = FBTextureLoadAction::Load;
 		StoreAction = FBTextureStoreAction::Store;
 	}
 
-	FBTextureAttachment(Ref<Texture2D>* texture, const TextureDescription& desc, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction)
+	FBTextureAttachment(uint32 renderID, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction)
 	{
-		Texture = texture;
-		Desc = desc;
+		RendererID = renderID;
+		Target = ETextureTarget::Texture2D;
+		LoadAction = loadAction;
+		StoreAction = storeAction;
+	}
+
+	FBTextureAttachment(uint32 renderID, ETextureTarget target, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction)
+	{
+		RendererID = renderID;
+		Target = target;
 		LoadAction = loadAction;
 		StoreAction = storeAction;
 	}
 
 	FBTextureAttachment(const FBTextureAttachment& other)
 	{
-		Texture = other.Texture;
-		Desc = other.Desc;
+		RendererID = other.RendererID;
+		Target = other.Target;
 		LoadAction = other.LoadAction;
 		StoreAction = other.StoreAction;
 	}
 
-	operator bool () const {return Texture != nullptr;}
-	Ref<Texture2D> GetTexture() const {return *Texture;}
-	uint32 GetTextureID() const {return GetTexture() ? GetTexture()->GetRendererID() : 0;}
+	operator bool () const {return RendererID != 0xFFFFFFFF;}
 };
 
 struct FBAttachmentInfo
@@ -137,10 +161,6 @@ public:
 	virtual void Unbind();
 
 	virtual int ReadPixel(uint32 attachmentIndex, int x, int y);
-
-	virtual uint32 GetDepthRendererID() { return m_Info.Depth.Texture ? m_Info.Depth.GetTextureID() : 0; }
-
-	virtual uint32 GetColorAttachmentRendererID(uint32 index);
 
 private:
 	uint32 m_RendererID = 0;

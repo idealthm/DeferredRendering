@@ -14,7 +14,7 @@ LightingPass::LightingPass()
 	m_Shader = ShaderLibrary::Get().GetShader("Shaders/DirectionLight", nullptr);
 }
 
-void LightingPass::Setup(FBAttachmentInfo& info)
+void LightingPass::Setup(FBAttachmentInfo& info, uint32 step)
 {
 	// Lighting Pass 是全屏绘制（Full-screen Quad），通常不需要深度测试
 	info.Depth = {};
@@ -23,14 +23,16 @@ void LightingPass::Setup(FBAttachmentInfo& info)
 	info.DSS.depthTest = false;
 	info.DSS.compareFunc = ECompareFunc::Less;
 
+	CreateResource(g_ctx.LightMap_SceneColor, CreateHDRBuffer(info.Width, info.Height));
+
 	// 输入：此时 ctx.GBuffer_Normal 等纹理已由前面 Pass 生成
 	// 输出：如果前面 Skybox 已经画了，这里 LoadAction 应该是 Load，否则会覆盖天空
 	info.Attachments = {
-		{ &g_ctx.LightMap_SceneColor, CreateHDRBuffer(info.Width, info.Height), FBTextureLoadAction::Load, FBTextureStoreAction::Store }
+		{ g_ctx.LightMap_SceneColor->GetRendererID(), FBTextureLoadAction::Load, FBTextureStoreAction::Store }
 	};
 }
 
-void LightingPass::Execute(Ref<Scene> scene)
+void LightingPass::Execute(Ref<Scene> scene, uint32 step)
 {
 	int32 index = 0;
 	for (auto lightActor : scene->GetActors())

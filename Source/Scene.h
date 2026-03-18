@@ -12,7 +12,7 @@
 class Camera;
 class Actor;
 
-class Scene
+class Scene : public std::enable_shared_from_this<Scene>
 {
 public:
 	friend class Window;
@@ -25,7 +25,9 @@ public:
 		Ref<T> actor = std::make_shared<T>();
 		actor->ValidateRootComponent();
 		actor->SetTransform(Math::Transform(location, rotation, scale));
+		actor->m_WeakScene = weak_from_this();
 		Actors.insert(actor);
+		actor->OnSpawn();
 		return actor;
 	}
 

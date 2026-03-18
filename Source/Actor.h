@@ -7,6 +7,7 @@
 #include "common/Core.h"
 #include "Common/Math.h"
 
+class Scene;
 class StaticMesh;
 class StaticMeshComponent;
 class SceneComponent;
@@ -14,6 +15,7 @@ class ActorComponent;
 
 class Actor
 {
+	friend class Scene;
 public:
 	Actor();
 
@@ -68,6 +70,8 @@ public:
 	void SetCastShadow(bool value) {bCastShadow = value;}
 protected:
 	bool bCastShadow = true;
+
+	std::weak_ptr<Scene>				m_WeakScene;
 
 	std::weak_ptr<SceneComponent>		RootComponent;
 

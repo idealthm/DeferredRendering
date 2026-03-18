@@ -66,6 +66,7 @@ void Renderer::Init(uint32 width, uint32 height)
 #endif
 
     glEnable(GL_LINE_SMOOTH);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
@@ -76,6 +77,7 @@ void Renderer::Init(uint32 width, uint32 height)
     m_LightPass = CreateRef<LightingPass>();
     m_SkyLightPass = CreateRef<SkyLightPass>();
     m_ToneMappingPass = CreateRef<ToneMapping>();
+    // m_ERPPass = CreateRef<ERPPass>();
 }
 
 void Renderer::Shutdown()
@@ -122,40 +124,23 @@ void Renderer::Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize)
     StartPass(scene, m_ShadowPass, viewportSize);
     StartPass(scene, m_GBufferPass, viewportSize);
     StartPass(scene, m_LightPass, viewportSize);
+    StartPass(scene, m_SkyLightPass, viewportSize);
     StartPass(scene, m_ToneMappingPass, viewportSize);
+
+    // StartPass(scene, m_ERPPass, viewportSize);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::StartPass(Ref<Scene>& scene, Ref<RenderPass> renderPass, const glm::u32vec2& viewportSize)
+void Renderer::StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass, const glm::u32vec2& viewportSize)
 {
-    FBAttachmentInfo FBInfo;
-    FBInfo.Width = viewportSize.x;
-    FBInfo.Height = viewportSize.y;
-    renderPass->Setup(FBInfo);
-    BuildTextures(FBInfo);
-    g_ctx.FrameBuffer->Attach(FBInfo);
-    renderPass->Execute(scene);
-}
-
-void Renderer::BuildTextures(FBAttachmentInfo& info)
-{
-    auto TextureValidate = [](FBTextureAttachment& desc)
+    for (uint32 i = 0; i < renderPass->GetRenderTimes(); i++)
     {
-        if (!desc.Texture)
-            return;
-
-        if (!desc.GetTexture() || desc.GetTexture()->GetDesc() != desc.Desc)
-            *desc.Texture = CreateScope<Texture2D>(desc.Desc);
-        else
-            desc.GetTexture()->SetTextureParameter(desc.Desc);
-    };
-
-    TextureValidate(info.Depth);
-
-    for (auto& desc : info.Attachments)
-    {
-        TextureValidate(desc);
+        FBAttachmentInfo FBInfo;
+        FBInfo.Width = viewportSize.x;
+        FBInfo.Height = viewportSize.y;
+        renderPass->Setup(FBInfo, i);
+        g_ctx.FrameBuffer->Attach(FBInfo);
+        renderPass->Execute(scene, i);
     }
 }
-

@@ -15,6 +15,7 @@
 #include "Windows/Window.h"
 #include <Lights/Light.h>
 
+#include "SkyLightActor.h"
 #include "Camera/Camera.h"
 #include "Events/Input.h"
 #include "Events/KeyEvent.h"
@@ -22,6 +23,7 @@
 #include "Panel/OutlinePanel.h"
 #include "Panel/PropertyPanel.h"
 #include "Panel/ScenePanel.h"
+#include "RenderPass/ERPPass.h"
 
 class DirectionLightActor;
 
@@ -49,7 +51,7 @@ void EditorLayer::LoadScene(std::string path)
 	m_ScenePath = path;
 	m_ActiveScene = CreateRef<Scene>();
 
-	auto PlaneActor = m_ActiveScene->SpawnActor<StaticMeshActor>(glm::vec3(0.0f, -5.0f, 0.0f), glm::vec3(0, 0, 0), glm::vec3(50.f, 0.1f, 50.f));
+	auto PlaneActor = m_ActiveScene->SpawnActor<StaticMeshActor>(glm::vec3(0.0f, -5.0f, 0.0f), glm::vec3(0, 0, 0), glm::vec3(10.f, 0.1f, 10.f));
 	auto ModelA = m_ActiveScene->SpawnActor<StaticMeshActor>();
 
 	// auto Cube = m_Scene->SpawnActor<StaticMeshActor>(glm::vec3(1.0f, 5.0f, 0.0f), glm::vec3(-90.f, 0.0f, 0.0f), glm::vec3(2.0f, 2.0f, 2.0f));
@@ -60,14 +62,12 @@ void EditorLayer::LoadScene(std::string path)
 
 	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.json"));
 
-	m_ActiveScene->SpawnActor<DirectionLightActor>(glm::vec3(0.f, 5.f, 0.f), glm::vec3(0, 0, 0), glm::vec3(1.f, 1.f, 1.f));
+	m_ActiveScene->SpawnActor<DirectionLightActor>(glm::vec3(0.f, 5.f, 0.f), glm::vec3(-45.f, 0, 0), glm::vec3(1.f, 1.f, 1.f));
+	m_ActiveScene->SpawnActor<SkyLightActor>();
 }
 
 void EditorLayer::OnAttach()
 {
-
-
-	
 }
 
 void EditorLayer::OnDetach()
