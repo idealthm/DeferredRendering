@@ -12,10 +12,9 @@ public:
 	ERPPass(const std::string& hdrFilePath, uint32 size);
 	virtual ~ERPPass();
 
-	void Setup(FBAttachmentInfo& info) override;
-	void Execute(Ref<Scene> scene) override;
-
-	Ref<TextureCube> GetCubeMapTexture() const { return m_CubeMapTexture; }
+	uint32 GetRenderTimes() override { return 6;}
+	void Setup(FBAttachmentInfo& info, uint32 step) override;
+	void Execute(Ref<Scene> scene, uint32 step) override;
 
 private:
 	Ref<Shader>			m_Shader;

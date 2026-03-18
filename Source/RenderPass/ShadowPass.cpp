@@ -21,7 +21,7 @@ ShadowPass::~ShadowPass()
 {
 }
 
-void ShadowPass::Setup(FBAttachmentInfo& info)
+void ShadowPass::Setup(FBAttachmentInfo& info, uint32 step)
 {
 	info.Width = g_ctx.ShadowWidth; 
 	info.Height = g_ctx.ShadowHeight;
@@ -31,19 +31,21 @@ void ShadowPass::Setup(FBAttachmentInfo& info)
 	info.DSS.depthWrite = true;
 	info.DSS.compareFunc = ECompareFunc::Less;
 
+	CreateResource(g_ctx.ShadowMap_Depth, CreateShadowMap(g_ctx.ShadowWidth));
+
 	info.Depth = { 
-		&g_ctx.ShadowMap_Depth, 
-		CreateShadowMap(g_ctx.ShadowWidth), 
+		g_ctx.ShadowMap_Depth->GetRendererID(),
+		ETextureTarget::Texture2D,
 		FBTextureLoadAction::Clear, 
-		FBTextureStoreAction::Store 
+		FBTextureStoreAction::Store
 	};
 
 	// info.Attachments = {
 	// 	{ &g_ctx.Test, CreateGBuffer(ctx.ShadowWidth, ctx.ShadowHeight, ETextureFormat::RGBA16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
-	// }; 
+	// };
 }
 
-void ShadowPass::Execute(Ref<Scene> scene)
+void ShadowPass::Execute(Ref<Scene> scene, uint32 step)
 {
 	m_Shader->Bind();
 

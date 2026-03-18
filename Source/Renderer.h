@@ -87,16 +87,15 @@ public:
 
     void Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize);
 
-    void StartPass(Ref<Scene>& scene, Ref<RenderPass> renderPass, const glm::u32vec2& viewportSize);
-
-    static void BuildTextures(FBAttachmentInfo& info);
+    void StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass, const glm::u32vec2& viewportSize);
 
 public:
     uint32 m_RenderMode = 0;
 
-    Ref<GBufferPass> m_GBufferPass;
-    Ref<ShadowPass> m_ShadowPass;
-    Ref<LightingPass> m_LightPass;
-    Ref<SkyLightPass> m_SkyLightPass;
-    Ref<ToneMapping> m_ToneMappingPass;
+    Ref<GBufferPass>    m_GBufferPass;
+    Ref<ShadowPass>     m_ShadowPass;
+    Ref<LightingPass>   m_LightPass;
+    Ref<SkyLightPass>   m_SkyLightPass;
+    Ref<ToneMapping>    m_ToneMappingPass;
+    Ref<ERPPass>        m_ERPPass;
 };

@@ -24,6 +24,7 @@ enum class ETextureFormat {
 	RGBA8,
 	SRGB8,
 	SRGBA8,     // 颜色贴图必备
+	RGB16F,
 	RGBA16F,    // HDR/帧缓冲必备
 	R11G11B10F, // 紧凑型 HDR
 	// 深度格式
@@ -41,26 +42,6 @@ enum class ETextureFilter {
 static bool IsFloatFormat(ETextureFormat format);
 
 extern uint32 GetGLWrapMode(ETextureWrapMode mode);
-
-class Texture
-{
-public:
-	virtual ~Texture();
-
-	bool IsValid() const {return m_RendererID != 0xFFFFFFFF;}
-
-	virtual void Bind(uint32 slot = 0);
-	virtual void Unbind();
-
-	virtual uint32 GetSizeX() = 0;
-	virtual uint32 GetSizeY() = 0;
-	virtual uint32 GetSizeZ() = 0;
-
-	virtual uint32 GetRendererID() { return m_RendererID; };
-
-protected:
-	uint32 m_RendererID = 0xFFFFFFFF;
-};
 
 struct TextureDescription
 {
@@ -102,6 +83,31 @@ struct TextureDescription
 		return !(*this == other);
 	}
 };
+
+class Texture
+{
+public:
+	virtual ~Texture();
+
+	bool IsValid() const {return m_RendererID != 0xFFFFFFFF;}
+
+	virtual void Init(const TextureDescription& desc, const void* data);
+	virtual void SetTextureParameter(const TextureDescription& desc) const;
+
+	virtual void Bind(uint32 slot = 0);
+	virtual void Unbind();
+
+	virtual uint32 GetSizeX() { return m_Desc.width;}
+	virtual uint32 GetSizeY() { return m_Desc.height;}
+	virtual uint32 GetSizeZ() { return m_Desc.slice;}
+
+	virtual uint32 GetRendererID() { return m_RendererID; };
+
+protected:
+	TextureDescription	m_Desc;
+	uint32 m_RendererID = 0xFFFFFFFF;
+};
+
 
 namespace 
 {
@@ -226,12 +232,8 @@ public:
 
 	Texture2D(const TextureDescription& desc, const void* data=nullptr);
 
-	void Init(const TextureDescription& desc, const void* data);
-	void SetTextureParameter(const TextureDescription& desc) const;
-
-	virtual uint32 GetSizeX() override;
-	virtual uint32 GetSizeY() override;
-	virtual uint32 GetSizeZ() override;
+	void Init(const TextureDescription& desc, const void* data) override;
+	void SetTextureParameter(const TextureDescription& desc) const override;
 
 	const TextureDescription& GetDesc();
 
@@ -247,12 +249,6 @@ class Texture3D : public Texture
 public:
 	Texture3D();
 	Texture3D(const TextureDescription& desc, const void* data);
-
-	void Init(const TextureDescription& desc, const void* data);
-
-	virtual uint32 GetSizeX() override;
-	virtual uint32 GetSizeY() override;
-	virtual uint32 GetSizeZ() override;
 
 	const TextureDescription& GetDesc() const;
 
@@ -274,9 +270,8 @@ public:
 	};
 	TextureCube(const TextureDescription& desc);
 
-	virtual uint32 GetSizeX() override;
-	virtual uint32 GetSizeY() override;
-	virtual uint32 GetSizeZ() override;
+	void Init(const TextureDescription& desc, const void* data) override;
+	void SetTextureParameter(const TextureDescription& desc) const override;
 
 	virtual void SetData(const void* data, uint32 size);
 	virtual void SetFaceData(uint32 srcName, uint32 srcTarget, int32 srcLevel, int32 srcX, int32 srcY, int32 srcZ, CubeFace face);
@@ -294,5 +289,16 @@ struct DefaultTextures
 	Ref<Texture2D> Normal; // 用于 Normal (128, 128, 255)
 	Ref<Texture2D> Gray;   // 用于 Roughness (0.5)
 };
+
+template <typename T>
+void CreateResource(Ref<T>& tex, const TextureDescription& desc)
+{
+	if (!tex || tex->GetDesc() != desc)
+		tex = CreateRef<T>(desc);
+	else
+	{
+		tex->SetTextureParameter(desc);
+	}
+}
 
 extern DefaultTextures GDefaultTextures;

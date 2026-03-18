@@ -17,8 +17,20 @@
 
 ERPPass::ERPPass(const std::string& hdrFilePath, uint32 size)
 {
-	m_Shader = CreateRef<Shader>("Shaders/Passes/ERPToCubeMap", 0, nullptr);
-	
+	m_Shader = CreateRef<Shader>("Shaders/Passes/ERPToCubeMap", 10, nullptr);
+
+	m_HDRMap = CreateRef<Texture2D>(hdrFilePath, false);
+}
+
+ERPPass::~ERPPass()
+{
+}
+
+void ERPPass::Setup(FBAttachmentInfo& info, uint32 step)
+{
+	info.Width = 512;
+	info.Height = 512;
+
 	TextureDescription desc;
 	desc.width = 512;
 	desc.height = 512;
@@ -29,20 +41,18 @@ ERPPass::ERPPass(const std::string& hdrFilePath, uint32 size)
 	desc.FilterS = ETextureWrapMode::EClampToEdge;
 	desc.FilterT = ETextureWrapMode::EClampToEdge;
 	desc.FilterR = ETextureWrapMode::EClampToEdge;
-	m_CubeMapTexture = CreateRef<TextureCube>(desc);
-	m_HDRMap = CreateRef<Texture2D>(hdrFilePath, true);
+
+	CreateResource(g_ctx.ERP_Cubemap, desc);
+	ETextureTarget target = (ETextureTarget)((uint32)ETextureTarget::Positive_X + step);
+
+	info.Attachments = {
+		{g_ctx.ERP_Cubemap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store}
+	};
 }
 
-ERPPass::~ERPPass()
+void ERPPass::Execute(Ref<Scene> scene, uint32 step)
 {
-}
-
-void ERPPass::Setup(FBAttachmentInfo& info)
-{
-}
-
-void ERPPass::Execute(Ref<Scene> scene)
-{
+	m_Shader->Bind();
 	uint32 FreeSlotIndex = m_Shader->GetFreeSlotIndex();
 	m_HDRMap->Bind(FreeSlotIndex);
 	m_Shader->SetUniform1i("uHDRMap", FreeSlotIndex++);
@@ -60,14 +70,8 @@ void ERPPass::Execute(Ref<Scene> scene)
 		glm::lookAt(glm::vec3(0,0,0), glm::vec3( 0, 0,-1), glm::vec3(0,-1, 0))  // -Z
 	};
 
-	m_Shader->SetUniformMatrix4f("uPerspective", captureProjection);
-	Scope<StaticMeshActor> Quad = CreateScope<StaticMeshActor>();
-	Quad->SetStaticMesh(MeshBuilder::BuildCube(Material::CreateDefault()));
+	m_Shader->SetUniformMatrix4f("uProjection", captureProjection);
+	m_Shader->SetUniformMatrix4f("uView", captureViews[step]);
 
-	for (int i = 0; i < 6; i++)
-	{
-		m_Shader->SetUniformMatrix4f("uView", captureViews[i]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_CubeMapTexture->GetRendererID(), 0);
-		Quad->GetComponent<StaticMeshComponent>()->GetMesh()->GetMeshSections()[0]->Draw();
-	}
+	MeshBuilder::BuildCube(Material::CreateDefault())->GetMeshSections()[0]->Draw();
 }
