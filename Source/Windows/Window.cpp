@@ -58,7 +58,6 @@ void Window::Init(const WindowProperties& props)
 	m_Context->Init();
 
 	glfwSetWindowUserPointer(m_Window, &m_Data);
-	// glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	SetVSync(true);
 
 	glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)

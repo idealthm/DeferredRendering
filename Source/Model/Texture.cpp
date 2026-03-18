@@ -98,6 +98,11 @@ void Texture::SetTextureParameter(const TextureDescription& desc) const
 {
 }
 
+void Texture::GenerateMipmap()
+{
+	glGenerateMipmap(m_RendererID);
+}
+
 void Texture::Bind(uint32 slot)
 {
 	GLCall(glBindTextureUnit(slot, m_RendererID));

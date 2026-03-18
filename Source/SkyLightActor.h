@@ -2,6 +2,7 @@
 #include "Actor.h"
 #include "Common/Core.h"
 
+class CubeMapConvolution;
 class ERPPass;
 class TextureCube;
 class SkyComponent;
@@ -16,4 +17,5 @@ public:
 private:
 	Ref<SkyComponent> m_SkyComponent;
 	Ref<ERPPass>	  m_ERPPass;
+	Ref<CubeMapConvolution>	  m_CubeInvolution;
 };

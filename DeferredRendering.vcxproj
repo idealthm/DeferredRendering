@@ -163,6 +163,7 @@ endlocal</Command>
     <ClInclude Include="Source\Panel\PropertyPanel.h" />
     <ClInclude Include="Source\Panel\ScenePanel.h" />
     <ClInclude Include="Source\Renderer.h" />
+    <ClInclude Include="Source\RenderPass\CubeMapConvolution.h" />
     <ClInclude Include="Source\RenderPass\ERPPass.h" />
     <ClInclude Include="Source\RenderPass\GBufferPass.h" />
     <ClInclude Include="Source\RenderPass\LightingPass.h" />
@@ -390,6 +391,7 @@ endlocal</Command>
     <ClCompile Include="Source\Panel\PropertyPanel.cpp" />
     <ClCompile Include="Source\Panel\ScenePanel.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
+    <ClCompile Include="Source\RenderPass\CubeMapConvolution.cpp" />
     <ClCompile Include="Source\RenderPass\ERPPass.cpp" />
     <ClCompile Include="Source\RenderPass\GBufferPass.cpp" />
     <ClCompile Include="Source\RenderPass\LightingPass.cpp" />
@@ -658,6 +660,8 @@ endlocal</Command>
     <Content Include="Shaders\GbufferDebug.glsl" />
     <Content Include="Shaders\GBufferHelper.glsl" />
     <Content Include="Shaders\GeometryPass.glsl" />
+    <Content Include="Shaders\Passes\CubeMapConvolution.frag.glsl" />
+    <Content Include="Shaders\Passes\CubeMapConvolution.vert.glsl" />
     <Content Include="Shaders\Passes\DeferredLighting.frag.glsl" />
     <Content Include="Shaders\Passes\DeferredLighting.vert.glsl" />
     <Content Include="Shaders\Passes\ToneMapping.vert.glsl" />

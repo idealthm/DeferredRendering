@@ -37,8 +37,6 @@ private:
 	Ref<PropertyPanel>		m_PropertyPanel;
 	Ref<OutlinePanel>		m_OutlinePanel;
 
-	glm::u32vec2			m_ViewportSize = {1600, 900};
-
 	EEditorMode				m_EditorMode = EEditorMode::Editor;
 	uint32					m_MainDockingSpace;
 	std::string				m_ScenePath;
