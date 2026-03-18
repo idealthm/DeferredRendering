@@ -11,8 +11,6 @@ in vec2 vvTexCoords;
 vec3 CalculateLighting_Phong()
 {
     vec3 dirlight = CalculateDirectionLighting(lightDir);
-
-    
 }
 
 vec3 CalculateLighting_PBR()

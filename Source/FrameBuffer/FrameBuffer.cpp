@@ -67,7 +67,7 @@ void FrameBuffer::Attach(FBAttachmentInfo& info)
 
 	if (m_Info.Depth)
 	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GetGLTexTarget(m_Info.Depth.Target), m_Info.Depth.RendererID, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GetGLTexTarget(m_Info.Depth.Target), m_Info.Depth.RendererID, m_Info.Depth.MipLevel);
 		if (m_Info.Depth.LoadAction == FBTextureLoadAction::Clear)
 		{
 			uint32 color = 0xFFFFFF00;
@@ -82,7 +82,7 @@ void FrameBuffer::Attach(FBAttachmentInfo& info)
 	for (int32 i = 0; i < m_Info.Attachments.size(); i++)
 	{
 		auto& attachment = m_Info.Attachments[i];
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GetGLTexTarget(attachment.Target), attachment.RendererID, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GetGLTexTarget(attachment.Target), attachment.RendererID, attachment.MipLevel);
 
 		if (attachment.LoadAction == FBTextureLoadAction::Clear)
 		{

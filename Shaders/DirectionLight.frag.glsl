@@ -13,6 +13,7 @@ uniform sampler2D gNormal;
 uniform sampler2D gAlbedo;
 uniform sampler2D gMaterial;
 uniform sampler2D gShadowMap;
+uniform samplerCube uIrradianceMap;
 
 uniform int uDebugMode;
 
@@ -165,7 +166,7 @@ float calculateShadowAttenuation(vec4 fragPosLightSpace, vec3 normal, vec3 light
     return shadow;
 }
 
-vec3 CalculateLighting_PBR(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness, float metallic, vec3 irradiance)
+vec3 CalculateLighting_PBR(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness, float metallic, vec3 lightColor)
 {
     // basic F (IOR)
     vec3 F0 = mix(vec3(0.04), albedo, metallic);
@@ -186,9 +187,21 @@ vec3 CalculateLighting_PBR(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness,
     vec3 specular = numerator / denominator;
 
     float NDotL = max(dot(N, L), 0.0);
-    vec3 Lo = (kd * albedo / PI + specular) * NDotL;
-    
-    return Lo * irradiance;
+    vec3 Lo = (kd * albedo / PI + specular) * NDotL * lightColor;
+    return Lo;
+}
+
+vec3 CalculateLighting_PBR_IBL(vec3 N, vec3 V, vec3 albedo, vec3 irradiance, float roughness, float metallic, float AO)
+{
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = F_Schlick(max(dot(N, V), 0.0), F0);
+    vec3 kS = F;
+    vec3 kD = (1.0 - kS) * (1.0 - metallic);
+
+    vec3 iblDiffuse = irradiance * albedo;
+    vec3 iblSpecular = vec3(0.0); // prefilteredColor * (F * brdf.x + brdf.y);
+    vec3 ambient = (kD * iblDiffuse + iblSpecular) * AO;
+    return ambient;
 }
 
 
@@ -198,6 +211,7 @@ vec3 CalculateLighting()
     vec3 N = NormalDecode(texture(gNormal, vTexCoords).rg);
     vec3 albedo = texture(gAlbedo, vTexCoords).rgb;
     vec4 material = texture(gMaterial, vTexCoords);
+    vec3 irradiance = texture(uIrradianceMap, N).rgb;
 
     float roughness = material.r;
     float metallic = material.g;
@@ -216,7 +230,10 @@ vec3 CalculateLighting()
             color += shadowAttenuation * CalculateLighting_PBR(L, N, V, albedo, roughness, metallic, lights[i].color.xyz * lights[i].color.w);
         }
     }
-    return color;
+
+    vec3 ambient = CalculateLighting_PBR_IBL(N, V, albedo, irradiance, roughness, metallic, AO);
+
+    return color + ambient;
 }
 
 vec4 CammeraToFragPos()

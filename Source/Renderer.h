@@ -38,7 +38,7 @@ struct RenderContext
     uint32 renderMode;
     uint32 usedTextureSlot;
 
-    glm::u32vec2 viewportSize;
+    glm::u32vec2 viewportSize = {1600, 900};
     float ShadowWidth, ShadowHeight;
 
     Ref<Texture2D> GBuffer_Position;
@@ -55,6 +55,7 @@ struct RenderContext
     Ref<Texture2D> LightMap_SceneDepth;
 
     Ref<TextureCube> ERP_Cubemap;
+    Ref<TextureCube> IBL_IrradianceMap;
 
     Ref<Texture2D> Sky_SceneColor;
 

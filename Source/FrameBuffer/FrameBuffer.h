@@ -91,6 +91,7 @@ struct FBTextureAttachment
 	ETextureTarget			Target = ETextureTarget::Texture2D;
 	FBTextureLoadAction		LoadAction;
 	FBTextureStoreAction	StoreAction;
+	uint32					MipLevel;
 
 	FBTextureAttachment()
 	{
@@ -98,22 +99,25 @@ struct FBTextureAttachment
 		Target = ETextureTarget::Texture2D;
 		LoadAction = FBTextureLoadAction::Load;
 		StoreAction = FBTextureStoreAction::Store;
+		MipLevel = 0;
 	}
 
-	FBTextureAttachment(uint32 renderID, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction)
+	FBTextureAttachment(uint32 renderID, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction, uint32 mipLevel = 0)
 	{
 		RendererID = renderID;
 		Target = ETextureTarget::Texture2D;
 		LoadAction = loadAction;
 		StoreAction = storeAction;
+		MipLevel = mipLevel;
 	}
 
-	FBTextureAttachment(uint32 renderID, ETextureTarget target, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction)
+	FBTextureAttachment(uint32 renderID, ETextureTarget target, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction, uint32 mipLevel = 0)
 	{
 		RendererID = renderID;
 		Target = target;
 		LoadAction = loadAction;
 		StoreAction = storeAction;
+		MipLevel = mipLevel;
 	}
 
 	FBTextureAttachment(const FBTextureAttachment& other)
@@ -122,6 +126,7 @@ struct FBTextureAttachment
 		Target = other.Target;
 		LoadAction = other.LoadAction;
 		StoreAction = other.StoreAction;
+		MipLevel = other.MipLevel;
 	}
 
 	operator bool () const {return RendererID != 0xFFFFFFFF;}

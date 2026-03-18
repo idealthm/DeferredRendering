@@ -94,6 +94,8 @@ public:
 	virtual void Init(const TextureDescription& desc, const void* data);
 	virtual void SetTextureParameter(const TextureDescription& desc) const;
 
+	virtual void GenerateMipmap();
+
 	virtual void Bind(uint32 slot = 0);
 	virtual void Unbind();
 

@@ -71,6 +71,9 @@ void LightingPass::Execute(Ref<Scene> scene, uint32 step)
 	g_ctx.ShadowMap_Depth->Bind(freeSlot);
 	m_Shader->SetUniform1i("gShadowMap", freeSlot++);
 
+	g_ctx.IBL_IrradianceMap->Bind(freeSlot);
+	m_Shader->SetUniform1i("uIrradianceMap", freeSlot++);
+
 	std::vector<uint32> indices = {0, 1, 2, 2, 1, 3};
 	std::vector<float> vertices = {-1.0f,  1.0f, -1.0f, -1.0f, 1.0f,  1.0f, 1.0f, -1.0f,};
 	Ref<MeshSection> section = MeshBuilder::BuildSection(vertices, indices, BufferLayout{BufferElement{ShaderDataType::Float2, "aPosition"}});

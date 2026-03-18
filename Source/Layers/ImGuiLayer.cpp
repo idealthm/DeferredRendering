@@ -1,6 +1,7 @@
 ﻿#include "ImGuiLayer.h"
 
 #include "Application.h"
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_internal.h"
@@ -81,7 +82,9 @@ void ImGuiLayer::End()
 
 	// Rendering
 	ImGui::Render();
+	//glEnable(GL_FRAMEBUFFER_SRGB);
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	//glEnable(GL_FRAMEBUFFER_SRGB);
 
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{

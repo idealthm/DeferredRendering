@@ -86,7 +86,7 @@ void EditorLayer::OnUpdate(Timestep ts)
 	m_CameraController->OnUpdate(ts);
 
 	auto& FrameData = g_ctx.FrameDataUB->Data;
-	FrameData.m_Projection = m_EditorCamera->GetProjectionMatrix(1.0 * m_ViewportSize.x / m_ViewportSize.y);
+	FrameData.m_Projection = m_EditorCamera->GetProjectionMatrix(1.0 * g_ctx.viewportSize.x / g_ctx.viewportSize.y);
 	FrameData.m_ViewProjection = m_EditorCamera->GetViewMatrix();
 	FrameData.m_CameraPosition = m_EditorCamera->GetPosition();
 	FrameData.m_InvProjection = glm::inverse(FrameData.m_Projection);
@@ -94,7 +94,7 @@ void EditorLayer::OnUpdate(Timestep ts)
 
 	g_ctx.FrameDataUB->Update();
 
-	Renderer::Get().Render(m_ActiveScene, m_ViewportSize);
+	Renderer::Get().Render(m_ActiveScene, g_ctx.viewportSize);
 }
 
 void EditorLayer::OnEvent(Event& event)
@@ -163,4 +163,14 @@ void EditorLayer::OnImGuiRender()
 	m_ScenePanel->OnImGuiRender(m_ActiveScene);
 	m_PropertyPanel->OnImGuiRender(m_ActiveScene);
 	m_OutlinePanel->OnImGuiRender(m_ActiveScene);
+
+	ImGui::Begin("Settings");
+	static bool VSync = true;
+	if (ImGui::Checkbox("VSync", &VSync))
+	{
+		Application::Get().GetWindow().SetVSync(VSync);
+	}
+	float deltaTime = ImGui::GetIO().DeltaTime * 1000.0f;
+	ImGui::Text("Frame Time: %.3f ms (%.1f FPS)", deltaTime, 1.0f / ImGui::GetIO().DeltaTime);
+	ImGui::End();
 }
