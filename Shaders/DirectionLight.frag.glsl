@@ -13,7 +13,9 @@ uniform sampler2D gNormal;
 uniform sampler2D gAlbedo;
 uniform sampler2D gMaterial;
 uniform sampler2D gShadowMap;
+uniform sampler2D uBRDF_LUT;
 uniform samplerCube uIrradianceMap;
+uniform samplerCube uIBL_PreFilterMap;
 
 uniform int uDebugMode;
 
@@ -32,104 +34,6 @@ vec3 NormalDecode(vec2 e)
     }
     return normalize(vec3(uv, z));
 }
-
-// 计算光照贡献（返回环境光、漫反射、高光）
-// mat3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
-// {
-//     vec3 lightDir = normalize(-light.direction);
-//     
-//     // 漫反射
-//     float diff = max(dot(normal, lightDir), 0.0);
-//     vec3 diffuse = light.diffuse * diff;
-//     
-//     // 高光 - 修正反射方向
-//     float shininess = 64.0;
-//     vec3 reflectDir = reflect(-lightDir, normal);
-//     float spec = pow(max(dot(reflectDir, viewDir), 0.0), shininess);
-//     vec3 specular = light.specular * spec;
-//     
-//     // 环境光
-//     return mat3(light.ambient, diffuse, specular);
-// }
-// 
-// mat3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
-// {
-//     vec3 lightDir = normalize(light.position - fragPos);
-//     
-//     // 漫反射
-//     float diff = max(dot(normal, lightDir), 0.0);
-//     vec3 diffuse = light.diffuse * diff;
-//     
-//     // 高光
-//     float shininess = 5.0;
-//     vec3 reflectDir = reflect(-lightDir, normal);
-//     float spec = pow(max(dot(reflectDir, viewDir), 0.0), shininess);
-//     vec3 specular = light.specular * spec;
-//     
-//     // 衰减
-//     float distance = length(light.position - fragPos);
-//     float attenuation = 1.0 / (light.constant + light.linear * distance + 
-//                              light.quadratic * (distance * distance));
-//     
-//     return mat3(light.ambient, diffuse * attenuation, specular * attenuation);
-// }
-// 
-// mat3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
-// {
-//     vec3 lightDir = normalize(-light.direction);
-// 
-//     float diff = max(dot(normal, lightDir), 0.0);
-//     vec3 diffuse = light.diffuse * diff;
-//     
-//     float shininess = 64.0;
-//     vec3 reflectDir = reflect(-lightDir, normal);
-//     float spec = pow(max(dot(reflectDir, viewDir), 0.0), shininess);
-//     vec3 specular = light.specular * spec;
-// 
-//     vec3 pixelDir = normalize(light.position - fragPos);
-//     
-//     float theta = dot(pixelDir, -lightDir);
-//     float epsilon = light.cutoff - light.outerCutoff;
-//     float intensity = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-// 
-//     diffuse *= intensity;
-//     specular *= intensity;
-// 
-//     float distance = length(light.position - fragPos);
-//     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-// 
-//     vec3 ambient = light.ambient * attenuation;
-//     diffuse *= attenuation;
-//     specular *= attenuation;
-// 
-//     return mat3(ambient, diffuse, specular);
-// }
-
-// float usePCF(vec2 uv, float zReceiver, float filterRadius)
-// {
-//     float shadow = 0.0;
-//     
-//     
-// }
-// 
-// 
-// float PCSS(vec3 shadowCoords, float lightSize)
-// {
-//     vec2 uv = shadowCoords.xy;
-//     float zReceiver = shadowCoords.z;
-// 
-//     // init search radius 
-//     float searchRadius = lightSize * zReceiver;
-// 
-//     float avgBlockerDepth = findBlocker(uv, zReceiver, searchRadius);
-// 
-//     if (avgBlockerDepth == -1.0) return 1.0;
-// 
-//     float penumbraRadius = (zReceiver - avgBlockerDepth) * lightSize / avgBlockerDepth;
-// 
-//     return usePCF(uv, zReceiver, penumbraRadius);
-// }
-// 
 
 float calculateShadowAttenuation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 {
@@ -175,7 +79,7 @@ vec3 CalculateLighting_PBR(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness,
 
     float D = D_GGX(N, H, roughness);
     float G = G_Smith(N, V, L, roughness);
-    vec3 F = F_Schlick(max(dot(H, V), 0.0), F0);
+    vec3 F = F_Schlick_Roughness(max(dot(H, V), 0.0), F0, roughness);
 
     vec3 ks = F;
     vec3 kd = vec3(1.0) - ks;
@@ -193,13 +97,18 @@ vec3 CalculateLighting_PBR(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness,
 
 vec3 CalculateLighting_PBR_IBL(vec3 N, vec3 V, vec3 albedo, vec3 irradiance, float roughness, float metallic, float AO)
 {
+    vec3 R = reflect(-V, N);
+    // 假设 MAX_REFLECTION_LOD 是你预过滤贴图的最大 Mip 层级
+    vec3 prefilteredColor = textureLod(uIBL_PreFilterMap, R, roughness * 5).rgb;
+    vec2 brdf = texture(uBRDF_LUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+
     vec3 F0 = mix(vec3(0.04), albedo, metallic);
-    vec3 F = F_Schlick(max(dot(N, V), 0.0), F0);
+    vec3 F = F_Schlick_Roughness(max(dot(N, V), 0.0), F0, roughness);
     vec3 kS = F;
     vec3 kD = (1.0 - kS) * (1.0 - metallic);
 
     vec3 iblDiffuse = irradiance * albedo;
-    vec3 iblSpecular = vec3(0.0); // prefilteredColor * (F * brdf.x + brdf.y);
+    vec3 iblSpecular = prefilteredColor * (F * brdf.x + brdf.y);
     vec3 ambient = (kD * iblDiffuse + iblSpecular) * AO;
     return ambient;
 }

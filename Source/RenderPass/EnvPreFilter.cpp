@@ -1,4 +1,4 @@
-﻿#include "CubeMapConvolution.h"
+﻿#include "EnvPreFilter.h"
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -7,36 +7,48 @@
 #include "ShaderPreprocessor/ShaderLoader.h"
 #include "Shapes/MeshBuilder.h"
 
-CubeMapConvolution::CubeMapConvolution()
+#define MAX_MIPMAP_LEVEL 5
+#define ENV_CUBE_SIZE 256
+
+EnvPreFilter::EnvPreFilter()
 {
-	m_Shader = ShaderLibrary::Get().GetShader("Shaders/Passes/CubeMapConvolution", nullptr);
+	m_Desc.width = ENV_CUBE_SIZE;
+	m_Desc.height = ENV_CUBE_SIZE;
+	m_Desc.bGenerateMipmap = true;
+	m_Desc.MipLevel = MAX_MIPMAP_LEVEL;
+	m_Desc.format = ETextureFormat::RGBA16F;
+	m_Desc.SRGB = true;
+	m_Desc.FilterS = ETextureWrapMode::EClampToEdge;
+	m_Desc.FilterT = ETextureWrapMode::EClampToEdge;
+	m_Desc.FilterR = ETextureWrapMode::EClampToEdge;
+	m_Desc.minFilter = ETextureFilter::LinearMipmapLinear;
+	m_Desc.magFilter = ETextureFilter::Linear;
+
+	m_Shader = ShaderLibrary::Get().GetShader("Shaders/Passes/EnvPreFilter", nullptr);
 }
 
-void CubeMapConvolution::Setup(FBAttachmentInfo& info, uint32 step)
+uint32 EnvPreFilter::GetRenderTimes()
 {
-	info.Width = 32;
-	info.Height = 32;
+	return 6 * MAX_MIPMAP_LEVEL;
+}
 
-	TextureDescription desc;
-	desc.width = 32;
-	desc.height = 32;
-	desc.bGenerateMipmap = true;
-	desc.MipLevel = 5;
-	desc.format = ETextureFormat::RGBA16F;
-	desc.SRGB = true;
-	desc.FilterS = ETextureWrapMode::EClampToEdge;
-	desc.FilterT = ETextureWrapMode::EClampToEdge;
-	desc.FilterR = ETextureWrapMode::EClampToEdge;
+void EnvPreFilter::Setup(FBAttachmentInfo& info, uint32 step)
+{
+	uint32 mip = step % MAX_MIPMAP_LEVEL;
+	step /= MAX_MIPMAP_LEVEL;
 
-	CreateResource(g_ctx.IBL_IrradianceMap, desc);
+	info.Width = ENV_CUBE_SIZE >> mip;
+	info.Height = ENV_CUBE_SIZE >> mip;
+
+	CreateResource<TextureCube, true>(g_ctx.IBL_PreFilterMap, m_Desc);
 	ETextureTarget target = (ETextureTarget)((uint32)ETextureTarget::Positive_X + step);
 
 	info.Attachments = {
-		{g_ctx.IBL_IrradianceMap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store}
+		{g_ctx.IBL_PreFilterMap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store, mip}
 	};
 }
 
-void CubeMapConvolution::Execute(Ref<Scene> scene, uint32 step)
+void EnvPreFilter::Execute(Ref<Scene> scene, uint32 step)
 {
 	m_Shader->Bind();
 	uint32 FreeSlotIndex = m_Shader->GetFreeSlotIndex();
@@ -56,8 +68,9 @@ void CubeMapConvolution::Execute(Ref<Scene> scene, uint32 step)
 		glm::lookAt(glm::vec3(0,0,0), glm::vec3( 0, 0,-1), glm::vec3(0,-1, 0))  // -Z
 	};
 
+	m_Shader->SetUniform1f("uRoughness", 1.f * (step % MAX_MIPMAP_LEVEL) / (MAX_MIPMAP_LEVEL));
 	m_Shader->SetUniformMatrix4f("uProjection", captureProjection);
-	m_Shader->SetUniformMatrix4f("uView", captureViews[step]);
+	m_Shader->SetUniformMatrix4f("uView", captureViews[step / MAX_MIPMAP_LEVEL]);
 
 	MeshBuilder::BuildCube(Material::CreateDefault())->GetMeshSections()[0]->Draw();
 }

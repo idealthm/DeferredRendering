@@ -16,6 +16,4 @@ public:
 	void OnSpawn() override;
 private:
 	Ref<SkyComponent> m_SkyComponent;
-	Ref<ERPPass>	  m_ERPPass;
-	Ref<CubeMapConvolution>	  m_CubeInvolution;
 };
