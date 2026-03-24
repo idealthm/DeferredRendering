@@ -94,6 +94,7 @@ public:
 	virtual void Init(const TextureDescription& desc, const void* data);
 	virtual void SetTextureParameter(const TextureDescription& desc) const;
 
+	virtual uint32 GetGLType() = 0;
 	virtual void GenerateMipmap();
 
 	virtual void Bind(uint32 slot = 0);
@@ -234,6 +235,8 @@ public:
 
 	Texture2D(const TextureDescription& desc, const void* data=nullptr);
 
+	uint32 GetGLType() override;
+
 	void Init(const TextureDescription& desc, const void* data) override;
 	void SetTextureParameter(const TextureDescription& desc) const override;
 
@@ -252,7 +255,7 @@ public:
 	Texture3D();
 	Texture3D(const TextureDescription& desc, const void* data);
 
-	const TextureDescription& GetDesc() const;
+	uint32 GetGLType() override;
 
 private:
 	TextureDescription m_Desc;
@@ -271,6 +274,8 @@ public:
 		Back,
 	};
 	TextureCube(const TextureDescription& desc);
+
+	uint32 GetGLType() override;
 
 	void Init(const TextureDescription& desc, const void* data) override;
 	void SetTextureParameter(const TextureDescription& desc) const override;
@@ -292,12 +297,12 @@ struct DefaultTextures
 	Ref<Texture2D> Gray;   // 用于 Roughness (0.5)
 };
 
-template <typename T>
+template <typename T, bool bOnlyCreate = false>
 void CreateResource(Ref<T>& tex, const TextureDescription& desc)
 {
 	if (!tex || tex->GetDesc() != desc)
 		tex = CreateRef<T>(desc);
-	else
+	else if constexpr (!bOnlyCreate) 
 	{
 		tex->SetTextureParameter(desc);
 	}

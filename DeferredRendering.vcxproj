@@ -132,7 +132,6 @@ endlocal</Command>
     <ClInclude Include="Source\Common\LayerStack.h" />
     <ClInclude Include="Source\Common\Math.h" />
     <ClInclude Include="Source\Common\MouseCode.h" />
-    <ClInclude Include="Source\Common\StringFormat.h" />
     <ClInclude Include="Source\Common\Timestep.h" />
     <ClInclude Include="Source\Common\Utils.h" />
     <ClInclude Include="Source\Component\ActorComponent.h" />
@@ -164,6 +163,7 @@ endlocal</Command>
     <ClInclude Include="Source\Panel\ScenePanel.h" />
     <ClInclude Include="Source\Renderer.h" />
     <ClInclude Include="Source\RenderPass\CubeMapConvolution.h" />
+    <ClInclude Include="Source\RenderPass\EnvPreFilter.h" />
     <ClInclude Include="Source\RenderPass\ERPPass.h" />
     <ClInclude Include="Source\RenderPass\GBufferPass.h" />
     <ClInclude Include="Source\RenderPass\LightingPass.h" />
@@ -361,7 +361,6 @@ endlocal</Command>
     <ClCompile Include="Source\Camera\CameraController.cpp" />
     <ClCompile Include="Source\Common\LayerStack.cpp" />
     <ClCompile Include="Source\Common\Math.cpp" />
-    <ClCompile Include="Source\Common\StringFormat.cpp" />
     <ClCompile Include="Source\Common\Timestep.cpp" />
     <ClCompile Include="Source\Common\Utils.cpp" />
     <ClCompile Include="Source\Component\ActorComponent.cpp" />
@@ -392,6 +391,7 @@ endlocal</Command>
     <ClCompile Include="Source\Panel\ScenePanel.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\RenderPass\CubeMapConvolution.cpp" />
+    <ClCompile Include="Source\RenderPass\EnvPreFilter.cpp" />
     <ClCompile Include="Source\RenderPass\ERPPass.cpp" />
     <ClCompile Include="Source\RenderPass\GBufferPass.cpp" />
     <ClCompile Include="Source\RenderPass\LightingPass.cpp" />
@@ -598,6 +598,7 @@ endlocal</Command>
     <Content Include="Assets\textures\container2_specular_colored.png" />
     <Content Include="Assets\textures\grass.png" />
     <Content Include="Assets\textures\hdr\newport_loft.hdr" />
+    <Content Include="Assets\textures\ibl_brdf_lut.png" />
     <Content Include="Assets\textures\marble.jpg" />
     <Content Include="Assets\textures\matrix.jpg" />
     <Content Include="Assets\textures\metal.png" />
@@ -664,6 +665,8 @@ endlocal</Command>
     <Content Include="Shaders\Passes\CubeMapConvolution.vert.glsl" />
     <Content Include="Shaders\Passes\DeferredLighting.frag.glsl" />
     <Content Include="Shaders\Passes\DeferredLighting.vert.glsl" />
+    <Content Include="Shaders\Passes\EnvPreFilter.frag.glsl" />
+    <Content Include="Shaders\Passes\EnvPreFilter.vert.glsl" />
     <Content Include="Shaders\Passes\ToneMapping.vert.glsl" />
     <Content Include="Shaders\Passes\ERPToCubeMap.vert.glsl" />
     <Content Include="Shaders\Passes\GBuffer.frag.glsl" />

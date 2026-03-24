@@ -20,5 +20,4 @@ private:
 	Ref<Shader>			m_Shader;
 
 	Ref<Texture2D>		m_HDRMap;
-	Ref<TextureCube>	m_CubeMapTexture;
 };

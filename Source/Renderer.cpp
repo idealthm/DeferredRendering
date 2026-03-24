@@ -107,6 +107,7 @@ void Renderer::SetClearColor(const glm::vec4& color)
 
 void Renderer::PostRendererInit()
 {
+    g_ctx.BRDF_LUT = CreateRef<Texture2D>("Assets/textures/ibl_brdf_lut.png");
     g_ctx.FrameBuffer = CreateScope<FrameBuffer>();
     g_ctx.FrameDataUB = CreateScope<ParamBuffer<FrameData>>(0);
     g_ctx.LightDataUB = CreateScope<ParamBuffer<LightData>>(1);

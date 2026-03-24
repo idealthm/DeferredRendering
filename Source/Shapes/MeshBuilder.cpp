@@ -3,12 +3,23 @@
 #include "Model/MeshSection.h"
 
 static std::vector<uint32> cubeIndices = {
-	0, 2, 1,    0, 3, 2,    // Back
-	4, 5, 6,    4, 6, 7,    // Front
-	8, 9, 10,   8, 10, 11,  // Left
-	12, 14, 13, 12, 15, 14, // Right
-	16, 17, 18, 16, 18, 19, // Bottom
-	20, 22, 21, 20, 23, 22  // Top
+	0, 1, 2,  // 第一个三角形
+   2, 3, 0,  // 第二个三角形
+   // Front face
+   4, 5, 6,
+   6, 7, 4,
+   // Left face
+   8, 9, 10,
+   10, 11, 8,
+   // Right face
+   12, 13, 14,
+   14, 15, 12,
+   // Bottom face
+   16, 17, 18,
+   18, 19, 16,
+   // Top face
+   20, 21, 22,
+   22, 23, 20
 };
 
 static std::vector<float> cubeVertices = {

@@ -100,7 +100,8 @@ void Texture::SetTextureParameter(const TextureDescription& desc) const
 
 void Texture::GenerateMipmap()
 {
-	glGenerateMipmap(m_RendererID);
+    Bind();
+	glGenerateMipmap(GetGLType());
 }
 
 void Texture::Bind(uint32 slot)
@@ -180,6 +181,11 @@ Texture2D::Texture2D(const TextureDescription& desc, const void* data)
 	Init(desc, data);
 }
 
+uint32 Texture2D::GetGLType()
+{
+	return GL_TEXTURE_2D;
+}
+
 const TextureDescription& Texture2D::GetDesc()
 {
 	return m_Desc;
@@ -241,14 +247,19 @@ Texture3D::Texture3D(const TextureDescription& desc, const void* data)
 	}
 }
 
-const TextureDescription& Texture3D::GetDesc() const
+uint32 Texture3D::GetGLType()
 {
-	return m_Desc;
+	return GL_TEXTURE_2D;
 }
 
 TextureCube::TextureCube(const TextureDescription& desc)
 {
 	Init(desc, nullptr);
+}
+
+uint32 TextureCube::GetGLType()
+{
+	return GL_TEXTURE_CUBE_MAP;
 }
 
 void TextureCube::Init(const TextureDescription& desc, const void* data)

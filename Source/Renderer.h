@@ -41,6 +41,8 @@ struct RenderContext
     glm::u32vec2 viewportSize = {1600, 900};
     float ShadowWidth, ShadowHeight;
 
+    Ref<Texture2D> BRDF_LUT;
+
     Ref<Texture2D> GBuffer_Position;
     Ref<Texture2D> GBuffer_Normal;
     Ref<Texture2D> GBuffer_Albedo;
@@ -56,6 +58,7 @@ struct RenderContext
 
     Ref<TextureCube> ERP_Cubemap;
     Ref<TextureCube> IBL_IrradianceMap;
+    Ref<TextureCube> IBL_PreFilterMap;
 
     Ref<Texture2D> Sky_SceneColor;
 

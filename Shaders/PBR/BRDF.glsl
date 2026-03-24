@@ -34,3 +34,9 @@ float G_Smith(vec3 N, vec3 V, vec3 L, float roughness) {
 vec3 F_Schlick(float cosTheta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
+
+vec3 F_Schlick_Roughness(float cosTheta, vec3 F0, float roughness)
+{
+    // 随着粗糙度增加，边缘的最大反射率不再是 1.0，而是被抑制
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}

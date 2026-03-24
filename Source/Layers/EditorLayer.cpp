@@ -23,6 +23,7 @@
 #include "Panel/OutlinePanel.h"
 #include "Panel/PropertyPanel.h"
 #include "Panel/ScenePanel.h"
+#include "RenderPass/EnvPreFilter.h"
 #include "RenderPass/ERPPass.h"
 
 class DirectionLightActor;

@@ -19,7 +19,7 @@ void main()
 
     float sampleCount = 60;
     float sampleStep = 1.0 / sampleCount;
-    float nrSample = 1.0 * int(2.0 * PI * sampleCount) * int(0.5 * PI * sampleCount);
+    float nrSample = 0;
 
     for (float phi = 0.0f; phi < 2.0 * PI; phi += sampleStep)
     {
@@ -27,7 +27,8 @@ void main()
         {
             vec3 tangentDir = vec3(cos(phi) * sin(theta), sin(phi) * sin(theta), cos(theta));
             vec3 sampleDir = TVB * tangentDir;
-            irradiance += texture(uCubeMap, sampleDir).rgb * cos(theta) * sin(theta)
+            irradiance += texture(uCubeMap, sampleDir).rgb * cos(theta) * sin(theta);
+            nrSample += 1;
         }
     }
 
