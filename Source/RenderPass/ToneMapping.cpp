@@ -4,11 +4,10 @@
 #include "Scene.h"
 #include "FrameBuffer/FrameBuffer.h"
 #include "glad/glad.h"
-#include "Model/MeshSection.h"
 #include "Model/Texture.h"
 #include "RHI/SamplerPool.h"
+#include "Shader/Shader.h"
 #include "Shader/ShaderLibrary.h"
-#include "Shapes/MeshBuilder.h"
 
 ToneMapping::ToneMapping()
 {
@@ -41,8 +40,5 @@ void ToneMapping::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 	ctx.LightMap_SceneColor->Bind(freeIndex);
 	m_Shader->SetUniform1i("uHdrSceneColor", freeIndex++);
 
-	std::vector<uint32_t> indices = {0, 1, 2, 1, 2, 3};
-	std::vector<float> vertices = {-1.0f,  1.0f, -1.0f, -1.0f, 1.0f,  1.0f, 1.0f, -1.0f,};
-	Ref<MeshSection> section = MeshBuilder::BuildSection(vertices, indices, BufferLayout{BufferElement{ShaderDataType::Float2, "aPosition"}});
-	section->Draw();
+	m_ScreenQuad.Draw();
 }

@@ -8,14 +8,11 @@
 #include "Component/ActorComponent.h"
 #include "FrameBuffer/FrameBuffer.h"
 #include "glad/glad.h"
-#include "Material/Material.h"
-#include "Model/StaticMesh.h"
 #include "Model/Texture.h"
 #include "RHI/RHITypes.h"
 #include "RHI/SamplerPool.h"
 #include "Shader/Shader.h"
 #include "Shader/ShaderLibrary.h"
-#include "Shapes/MeshBuilder.h"
 
 ERPPass::ERPPass(const std::string& hdrFilePath, uint32_t size)
 {
@@ -80,7 +77,7 @@ void ERPPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 	m_Shader->SetUniformMatrix4f("uProjection", captureProjection);
 	m_Shader->SetUniformMatrix4f("uView", captureViews[step]);
 
-	MeshBuilder::BuildCube(Material::CreateDefault())->GetMeshSections()[0]->Draw();
+	m_UnitCube.Draw();
 
 	if (step == 5)
 	{

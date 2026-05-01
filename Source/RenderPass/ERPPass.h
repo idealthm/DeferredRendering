@@ -2,6 +2,7 @@
 #include <string>
 
 #include "RenderPass.h"
+#include "Shapes/UnitCube.h"
 
 class TextureCube;
 class Texture2D;
@@ -18,6 +19,6 @@ public:
 
 private:
 	Ref<Shader>			m_Shader;
-
+	UnitCube			m_UnitCube;
 	Ref<Texture2D>		m_HDRMap;
 };

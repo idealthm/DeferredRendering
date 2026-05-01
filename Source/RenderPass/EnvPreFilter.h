@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "RenderPass.h"
 #include "Model/Texture.h"
+#include "Shapes/UnitCube.h"
 
 class EnvPreFilter : public RenderPass
 {
@@ -12,4 +13,5 @@ public:
 private:
 	RHI::TextureDesc	m_Desc;
 	Ref<Shader>			m_Shader;
+	UnitCube			m_UnitCube;
 };

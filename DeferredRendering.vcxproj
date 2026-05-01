@@ -189,6 +189,8 @@ endlocal</Command>
     <ClInclude Include="Source\Shader\Shader.h" />
     <ClInclude Include="Source\Shader\ShaderLibrary.h" />
     <ClInclude Include="Source\Shapes\MeshBuilder.h" />
+    <ClInclude Include="Source\Shapes\ScreenQuad.h" />
+    <ClInclude Include="Source\Shapes\UnitCube.h" />
     <ClInclude Include="Source\SkyLightActor.h" />
     <ClInclude Include="Source\stb_images\stb_image.h" />
     <ClInclude Include="Source\UnifromBuffer\ParamBuffer.h" />
@@ -427,6 +429,8 @@ endlocal</Command>
     <ClCompile Include="Source\Shader\Shader.cpp" />
     <ClCompile Include="Source\Shader\ShaderLibrary.cpp" />
     <ClCompile Include="Source\Shapes\MeshBuilder.cpp" />
+    <ClCompile Include="Source\Shapes\ScreenQuad.cpp" />
+    <ClCompile Include="Source\Shapes\UnitCube.cpp" />
     <ClCompile Include="Source\SkyLightActor.cpp" />
     <ClCompile Include="Source\stb_images\stb_image.cpp" />
     <ClCompile Include="Source\UnifromBuffer\ParamBuffer.cpp" />

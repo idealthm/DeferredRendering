@@ -3,10 +3,13 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+#include "Renderer.h"
+#include "FrameBuffer/FrameBuffer.h"
+#include "Model/Texture.h"
 #include "RHI/SamplerPool.h"
+#include "Shader/Shader.h"
 #include "Shader/ShaderLibrary.h"
 #include "ShaderPreprocessor/ShaderLoader.h"
-#include "Shapes/MeshBuilder.h"
 
 CubeMapConvolution::CubeMapConvolution()
 {
@@ -65,5 +68,5 @@ void CubeMapConvolution::Execute(Ref<Scene> scene, uint32_t step, RenderContext&
 	m_Shader->SetUniformMatrix4f("uProjection", captureProjection);
 	m_Shader->SetUniformMatrix4f("uView", captureViews[step]);
 
-	MeshBuilder::BuildCube(Material::CreateDefault())->GetMeshSections()[0]->Draw();
+	m_UnitCube.Draw();
 }
