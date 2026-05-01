@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "RenderPass.h"
+#include "Shapes/UnitCube.h"
 
 class CubeMapConvolution : public RenderPass
 {
@@ -10,5 +11,6 @@ public:
 	void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx) override;
 
 private:
-	Ref<Shader>			m_Shader;
+	Ref<Shader>	m_Shader;
+	UnitCube	m_UnitCube;
 };

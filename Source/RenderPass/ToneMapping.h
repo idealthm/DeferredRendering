@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "RenderPass.h"
+#include "Shapes/ScreenQuad.h"
 
 class ToneMapping : public RenderPass
 {
@@ -11,4 +12,5 @@ public:
 
 private:
 	Ref<Shader> m_Shader;
+	ScreenQuad  m_ScreenQuad;
 };

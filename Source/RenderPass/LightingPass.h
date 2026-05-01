@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "RenderPass.h"
+#include "Shapes/ScreenQuad.h"
 
 class FrameBuffer;
 
@@ -16,4 +17,5 @@ public:
 
 private:
 	Ref<Shader> m_Shader;
+	ScreenQuad  m_ScreenQuad;
 };

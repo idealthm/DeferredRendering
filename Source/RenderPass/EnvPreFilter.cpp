@@ -3,10 +3,12 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+#include "Renderer.h"
+#include "FrameBuffer/FrameBuffer.h"
 #include "RHI/SamplerPool.h"
+#include "Shader/Shader.h"
 #include "Shader/ShaderLibrary.h"
 #include "ShaderPreprocessor/ShaderLoader.h"
-#include "Shapes/MeshBuilder.h"
 
 #define MAX_MIPMAP_LEVEL 5
 #define ENV_CUBE_SIZE 256
@@ -76,5 +78,5 @@ void EnvPreFilter::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 	m_Shader->SetUniformMatrix4f("uProjection", captureProjection);
 	m_Shader->SetUniformMatrix4f("uView", captureViews[step / MAX_MIPMAP_LEVEL]);
 
-	MeshBuilder::BuildCube(Material::CreateDefault())->GetMeshSections()[0]->Draw();
+	m_UnitCube.Draw();
 }

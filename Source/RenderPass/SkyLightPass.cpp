@@ -6,7 +6,6 @@
 #include "FrameBuffer/FrameBuffer.h"
 #include "Shader/Shader.h"
 #include "Model/Texture.h"
-#include "Shapes/MeshBuilder.h"
 
 SkyLightPass::SkyLightPass()
 {
@@ -34,6 +33,6 @@ void SkyLightPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 	ctx.ERP_Cubemap->Bind(freeSlotIndex);
 	m_Shader->SetUniform1i("uCubeMap", freeSlotIndex++);
 
-	MeshBuilder::BuildCube(Material::CreateDefault())->GetMeshSections()[0]->Draw();
+	m_UnitCube.Draw();
 }
 

@@ -6,7 +6,6 @@
 #include "Model/Texture.h"
 #include "RHI/SamplerPool.h"
 #include "Shader/Shader.h"
-#include "Shapes/MeshBuilder.h"
 #include "glad/glad.h"
 #include "Shader/ShaderLibrary.h"
 
@@ -84,8 +83,5 @@ void LightingPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 	ctx.IBL_PreFilterMap->Bind(freeSlot);
 	m_Shader->SetUniform1i("uIBL_PreFilterMap", freeSlot++);
 
-	std::vector<uint32_t> indices = {0, 1, 2, 2, 1, 3};
-	std::vector<float> vertices = {-1.0f,  1.0f, -1.0f, -1.0f, 1.0f,  1.0f, 1.0f, -1.0f,};
-	Ref<MeshSection> section = MeshBuilder::BuildSection(vertices, indices, BufferLayout{BufferElement{ShaderDataType::Float2, "aPosition"}});
-	section->Draw();
+	m_ScreenQuad.Draw();
 }
