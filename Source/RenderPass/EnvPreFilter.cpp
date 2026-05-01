@@ -3,6 +3,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+#include "RHI/SamplerPool.h"
 #include "Shader/ShaderLibrary.h"
 #include "ShaderPreprocessor/ShaderLoader.h"
 #include "Shapes/MeshBuilder.h"
@@ -12,47 +13,50 @@
 
 EnvPreFilter::EnvPreFilter()
 {
-	m_Desc.width = ENV_CUBE_SIZE;
-	m_Desc.height = ENV_CUBE_SIZE;
-	m_Desc.bGenerateMipmap = true;
-	m_Desc.MipLevel = MAX_MIPMAP_LEVEL;
-	m_Desc.format = ETextureFormat::RGBA16F;
-	m_Desc.SRGB = true;
-	m_Desc.FilterS = ETextureWrapMode::EClampToEdge;
-	m_Desc.FilterT = ETextureWrapMode::EClampToEdge;
-	m_Desc.FilterR = ETextureWrapMode::EClampToEdge;
-	m_Desc.minFilter = ETextureFilter::LinearMipmapLinear;
-	m_Desc.magFilter = ETextureFilter::Linear;
-
+	m_Desc.Width = ENV_CUBE_SIZE;
+	m_Desc.Height = ENV_CUBE_SIZE;
+	m_Desc.MipLevels = MAX_MIPMAP_LEVEL;
+	m_Desc.Format = RHI::Format::RGBA16F;
+	m_Desc.Target = RHI::Sampler::DimCube;
 	m_Shader = ShaderLibrary::Get().GetShader("Shaders/Passes/EnvPreFilter", nullptr);
 }
 
-uint32 EnvPreFilter::GetRenderTimes()
+uint32_t EnvPreFilter::GetRenderTimes()
 {
 	return 6 * MAX_MIPMAP_LEVEL;
 }
 
-void EnvPreFilter::Setup(FBAttachmentInfo& info, uint32 step)
+void EnvPreFilter::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
 {
-	uint32 mip = step % MAX_MIPMAP_LEVEL;
+	uint32_t mip = step % MAX_MIPMAP_LEVEL;
 	step /= MAX_MIPMAP_LEVEL;
 
 	info.Width = ENV_CUBE_SIZE >> mip;
 	info.Height = ENV_CUBE_SIZE >> mip;
 
-	CreateResource<TextureCube, true>(g_ctx.IBL_PreFilterMap, m_Desc);
-	ETextureTarget target = (ETextureTarget)((uint32)ETextureTarget::Positive_X + step);
+	CreateResource<TextureCube>(ctx.IBL_PreFilterMap, m_Desc);
+	if (!ctx.IBL_PreFilterMap->GetSampler())
+	{
+		RHI::SamplerParams samplerParams{};
+		samplerParams.wrapS = RHI::SamplerWrapMode::ClampToEdge;
+		samplerParams.wrapT = RHI::SamplerWrapMode::ClampToEdge;
+		samplerParams.wrapR = RHI::SamplerWrapMode::ClampToEdge;
+		samplerParams.filterMin = RHI::SamplerMinFilter::LinearMipmapLinear;
+		samplerParams.filterMag = RHI::SamplerMagFilter::Linear;
+		ctx.IBL_PreFilterMap->SetSampler(SamplerPool::Get().GetOrCreate(samplerParams));
+	}
+	ETextureTarget target = (ETextureTarget)((uint32_t)ETextureTarget::Positive_X + step);
 
 	info.Attachments = {
-		{g_ctx.IBL_PreFilterMap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store, mip}
+		{ctx.IBL_PreFilterMap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store, mip}
 	};
 }
 
-void EnvPreFilter::Execute(Ref<Scene> scene, uint32 step)
+void EnvPreFilter::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 {
 	m_Shader->Bind();
-	uint32 FreeSlotIndex = m_Shader->GetFreeSlotIndex();
-	g_ctx.ERP_Cubemap->Bind(FreeSlotIndex);
+	uint32_t FreeSlotIndex = m_Shader->GetFreeSlotIndex();
+	ctx.ERP_Cubemap->Bind(FreeSlotIndex);
 	m_Shader->SetUniform1i("uCubeMap", FreeSlotIndex++);
 
 	// 投影矩阵：90度 FOV，1:1 宽高比

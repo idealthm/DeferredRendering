@@ -10,7 +10,7 @@ struct alignas(16) LightInfo {
 	float intensity;
 
 	glm::vec3 direction; // w: 光源类型 (0: 方向光, 1: 点光源, 2: 聚光灯)
-	int32 type;
+	int32_t type;
 
 	glm::vec4 params;    // x: 聚光灯内角, y: 聚光灯外角, z: 是否产生阴影, w: 预留
 }; 
@@ -19,7 +19,7 @@ struct alignas(16) LightData
 {
 	LightInfo lights[16];
 	glm::mat4 uLightVP;
-	int32 NumLights;
+	int32_t NumLights;
 };
 
 class LightComponent : public SceneComponent

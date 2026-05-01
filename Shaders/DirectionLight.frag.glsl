@@ -59,8 +59,7 @@ float calculateShadowAttenuation(vec4 fragPosLightSpace, vec3 normal, vec3 light
     vec2 texelSize = 1.0 / textureSize(gShadowMap, 0);
     for(int x = -3; x <= 3; ++x) {
         for(int y = -3; y <= 3; ++y) {
-            vec2 sampleCoord = ProjCoord.xy + vec2(x, y) * texelSize;
-            // 可选：对 sampleCoord 进行 clamp，但一般纹理寻址模式已处理
+            vec2 sampleCoord = clamp(ProjCoord.xy + vec2(x, y) * texelSize, 0.0, 1.0);
             float closest = texture(gShadowMap, sampleCoord).r;
             shadow += (currentDepth - bias > closest) ? 1.0 : 0.0;
         }

@@ -10,7 +10,7 @@ enum class ECompareFunc {
 	Never, Less, Equal, LEqual, Greater, NotEqual, GEqual, Always
 };
 
-uint32 GetGLCompareFunc(ECompareFunc func);
+uint32_t GetGLCompareFunc(ECompareFunc func);
 
 struct DepthStencilState {
 	bool depthTest = true;
@@ -49,18 +49,6 @@ enum class FBTextureStoreAction
 	Discard,
 };
 
-struct FBTextureDesc
-{
-	uint32 Width, Height;
-	EFBTextureFormat		TextureFormat;
-	FBTextureLoadAction		LoadAction;
-	FBTextureStoreAction	StoreAction;
-
-	Ref<Texture2D>*			TargetTexture;
-	// TODO: filtering/wrap
-};
-
-
 enum class FBAttachmentType
 {
 	Color,
@@ -83,15 +71,15 @@ enum class ETextureTarget
 	//
 };
 
-uint32 GetGLTexTarget(ETextureTarget target);
+uint32_t GetGLTexTarget(ETextureTarget target);
 
 struct FBTextureAttachment
 {
-	uint32					RendererID;
+	uint32_t					RendererID;
 	ETextureTarget			Target = ETextureTarget::Texture2D;
 	FBTextureLoadAction		LoadAction;
 	FBTextureStoreAction	StoreAction;
-	uint32					MipLevel;
+	uint32_t					MipLevel;
 
 	FBTextureAttachment()
 	{
@@ -102,7 +90,7 @@ struct FBTextureAttachment
 		MipLevel = 0;
 	}
 
-	FBTextureAttachment(uint32 renderID, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction, uint32 mipLevel = 0)
+	FBTextureAttachment(uint32_t renderID, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction, uint32_t mipLevel = 0)
 	{
 		RendererID = renderID;
 		Target = ETextureTarget::Texture2D;
@@ -111,7 +99,7 @@ struct FBTextureAttachment
 		MipLevel = mipLevel;
 	}
 
-	FBTextureAttachment(uint32 renderID, ETextureTarget target, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction, uint32 mipLevel = 0)
+	FBTextureAttachment(uint32_t renderID, ETextureTarget target, FBTextureLoadAction loadAction, FBTextureStoreAction storeAction, uint32_t mipLevel = 0)
 	{
 		RendererID = renderID;
 		Target = target;
@@ -134,22 +122,13 @@ struct FBTextureAttachment
 
 struct FBAttachmentInfo
 {
-	uint32 Width = 0, Height = 0;
-	uint32 NumSamples;
+	uint32_t Width = 0, Height = 0;
+	uint32_t NumSamples;
 
 	DepthStencilState DSS;
 
 	FBTextureAttachment Depth;
 	std::vector<FBTextureAttachment> Attachments;
-};
-
-struct FramebufferAttachmentSpecification
-{
-	FramebufferAttachmentSpecification() = default;
-	FramebufferAttachmentSpecification(std::initializer_list<FBTextureDesc> attachments)
-		: Attachments(attachments) {}
-
-	std::vector<FBTextureDesc> Attachments;
 };
 
 class FrameBuffer
@@ -165,10 +144,10 @@ public:
 	virtual void Bind();
 	virtual void Unbind();
 
-	virtual int ReadPixel(uint32 attachmentIndex, int x, int y);
+	virtual int ReadPixel(uint32_t attachmentIndex, int x, int y);
 
 private:
-	uint32 m_RendererID = 0;
+	uint32_t m_RendererID = 0;
 	FBAttachmentInfo m_Info;
 };
 

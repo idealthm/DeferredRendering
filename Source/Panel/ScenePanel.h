@@ -13,8 +13,8 @@ public:
 
 	void OnImGuiRender(Ref<Scene>& scene) override;
 
-	uint32 GetGizmoMode() const;
+	uint32_t GetGizmoMode() const;
 	void ToggleGizmoMode();
 private:
-	uint32	m_GizmoMode = 0;
+	uint32_t	m_GizmoMode = 0;
 };

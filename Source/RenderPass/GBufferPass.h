@@ -13,6 +13,6 @@ public:
 	GBufferPass();
 	virtual ~GBufferPass() = default;
 
-	virtual void Setup(FBAttachmentInfo& info, uint32 step) override;
-	virtual void Execute(Ref<Scene> scene, uint32 step);
+	virtual void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx) override;
+	virtual void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx);
 };

@@ -1,6 +1,7 @@
 ﻿#include "Input.h"
 
 #include <GLFW/glfw3.h>
+#include <glm/vec2.hpp>
 
 #include "Application.h"
 #include "Windows/Window.h"
@@ -19,21 +20,16 @@ bool Input::IsMouseButtonPressed(const MouseCode button)
 	return state == GLFW_PRESS;
 }
 
-glm::vec2 Input::GetMousePosition()
-{
-	auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
-	double xpos, ypos;
-	glfwGetCursorPos(window, &xpos, &ypos);
-
-	return { (float)xpos, (float)ypos };
-}
-
 float Input::GetMouseX()
 {
-	return GetMousePosition().x;
+	double xpos, ypos;
+	glfwGetCursorPos(Application::Get().GetWindow().GetNativeWindow(), &xpos, &ypos);
+	return xpos;
 }
 
 float Input::GetMouseY()
 {
-	return GetMousePosition().y;
+	double xpos, ypos;
+	glfwGetCursorPos(Application::Get().GetWindow().GetNativeWindow(), &xpos, &ypos);
+	return ypos;
 }

@@ -18,10 +18,10 @@ public:
 	virtual void OnImGuiRender() {}
 	virtual void OnEvent(Event& event) {}
 
-	virtual void OnWindowResize(uint32 width, uint32 height) {}
+	virtual void OnWindowResize(uint32_t width, uint32_t height) {}
 
 	const std::string& GetName() const { return m_DebugName; }
 protected:
 	std::string m_DebugName;
-	uint32 m_Width, m_Height;
+	uint32_t m_Width, m_Height;
 };

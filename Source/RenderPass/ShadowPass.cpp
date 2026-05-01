@@ -9,6 +9,8 @@
 #include "FrameBuffer/FrameBuffer.h"
 #include "Lights/Light.h"
 #include "Model/StaticMesh.h"
+#include "Model/Texture.h"
+#include "RHI/SamplerPool.h"
 #include "Shader/Shader.h"
 #include "Shader/ShaderLibrary.h"
 
@@ -21,35 +23,38 @@ ShadowPass::~ShadowPass()
 {
 }
 
-void ShadowPass::Setup(FBAttachmentInfo& info, uint32 step)
+void ShadowPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
 {
-	info.Width = g_ctx.ShadowWidth; 
-	info.Height = g_ctx.ShadowHeight;
+	info.Width = ctx.ShadowWidth; 
+	info.Height = ctx.ShadowHeight;
 	info.NumSamples = 1;
 
 	info.DSS.depthTest =true;
 	info.DSS.depthWrite = true;
 	info.DSS.compareFunc = ECompareFunc::Less;
 
-	CreateResource(g_ctx.ShadowMap_Depth, CreateShadowMap(g_ctx.ShadowWidth));
+	CreateResource(ctx.ShadowMap_Depth, CreateShadowMap(ctx.ShadowWidth));
 
-	info.Depth = { 
-		g_ctx.ShadowMap_Depth->GetRendererID(),
+	if (!ctx.ShadowMap_Depth->GetSampler())
+		ctx.ShadowMap_Depth->SetSampler(SamplerPool::Get().GetOrCreate(ShadowMapSampler()));
+
+	info.Depth = {
+		ctx.ShadowMap_Depth->GetRendererID(),
 		ETextureTarget::Texture2D,
 		FBTextureLoadAction::Clear, 
 		FBTextureStoreAction::Store
 	};
 
 	// info.Attachments = {
-	// 	{ &g_ctx.Test, CreateGBuffer(ctx.ShadowWidth, ctx.ShadowHeight, ETextureFormat::RGBA16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+	// 	{ &ctx.Test, CreateGBuffer(ctx.ShadowWidth, ctx.ShadowHeight, ETextureFormat::RGBA16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
 	// };
 }
 
-void ShadowPass::Execute(Ref<Scene> scene, uint32 step)
+void ShadowPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 {
 	m_Shader->Bind();
 
-	LightData& data = g_ctx.LightDataUB->Data;
+	LightData& data = ctx.LightDataUB->Data;
 
 	for (const auto& Actor : scene->GetActors())
 	{
@@ -62,7 +67,7 @@ void ShadowPass::Execute(Ref<Scene> scene, uint32 step)
 			}  
 		}
 	}
-	g_ctx.LightDataUB->Update();
+	ctx.LightDataUB->Update();
 
 	for (const auto& Actor : scene->GetActors())
 	{

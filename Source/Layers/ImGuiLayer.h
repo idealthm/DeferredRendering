@@ -11,7 +11,7 @@ public:
 	void OnUpdate(Timestep ts) override;
 	void OnImGuiRender() override;
 	void OnEvent(Event& event) override;
-	void OnWindowResize(uint32 width, uint32 height) override;
+	void OnWindowResize(uint32_t width, uint32_t height) override;
 
 	void OnAttach() override;
 	void OnDetach() override;
@@ -23,7 +23,7 @@ public:
 
 	void SetBlockEvents(bool block) {m_BlockEvents = block;}
 
-	uint32 GetActiveWidgetID() const;
+	uint32_t GetActiveWidgetID() const;
 private:
 	bool m_BlockEvents = false;
 };

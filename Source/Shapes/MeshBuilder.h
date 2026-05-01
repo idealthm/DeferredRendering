@@ -22,7 +22,7 @@ namespace MeshBuilder
 	Ref<StaticMesh> BuildQuad(const Ref<Material>& material);
 
 	template<typename T>
-	Ref<MeshSection> BuildSection(const std::vector<T>& vertices, const std::vector<uint32>& indices, const BufferLayout& layout)
+	Ref<MeshSection> BuildSection(const std::vector<T>& vertices, const std::vector<uint32_t>& indices, const BufferLayout& layout)
 	{
 		Ref<VertexArray> vertexArray = CreateRef<VertexArray>();
 		Ref<IndexBuffer> indexBuffer = CreateRef<IndexBuffer>(indices.data(), indices.size());

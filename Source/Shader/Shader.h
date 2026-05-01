@@ -24,10 +24,10 @@ class Shader
 {
     friend struct SlotSnapshot;
 public:
-    Shader(const std::string& FilePath, uint32 freeSlot, DUI* dui=nullptr);
+    Shader(const std::string& FilePath, uint32_t freeSlot, DUI* dui=nullptr);
     ~Shader();
 
-    uint32 GetRendererID() const {return m_RendererID;}
+    uint32_t GetRendererID() const {return m_RendererID;}
 
     void Bind() const;
     void Unbind() const;
@@ -37,17 +37,17 @@ public:
     void SetUniform2f(const std::string& name, const glm::vec2& value);
     void SetUniform3f(const std::string& name, const glm::vec3& value);
     void SetUniform4f(const std::string& name, const glm::vec4& value);
-    void SetUniform1i(const std::string& name, int32 value);
+    void SetUniform1i(const std::string& name, int32_t value);
     void SetUniformMatrix4f(const std::string& name, const glm::mat4& value);
 
-    uint32 GetFreeSlotIndex() const {return m_FreeSlotIndex;}
+    uint32_t GetFreeSlotIndex() const {return m_FreeSlotIndex;}
 private:
     int GetUniformLocation(const std::string& name);
 
 private:
-    uint64      m_BuildHash;
-    uint32      m_RendererID;
-    uint32      m_FreeSlotIndex;
+    uint64_t      m_BuildHash;
+    uint32_t      m_RendererID;
+    uint32_t      m_FreeSlotIndex;
 
     std::unordered_map<std::string, int> m_UniformLocations;
 };

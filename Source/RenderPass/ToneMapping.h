@@ -6,8 +6,8 @@ class ToneMapping : public RenderPass
 public:
 	ToneMapping();
 
-	void Setup(FBAttachmentInfo& info, uint32 step) override;
-	void Execute(Ref<Scene> scene, uint32 step) override;
+	void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx) override;
+	void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx) override;
 
 private:
 	Ref<Shader> m_Shader;

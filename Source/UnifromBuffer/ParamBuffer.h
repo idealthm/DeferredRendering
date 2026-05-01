@@ -7,7 +7,7 @@ class ParamBuffer
 public:
 	using ParamType = T;
 
-	ParamBuffer(uint32 binding)
+	ParamBuffer(uint32_t binding)
 		: UniformBuffer(CreateRef<class UniformBuffer>(sizeof(T), binding))
 	{
 	}

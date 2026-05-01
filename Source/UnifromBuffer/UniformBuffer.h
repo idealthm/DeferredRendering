@@ -9,5 +9,5 @@ public:
 
 	virtual void Update(const void* data, uint32_t size, uint32_t offset = 0);
 private:
-	uint32 m_RendererID = 0;
+	uint32_t m_RendererID = 0;
 };

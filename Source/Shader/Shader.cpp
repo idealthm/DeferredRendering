@@ -18,7 +18,7 @@ struct ShaderProgramSource
     std::string FragmentSource;
 };
 
-Shader::Shader(const std::string& filePath, uint32 freeSlot, struct DUI* dui)
+Shader::Shader(const std::string& filePath, uint32_t freeSlot, struct DUI* dui)
     : m_FreeSlotIndex(4)
 {
     m_RendererID = ShaderLoader::CreateShader(filePath, dui);
@@ -59,7 +59,7 @@ void Shader::SetUniform4f(const std::string& name, const glm::vec4& value)
     SET_UNIFORM(glUniform4f(location, value.x, value.y, value.z, value.w));
 }
 
-void Shader::SetUniform1i(const std::string& name, int32 value)
+void Shader::SetUniform1i(const std::string& name, int32_t value)
 {
     SET_UNIFORM(glUniform1i(location, value));
 }

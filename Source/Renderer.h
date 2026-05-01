@@ -7,21 +7,12 @@
 #include "FrameBuffer/FrameBuffer.h"
 #include "UnifromBuffer/ParamBuffer.h"
 
-class LightingPass;
 class Scene;
-class ToneMapping;
-class SkyLightPass;
-struct LightData;
-struct FBAttachmentInfo;
-class UniformBuffer;
-enum class EShaderType;
-class TextureCube;
-class Texture2D;
-class ERPPass;
-class ShadowPass;
-class GBufferPass;
 class RenderPass;
-class Shader;
+class RenderPipeline;
+class Texture2D;
+class TextureCube;
+struct LightData;
 
 struct FrameData
 {
@@ -35,8 +26,8 @@ struct FrameData
 
 struct RenderContext
 {
-    uint32 renderMode;
-    uint32 usedTextureSlot;
+    uint32_t renderMode;
+    uint32_t usedTextureSlot;
 
     glm::u32vec2 viewportSize = {1600, 900};
     float ShadowWidth, ShadowHeight;
@@ -70,36 +61,25 @@ struct RenderContext
     Ref<ParamBuffer<LightData>> LightDataUB;
 };
 
-extern RenderContext g_ctx;
-
 class Renderer
 {
 public:
     static Renderer& Get();
 
-    void Init(uint32 width, uint32 height);
+    void Init(uint32_t width, uint32_t height);
 
     void Shutdown();
 
-    void OnWindowResize(int32 width, int32 height);
+    void OnWindowResize(int32_t width, int32_t height);
 
-    void SetViewport(uint32 x, uint32 y, uint32 width, uint32 height);
+    void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 
     void SetClearColor(const glm::vec4& color);
 
-    void PostRendererInit();
+    void StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass, const glm::u32vec2& viewportSize, RenderContext& ctx);
 
-    void Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize);
+    RenderPipeline& GetPipeline();
 
-    void StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass, const glm::u32vec2& viewportSize);
-
-public:
-    uint32 m_RenderMode = 0;
-
-    Ref<GBufferPass>    m_GBufferPass;
-    Ref<ShadowPass>     m_ShadowPass;
-    Ref<LightingPass>   m_LightPass;
-    Ref<SkyLightPass>   m_SkyLightPass;
-    Ref<ToneMapping>    m_ToneMappingPass;
-    Ref<ERPPass>        m_ERPPass;
+private:
+    Scope<RenderPipeline> m_Pipeline;
 };

@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Core.h"
 
-using KeyCode = uint16;
+using KeyCode = uint16_t;
 	
 namespace Key
 {

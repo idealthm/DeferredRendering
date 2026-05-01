@@ -14,8 +14,8 @@ class Scene;
 struct WindowProperties
 {
 	std::string title;
-	uint32		width;
-	uint32		height;
+	uint32_t		width;
+	uint32_t		height;
 };
 
 class Window
@@ -28,8 +28,8 @@ public:
 
 	void Update() const;
 
-	int32 GetWidth() const {return m_Data.Width;}
-	int32 GetHeight() const {return m_Data.Height;}
+	int32_t GetWidth() const {return m_Data.Width;}
+	int32_t GetHeight() const {return m_Data.Height;}
 
 	void SetEventCallback(const EventCallbackFn& callback);
 	void SetVSync(bool enabled);
