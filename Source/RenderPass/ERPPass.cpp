@@ -11,11 +11,13 @@
 #include "Material/Material.h"
 #include "Model/StaticMesh.h"
 #include "Model/Texture.h"
+#include "RHI/RHITypes.h"
+#include "RHI/SamplerPool.h"
 #include "Shader/Shader.h"
 #include "Shader/ShaderLibrary.h"
 #include "Shapes/MeshBuilder.h"
 
-ERPPass::ERPPass(const std::string& hdrFilePath, uint32 size)
+ERPPass::ERPPass(const std::string& hdrFilePath, uint32_t size)
 {
 	m_Shader = ShaderLibrary::Get().GetShader("Shaders/Passes/ERPToCubeMap", nullptr);
 
@@ -26,34 +28,39 @@ ERPPass::~ERPPass()
 {
 }
 
-void ERPPass::Setup(FBAttachmentInfo& info, uint32 step)
+void ERPPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
 {
 	info.Width = 512;
 	info.Height = 512;
 
-	TextureDescription desc;
-	desc.width = 512;
-	desc.height = 512;
-	desc.bGenerateMipmap = true;
-	desc.MipLevel = 7;
-	desc.format = ETextureFormat::RGBA16F;
-	desc.SRGB = true;
-	desc.FilterS = ETextureWrapMode::EClampToEdge;
-	desc.FilterT = ETextureWrapMode::EClampToEdge;
-	desc.FilterR = ETextureWrapMode::EClampToEdge;
-
-	CreateResource(g_ctx.ERP_Cubemap, desc);
-	ETextureTarget target = (ETextureTarget)((uint32)ETextureTarget::Positive_X + step);
+	RHI::TextureDesc desc;
+	desc.Width = 512;
+	desc.Height = 512;
+	desc.MipLevels = 7;
+	desc.Format = RHI::Format::RGBA16F;
+	desc.Target = RHI::Sampler::DimCube;
+	CreateResource(ctx.ERP_Cubemap, desc);
+	if (!ctx.ERP_Cubemap->GetSampler())
+	{
+		RHI::SamplerParams samplerParams{};
+		samplerParams.wrapS = RHI::SamplerWrapMode::ClampToEdge;
+		samplerParams.wrapT = RHI::SamplerWrapMode::ClampToEdge;
+		samplerParams.wrapR = RHI::SamplerWrapMode::ClampToEdge;
+		samplerParams.filterMin = RHI::SamplerMinFilter::Linear;
+		samplerParams.filterMag = RHI::SamplerMagFilter::Linear;
+		ctx.ERP_Cubemap->SetSampler(SamplerPool::Get().GetOrCreate(samplerParams));
+	}
+	ETextureTarget target = (ETextureTarget)((uint32_t)ETextureTarget::Positive_X + step);
 
 	info.Attachments = {
-		{g_ctx.ERP_Cubemap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store}
+		{ctx.ERP_Cubemap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store}
 	};
 }
 
-void ERPPass::Execute(Ref<Scene> scene, uint32 step)
+void ERPPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 {
 	m_Shader->Bind();
-	uint32 FreeSlotIndex = m_Shader->GetFreeSlotIndex();
+	uint32_t FreeSlotIndex = m_Shader->GetFreeSlotIndex();
 	m_HDRMap->Bind(FreeSlotIndex);
 	m_Shader->SetUniform1i("uHDRMap", FreeSlotIndex++);
 
@@ -77,6 +84,6 @@ void ERPPass::Execute(Ref<Scene> scene, uint32 step)
 
 	if (step == 5)
 	{
-		g_ctx.ERP_Cubemap->GenerateMipmap();
+		ctx.ERP_Cubemap->GenerateMipmap();
 	}
 }

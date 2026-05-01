@@ -150,7 +150,7 @@ void ImGuiLayer::OnEvent(Event& event)
 	}
 }
 
-void ImGuiLayer::OnWindowResize(uint32 width, uint32 height)
+void ImGuiLayer::OnWindowResize(uint32_t width, uint32_t height)
 {
 	Layer::OnWindowResize(width, height);
 }

@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "Layers/Layer.h"
+#include "RenderPipeline.h"
 #include "Renderer.h"
 #include "Events/ApplicationEvent.h"
 #include "Events/KeyEvent.h"
@@ -81,16 +82,17 @@ void Application::OnEvent(Event& e)
 	EventDispatcher dispatcher(e);
 	dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e )
 	{
+		auto& ctx = Renderer::Get().GetPipeline().GetContext();
 		switch (e.GetKeyCode())
 		{
 			case Key::Escape: m_Running = false; return true;
-			case Key::F1: g_ctx.FrameDataUB->Data.RenderMode = 1; return true;
-			case Key::F2: g_ctx.FrameDataUB->Data.RenderMode = 2; return true;
-			case Key::F3: g_ctx.FrameDataUB->Data.RenderMode = 3; return true;
-			case Key::F4: g_ctx.FrameDataUB->Data.RenderMode = 4; return true;
-			case Key::F5: g_ctx.FrameDataUB->Data.RenderMode = 5; return true;
-			case Key::F6: g_ctx.FrameDataUB->Data.RenderMode = 6; return true;
-			case Key::F7: g_ctx.FrameDataUB->Data.RenderMode = 7; return true;
+			case Key::F1: ctx.FrameDataUB->Data.RenderMode = 1; return true;
+			case Key::F2: ctx.FrameDataUB->Data.RenderMode = 2; return true;
+			case Key::F3: ctx.FrameDataUB->Data.RenderMode = 3; return true;
+			case Key::F4: ctx.FrameDataUB->Data.RenderMode = 4; return true;
+			case Key::F5: ctx.FrameDataUB->Data.RenderMode = 5; return true;
+			case Key::F6: ctx.FrameDataUB->Data.RenderMode = 6; return true;
+			case Key::F7: ctx.FrameDataUB->Data.RenderMode = 7; return true;
 		}
 		return false;
 	});

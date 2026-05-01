@@ -5,7 +5,7 @@
 class VertexBuffer
 {
 public:
-    VertexBuffer(const void* data, uint64 size);
+    VertexBuffer(const void* data, uint64_t size);
     ~VertexBuffer();
 
     void Bind() const;

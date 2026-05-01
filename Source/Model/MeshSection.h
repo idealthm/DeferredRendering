@@ -32,7 +32,7 @@ struct Vertex {
     float m_Weights[MAX_BONE_INFLUENCE];
 };
 
-enum class TextureType : uint8
+enum class TextureType : uint8_t
 {
     ALBEDO,
     NORMAL,

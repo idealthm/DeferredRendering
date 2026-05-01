@@ -38,7 +38,7 @@ private:
 	Ref<OutlinePanel>		m_OutlinePanel;
 
 	EEditorMode				m_EditorMode = EEditorMode::Editor;
-	uint32					m_MainDockingSpace;
+	uint32_t					m_MainDockingSpace;
 	std::string				m_ScenePath;
 	Ref<Scene>				m_ActiveScene;
 

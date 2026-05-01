@@ -25,10 +25,10 @@ protected:
 	std::tuple<VarTypes...> Payload;
 };
 
-template<int32 Size, uint32 Alignment>
+template<int32_t Size, uint32_t Alignment>
 struct TAlignedBytes
 {
-	alignas(Alignment) uint8 Pad[Size];
+	alignas(Alignment) uint8_t Pad[Size];
 };
 
 

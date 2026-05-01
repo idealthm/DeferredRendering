@@ -2,7 +2,7 @@
 
 #include "Model/MeshSection.h"
 
-static std::vector<uint32> cubeIndices = {
+static std::vector<uint32_t> cubeIndices = {
 	0, 1, 2,  // 第一个三角形
    2, 3, 0,  // 第二个三角形
    // Front face
@@ -61,7 +61,7 @@ static std::vector<float> cubeVertices = {
     -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f
 };
 
-static std::vector<uint32> QuadIndices = {
+static std::vector<uint32_t> QuadIndices = {
 	0, 1, 2, 1, 2, 3
 };
 

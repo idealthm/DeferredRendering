@@ -8,7 +8,7 @@
 #include "TokenList.h"
 #include "glad/glad.h"
 
-uint32 ShaderLoader::CompileShader(unsigned int type, const std::string& source)
+uint32_t ShaderLoader::CompileShader(unsigned int type, const std::string& source)
 {
     GLCall(unsigned int id = glCreateShader(type));
     const char* src = source.c_str();
@@ -34,7 +34,7 @@ uint32 ShaderLoader::CompileShader(unsigned int type, const std::string& source)
     return id;
 }
 
-uint32 ShaderLoader::CreateShader(const std::string& vertexShader, const std::string& fragmentShader)
+uint32_t ShaderLoader::CreateShader(const std::string& vertexShader, const std::string& fragmentShader)
 {
     unsigned int program = glCreateProgram();
     unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
@@ -51,7 +51,7 @@ uint32 ShaderLoader::CreateShader(const std::string& vertexShader, const std::st
     return program;
 }
 
-uint32 ShaderLoader::CreateShader(const std::string& filePath, DUI* Indui)
+uint32_t ShaderLoader::CreateShader(const std::string& filePath, DUI* Indui)
 {
     static DUI StaticDUI{{"#version 460 core\n"},{},{},{"Shaders/"},{},false, !_DEBUG};
 

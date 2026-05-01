@@ -2,6 +2,7 @@
 
 #include "Actor.h"
 #include "Application.h"
+#include "RenderPipeline.h"
 #include "Scene.h"
 #include "Camera/CameraController.h"
 #include "Events/Event.h"
@@ -86,16 +87,16 @@ void EditorLayer::OnUpdate(Timestep ts)
 
 	m_CameraController->OnUpdate(ts);
 
-	auto& FrameData = g_ctx.FrameDataUB->Data;
-	FrameData.m_Projection = m_EditorCamera->GetProjectionMatrix(1.0 * g_ctx.viewportSize.x / g_ctx.viewportSize.y);
+	auto& FrameData = Renderer::Get().GetPipeline().GetContext().FrameDataUB->Data;
+	FrameData.m_Projection = m_EditorCamera->GetProjectionMatrix(1.0 * Renderer::Get().GetPipeline().GetContext().viewportSize.x / Renderer::Get().GetPipeline().GetContext().viewportSize.y);
 	FrameData.m_ViewProjection = m_EditorCamera->GetViewMatrix();
 	FrameData.m_CameraPosition = m_EditorCamera->GetPosition();
 	FrameData.m_InvProjection = glm::inverse(FrameData.m_Projection);
 	FrameData.m_InvViewProjection = glm::inverse(FrameData.m_ViewProjection);
 
-	g_ctx.FrameDataUB->Update();
+	Renderer::Get().GetPipeline().GetContext().FrameDataUB->Update();
 
-	Renderer::Get().Render(m_ActiveScene, g_ctx.viewportSize);
+	Renderer::Get().GetPipeline().Render(m_ActiveScene, Renderer::Get().GetPipeline().GetContext().viewportSize);
 }
 
 void EditorLayer::OnEvent(Event& event)

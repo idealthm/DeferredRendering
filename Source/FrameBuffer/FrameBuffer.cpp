@@ -5,23 +5,8 @@
 
 #include "Model/Texture.h"
 
-uint32 GetGLCompareFunc(ECompareFunc func)
-{
-	switch (func)
-	{
-	case ECompareFunc::Never: return GL_NEVER;
-	case ECompareFunc::Less: return GL_LESS;
-	case ECompareFunc::Equal: return GL_EQUAL;
-	case ECompareFunc::LEqual: return GL_LEQUAL;
-	case ECompareFunc::Greater: return GL_GREATER;
-	case ECompareFunc::NotEqual: return GL_NOTEQUAL;
-	case ECompareFunc::GEqual: return GL_GEQUAL;
-	case ECompareFunc::Always: return GL_ALWAYS;
-		default: return GL_LESS;
-	}
-}
 
-uint32 GetGLTexTarget(ETextureTarget target)
+uint32_t GetGLTexTarget(ETextureTarget target)
 {
 	switch (target)
 	{
@@ -34,6 +19,21 @@ uint32 GetGLTexTarget(ETextureTarget target)
 	case ETextureTarget::Positive_Z: return GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
 	case ETextureTarget::Negative_Z: return GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
 	}
+}
+
+uint32_t GetGLCompareFunc(ECompareFunc func)
+{
+	switch (func) {
+	case ECompareFunc::Never:    return GL_NEVER;
+	case ECompareFunc::Less:     return GL_LESS;
+	case ECompareFunc::Equal:    return GL_EQUAL;
+	case ECompareFunc::LEqual:   return GL_LEQUAL;
+	case ECompareFunc::Greater:  return GL_GREATER;
+	case ECompareFunc::NotEqual: return GL_NOTEQUAL;
+	case ECompareFunc::GEqual:   return GL_GEQUAL;
+	case ECompareFunc::Always:   return GL_ALWAYS;
+	}
+	return GL_LESS;
 }
 
 FrameBuffer::FrameBuffer()
@@ -70,7 +70,7 @@ void FrameBuffer::Attach(FBAttachmentInfo& info)
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GetGLTexTarget(m_Info.Depth.Target), m_Info.Depth.RendererID, m_Info.Depth.MipLevel);
 		if (m_Info.Depth.LoadAction == FBTextureLoadAction::Clear)
 		{
-			uint32 color = 0xFFFFFF00;
+			uint32_t color = 0xFFFFFF00;
 			glClearTexImage(m_Info.Depth.RendererID, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, &color);
 		}
 	}
@@ -79,7 +79,7 @@ void FrameBuffer::Attach(FBAttachmentInfo& info)
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
 	}
 
-	for (int32 i = 0; i < m_Info.Attachments.size(); i++)
+	for (int32_t i = 0; i < m_Info.Attachments.size(); i++)
 	{
 		auto& attachment = m_Info.Attachments[i];
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GetGLTexTarget(attachment.Target), attachment.RendererID, attachment.MipLevel);

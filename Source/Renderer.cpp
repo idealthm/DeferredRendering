@@ -1,25 +1,20 @@
-﻿#include "Renderer.h"
+#include "Renderer.h"
 #include <iostream>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
+#include "RenderPipeline.h"
+#include "RHI/SamplerPool.h"
+#include "RenderPass/RenderPass.h"
 #include "Scene.h"
 #include "FrameBuffer/FrameBuffer.h"
 #include "IndexBuffer/IndexBuffer.h"
 #include "Model/Texture.h"
-#include "RenderPass/ERPPass.h"
-#include "RenderPass/GBufferPass.h"
-#include "RenderPass/ShadowPass.h"
-#include "RenderPass/SkyLightPass.h"
-#include "RenderPass/ToneMapping.h"
-#include "RenderPass/LightingPass.h"
 #include "Lights/Light.h"
 
 
-RenderContext g_ctx;
-
-namespace 
+namespace
 {
     void OpenGLMessageCallback(
         unsigned source,
@@ -55,7 +50,7 @@ Renderer& Renderer::Get()
     return renderer;
 }
 
-void Renderer::Init(uint32 width, uint32 height)
+void Renderer::Init(uint32_t width, uint32_t height)
 {
 #ifdef _DEBUG
     glEnable(GL_DEBUG_OUTPUT);
@@ -70,32 +65,27 @@ void Renderer::Init(uint32 width, uint32 height)
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    PostRendererInit();
-
-    m_GBufferPass = CreateRef<GBufferPass>();
-    m_ShadowPass = CreateRef<ShadowPass>();
-    m_LightPass = CreateRef<LightingPass>();
-    m_SkyLightPass = CreateRef<SkyLightPass>();
-    m_ToneMappingPass = CreateRef<ToneMapping>();
-    // m_ERPPass = CreateRef<ERPPass>();
+    m_Pipeline = CreateScope<RenderPipeline>();
 }
 
 void Renderer::Shutdown()
 {
+    m_Pipeline = nullptr;
+
+    SamplerPool::Get().Clear();
+
     GDefaultTextures.White = nullptr;
     GDefaultTextures.Black = nullptr;
     GDefaultTextures.Gray = nullptr;
     GDefaultTextures.Normal = nullptr;
-
-    g_ctx = {};
 }
 
-void Renderer::OnWindowResize(int32 width, int32 height)
+void Renderer::OnWindowResize(int32_t width, int32_t height)
 {
     SetViewport(0, 0, width, height);
 }
 
-void Renderer::SetViewport(uint32 x, uint32 y, uint32 width, uint32 height)
+void Renderer::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
     // glViewport(x, y, width, height);
 }
@@ -105,43 +95,20 @@ void Renderer::SetClearColor(const glm::vec4& color)
     glClearColor(color.x, color.y, color.z, color.w);
 }
 
-void Renderer::PostRendererInit()
+void Renderer::StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass, const glm::u32vec2& viewportSize, RenderContext& ctx)
 {
-    g_ctx.BRDF_LUT = CreateRef<Texture2D>("Assets/textures/ibl_brdf_lut.png");
-    g_ctx.FrameBuffer = CreateScope<FrameBuffer>();
-    g_ctx.FrameDataUB = CreateScope<ParamBuffer<FrameData>>(0);
-    g_ctx.LightDataUB = CreateScope<ParamBuffer<LightData>>(1);
-    g_ctx.ShadowWidth = 2048.f * 1;
-    g_ctx.ShadowHeight = 2048.f * 1;
-
-    GDefaultTextures.White  = Texture2D::Create(0xFFFFFFFF);
-    GDefaultTextures.Black  = Texture2D::Create(0xFF000000);
-    GDefaultTextures.Gray   = Texture2D::Create(0xFF808080);
-    GDefaultTextures.Normal = Texture2D::Create(0xFFFF8080);
-}
-
-void Renderer::Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize)
-{
-    StartPass(scene, m_ShadowPass, viewportSize);
-    StartPass(scene, m_GBufferPass, viewportSize);
-    StartPass(scene, m_LightPass, viewportSize);
-    StartPass(scene, m_SkyLightPass, viewportSize);
-    StartPass(scene, m_ToneMappingPass, viewportSize);
-
-    // StartPass(scene, m_ERPPass, viewportSize);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void Renderer::StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass, const glm::u32vec2& viewportSize)
-{
-    for (uint32 i = 0; i < renderPass->GetRenderTimes(); i++)
+    for (uint32_t i = 0; i < renderPass->GetRenderTimes(); i++)
     {
         FBAttachmentInfo FBInfo;
         FBInfo.Width = viewportSize.x;
         FBInfo.Height = viewportSize.y;
-        renderPass->Setup(FBInfo, i);
-        g_ctx.FrameBuffer->Attach(FBInfo);
-        renderPass->Execute(scene, i);
+        renderPass->Setup(FBInfo, i, ctx);
+        ctx.FrameBuffer->Attach(FBInfo);
+        renderPass->Execute(scene, i, ctx);
     }
+}
+
+RenderPipeline& Renderer::GetPipeline()
+{
+    return *m_Pipeline;
 }

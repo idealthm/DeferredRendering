@@ -21,7 +21,7 @@ void Material::ApplyMaterial(Ref<Shader> shader)
 		}
 	}
 
-	uint32 startIndex = shader->GetFreeSlotIndex();
+	uint32_t startIndex = shader->GetFreeSlotIndex();
 	for (auto& [name, tex] : m_TextureProperty)
 	{
 		tex->Bind(startIndex);

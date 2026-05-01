@@ -9,12 +9,12 @@ class Texture2D;
 class ERPPass : public RenderPass
 {
 public:
-	ERPPass(const std::string& hdrFilePath, uint32 size);
+	ERPPass(const std::string& hdrFilePath, uint32_t size);
 	virtual ~ERPPass();
 
-	uint32 GetRenderTimes() override { return 6;}
-	void Setup(FBAttachmentInfo& info, uint32 step) override;
-	void Execute(Ref<Scene> scene, uint32 step) override;
+	uint32_t GetRenderTimes() override { return 6;}
+	void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx) override;
+	void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx) override;
 
 private:
 	Ref<Shader>			m_Shader;

@@ -3,6 +3,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+#include "RHI/SamplerPool.h"
 #include "Shader/ShaderLibrary.h"
 #include "ShaderPreprocessor/ShaderLoader.h"
 #include "Shapes/MeshBuilder.h"
@@ -12,35 +13,40 @@ CubeMapConvolution::CubeMapConvolution()
 	m_Shader = ShaderLibrary::Get().GetShader("Shaders/Passes/CubeMapConvolution", nullptr);
 }
 
-void CubeMapConvolution::Setup(FBAttachmentInfo& info, uint32 step)
+void CubeMapConvolution::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
 {
 	info.Width = 32;
 	info.Height = 32;
 
-	TextureDescription desc;
-	desc.width = 32;
-	desc.height = 32;
-	desc.bGenerateMipmap = true;
-	desc.MipLevel = 5;
-	desc.format = ETextureFormat::RGBA16F;
-	desc.SRGB = true;
-	desc.FilterS = ETextureWrapMode::EClampToEdge;
-	desc.FilterT = ETextureWrapMode::EClampToEdge;
-	desc.FilterR = ETextureWrapMode::EClampToEdge;
-
-	CreateResource(g_ctx.IBL_IrradianceMap, desc);
-	ETextureTarget target = (ETextureTarget)((uint32)ETextureTarget::Positive_X + step);
+	RHI::TextureDesc desc;
+	desc.Width = 32;
+	desc.Height = 32;
+	desc.MipLevels = 5;
+	desc.Format = RHI::Format::RGBA16F;
+	desc.Target = RHI::Sampler::DimCube;
+	CreateResource(ctx.IBL_IrradianceMap, desc);
+	if (!ctx.IBL_IrradianceMap->GetSampler())
+	{
+		RHI::SamplerParams samplerParams{};
+		samplerParams.wrapS = RHI::SamplerWrapMode::ClampToEdge;
+		samplerParams.wrapT = RHI::SamplerWrapMode::ClampToEdge;
+		samplerParams.wrapR = RHI::SamplerWrapMode::ClampToEdge;
+		samplerParams.filterMin = RHI::SamplerMinFilter::Linear;
+		samplerParams.filterMag = RHI::SamplerMagFilter::Linear;
+		ctx.IBL_IrradianceMap->SetSampler(SamplerPool::Get().GetOrCreate(samplerParams));
+	}
+	ETextureTarget target = (ETextureTarget)((uint32_t)ETextureTarget::Positive_X + step);
 
 	info.Attachments = {
-		{g_ctx.IBL_IrradianceMap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store}
+		{ctx.IBL_IrradianceMap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store}
 	};
 }
 
-void CubeMapConvolution::Execute(Ref<Scene> scene, uint32 step)
+void CubeMapConvolution::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 {
 	m_Shader->Bind();
-	uint32 FreeSlotIndex = m_Shader->GetFreeSlotIndex();
-	g_ctx.ERP_Cubemap->Bind(FreeSlotIndex);
+	uint32_t FreeSlotIndex = m_Shader->GetFreeSlotIndex();
+	ctx.ERP_Cubemap->Bind(FreeSlotIndex);
 	m_Shader->SetUniform1i("uCubeMap", FreeSlotIndex++);
 
 	// 投影矩阵：90度 FOV，1:1 宽高比

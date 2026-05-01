@@ -16,13 +16,13 @@ template<typename T, typename enable = void> struct Length;
 template<>
 struct Length<float>
 {
-	static constexpr uint32 value = 1;
+	static constexpr uint32_t value = 1;
 };
 
 template<typename T>
 struct Length<T, decltype(std::declval<T>().length())>
 {
-	static constexpr uint32 value = T().length();
+	static constexpr uint32_t value = T().length();
 };
 
 enum class EMaterialDomain
@@ -50,8 +50,8 @@ public:
 
 	struct floatInfo
 	{
-		uint32 offset;
-		uint32 size;
+		uint32_t offset;
+		uint32_t size;
 	};
 
 	void ApplyMaterial(Ref<Shader> shader);
@@ -62,7 +62,7 @@ public:
 		auto pos = this->m_FloatProperty.find(name);
 		if (pos == this->m_FloatProperty.end())
 		{
-			constexpr uint32 length = Length<T>::value;
+			constexpr uint32_t length = Length<T>::value;
 			m_FloatProperty.emplace(name, {m_Floats.size(), value.length()});
 			if constexpr (!std::is_same_v<T, float>)
 				for (int i = 0; i < length; i++) m_Floats.emplace_back(value[i]);
@@ -88,7 +88,7 @@ public:
 	}
 
 	template<typename T>
-	T GetFloat(uint32 offset)
+	T GetFloat(uint32_t offset)
 	{
 		return *(T *)&m_Floats[offset];
 	}

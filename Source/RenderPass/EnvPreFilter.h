@@ -6,10 +6,10 @@ class EnvPreFilter : public RenderPass
 {
 public:
 	EnvPreFilter();
-	uint32 GetRenderTimes() override;
-	void Setup(FBAttachmentInfo& info, uint32 step) override;
-	void Execute(Ref<Scene> scene, uint32 step) override;
+	uint32_t GetRenderTimes() override;
+	void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx) override;
+	void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx) override;
 private:
-	TextureDescription	m_Desc;
+	RHI::TextureDesc	m_Desc;
 	Ref<Shader>			m_Shader;
 };

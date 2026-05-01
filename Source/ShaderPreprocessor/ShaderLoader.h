@@ -10,10 +10,10 @@ class Shader;
 class ShaderLoader
 {
 public:
-	static uint32 CompileShader(unsigned int type, const std::string& source);
-	static uint32 CreateShader(const std::string& vertexShader, const std::string& fragmentShader);
+	static uint32_t CompileShader(unsigned int type, const std::string& source);
+	static uint32_t CreateShader(const std::string& vertexShader, const std::string& fragmentShader);
 
-	static uint32 CreateShader(const std::string& filePath, DUI* Indui);
+	static uint32_t CreateShader(const std::string& filePath, DUI* Indui);
 
 	static bool IsDirectory(const std::string &path);
 

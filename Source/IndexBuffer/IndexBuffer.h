@@ -6,15 +6,15 @@
 class IndexBuffer
 {
 public:
-    IndexBuffer(const uint32 * data, uint32 count);
+    IndexBuffer(const uint32_t * data, uint32_t count);
     ~IndexBuffer();
 
     void Bind() const;
     void Unbind() const;
 
-    int32 GetCount() const {return static_cast<int32>(m_Count);}
+    int32_t GetCount() const {return static_cast<int32_t>(m_Count);}
 
 private:
-    uint32 m_RendererID;
-    uint32 m_Count;
+    uint32_t m_RendererID;
+    uint32_t m_Count;
 };
