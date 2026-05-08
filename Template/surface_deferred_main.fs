@@ -17,7 +17,5 @@ void main() {
     // Invoke user code
     material(inputs);
 
-    // applyAlphaMask(inputs.baseColor);
-
     fragColor = evaluateMaterial(inputs);
 }

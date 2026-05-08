@@ -55,15 +55,20 @@ static const char* StageSuffix(ShaderStage stage)
     return stage == ShaderStage::Vertex ? "vs" : "fs";
 }
 
+static const char* ToString(Pipeline pipeline)
+{
+    return pipeline == Pipeline::Deferred ? "deferred" : "forward";
+}
+
 // ============================================================
 // EmitDefine — centralized macro emission
 // ============================================================
-static void EmitDefine(std::ostringstream& os, const char* name)
+static void EmitDefine(std::ostringstream& os, const std::string& name)
 {
     os << "#define " << name << "\n";
 }
 
-static void EmitDefine(std::ostringstream& os, const char* name, const char* value)
+static void EmitDefine(std::ostringstream& os, const std::string& name, const std::string& value)
 {
     os << "#define " << name << " " << value << "\n";
 }
@@ -187,15 +192,19 @@ void GenerateHeader(std::ostringstream& os, const MaterialSpec& spec)
     }
 
     // --- Sampler uniforms (materialParams_<name>) ---
-    int samplerBinding = 0;
+    // Start at 4 to avoid conflict with uniform blocks: MaterialParams(0),
+    // FrameUniforms(1), ShadowUniforms(2), ObjectUniforms(3)
+    int samplerBinding = 4;
+    bool hasSamplers = false;
     for (const auto& p : spec.properties)
     {
         if (p.kind != PropertyParam::Kind::Sampler)
             continue;
         os << "layout(binding = " << samplerBinding++ << ") uniform "
            << SamplerTypeToGLSL(p.samplerType) << " materialParams_" << p.name << ";\n";
+        hasSamplers = true;
     }
-    if (samplerBinding > 0)
+    if (hasSamplers)
         os << '\n';
 
     // --- Feature macros ---
@@ -208,18 +217,17 @@ void GenerateHeader(std::ostringstream& os, const MaterialSpec& spec)
     {
         const auto& v = spec.variables[i];
         std::string upper = UpperCase(v.name);
-        EmitDefine(os, ("HAS_VARIABLE_" + upper).c_str());
-        EmitDefine(os, ("VARIABLE_CUSTOM" + std::to_string(i)).c_str(), v.name.c_str());
-        EmitDefine(os, ("VARIABLE_CUSTOM_AT" + std::to_string(i)).c_str(),
-                   ("variable_" + v.name).c_str());
+        EmitDefine(os, "HAS_VARIABLE_" + upper);
+        EmitDefine(os, "VARIABLE_CUSTOM" + std::to_string(i), v.name);
+        EmitDefine(os, "VARIABLE_CUSTOM_AT" + std::to_string(i), "variable_" + v.name);
     }
 
     for (const auto& c : spec.constants)
-        EmitDefine(os, ("CONST_" + UpperCase(c.name)).c_str(), c.name.c_str());
+        EmitDefine(os, "CONST_" + UpperCase(c.name), c.name);
 
     // HAS_ATTRIBUTE_<NAME> for required attributes
     for (VertexAttribute attr : spec.requiredAttributes)
-        EmitDefine(os, ("HAS_ATTRIBUTE_" + std::string(VertexAttributeToMacroName(attr))).c_str());
+        EmitDefine(os, "HAS_ATTRIBUTE_" + std::string(VertexAttributeToMacroName(attr)));
 
     // HAS_ATTRIBUTE_POSITION is implied for surface domain
     if (spec.domain == "surface")
@@ -292,7 +300,7 @@ void GenerateGetter(std::ostringstream& os, const MaterialSpec& spec, ShaderStag
 
 void GenerateMain(std::ostringstream& os, const MaterialSpec& spec, ShaderStage stage)
 {
-    std::string file = std::string("surface_main.") + StageSuffix(stage);
+    std::string file = "surface_" + std::string(ToString(spec.pipeline)) + "_main." + StageSuffix(stage);
     os << "// =====================================================\n";
     os << "// Template: " << file << "\n";
     os << "// =====================================================\n";

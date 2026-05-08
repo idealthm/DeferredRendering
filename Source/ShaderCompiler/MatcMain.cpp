@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -8,7 +9,6 @@
 #include "MaterialSpec.h"
 
 #define WIN32_LEAN_AND_MEAN
-#include <sstream>
 #include <windows.h>
 
 static void PrintUsage()
@@ -249,6 +249,21 @@ int main(int Argc, char* Argv[])
 
     std::cout << "matc: parsed material '" << spec.name << "' ("
               << spec.domain << ", shading: " << spec.shadingModel << ")\n";
+
+    // default Code.
+    if (spec.vertexCode.empty())
+    {
+        spec.vertexCode = "void materialVertex(out MaterialVertexInputs inputs)\n{\n}";
+    }
+    if (spec.fragmentCode.empty())
+    {
+        spec.fragmentCode = "void material(out MaterialInputs inputs)\n{\n}";
+    }
+    // default Attributes
+    if (spec.shadingModel != "unlit")
+    {
+        spec.requiredAttributes.push_back(VertexAttribute::TANGENTS);
+    }
 
     // --- Step 2: Expand includes ---
     std::string inputDir = GetDirectory(inputFile);
