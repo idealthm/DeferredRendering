@@ -3,3 +3,6 @@
 .git
 Binaries
 Intermediate
+*.frag
+*.vert
+*.spv
