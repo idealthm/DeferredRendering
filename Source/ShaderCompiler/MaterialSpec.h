@@ -6,6 +6,8 @@
 #include "Material/MaterialEnums.h"
 #include "ShaderCompiler/MaterialEnums.h"
 
+enum class Pipeline;
+
 struct ConstantParam
 {
     std::string type;   // "float", "int", "bool", "vec3", etc.
@@ -37,6 +39,7 @@ struct OutputParam
 struct MaterialSpec
 {
     std::string name;
+    Pipeline    pipeline;                           // "deferred" | "forward"
     std::string shadingModel;                   // "unlit" | "lit" | ...
     std::string domain;                         // "surface" | "postprocess" | "compute"
     std::vector<VertexAttribute> requiredAttributes;

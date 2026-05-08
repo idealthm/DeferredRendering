@@ -34,7 +34,7 @@ vec3 saturate(vec3 v) { return clamp(v, 0.0, 1.0); }
 vec4 saturate(vec4 v) { return clamp(v, 0.0, 1.0); }
 
 // --- Frame / transform helpers ---
-mat4 getWorldFromModelNormalMatrix() { return mat4(1.0); }
+mat3 getWorldFromModelNormalMatrix() { return mat3(1.0); }
 mat4 getViewFromWorldMatrix() { return mat4(1.0); }
 vec3 getWorldPosition() { return vec3(0.0); }
 vec3 getWorldCameraPosition() { return vec3(0.0); }
@@ -44,13 +44,18 @@ vec3 getWorldCameraPosition() { return vec3(0.0); }
 vec4 ComputeWorldPosition() { return mesh_position; }
 #endif
 
-void toTangentFrame(vec4 q, out vec3 n) {
-    n = vec3(0.0, 0.0, 1.0);
+void toTangentFrame(vec4 q, out vec3 n) 
+{
+    n = vec3( 0.0,  0.0,  1.0) +
+        vec3( 2.0, -2.0, -2.0) * q.x * q.zwx +
+        vec3( 2.0,  2.0, -2.0) * q.y * q.wzy;
 }
 
 void toTangentFrame(vec4 q, out vec3 n, out vec3 t) {
-    n = vec3(0.0, 0.0, 1.0);
-    t = vec3(1.0, 0.0, 0.0);
+    toTangentFrame(q, n);
+    t = vec3( 1.0,  0.0,  0.0) +
+        vec3(-2.0,  2.0, -2.0) * q.y * q.yxw +
+        vec3(-2.0,  2.0,  2.0) * q.z * q.zwx;
 }
 
 // --- Shadow helpers ---

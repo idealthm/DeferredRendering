@@ -1,4 +1,5 @@
 #include "MaterialSpec.h"
+#include "GLSLGenerator.h"
 
 #include <stdexcept>
 #include <unordered_map>
@@ -55,6 +56,18 @@ static MaterialSpec ParseMaterialSpecImpl(const json& j)
     if (!j.contains("name"))
         throw std::runtime_error("missing required field 'name'");
     spec.name = j["name"].get<std::string>();
+
+    // --- pipeline (optional, defaults to "deferred") ---
+    {
+        std::string pipelineStr = j.value("pipeline", "deferred");
+        if (pipelineStr == "deferred")
+            spec.pipeline = Pipeline::Deferred;
+        else if (pipelineStr == "forward")
+            spec.pipeline = Pipeline::Forward;
+        else
+            throw std::runtime_error("material '" + spec.name + "': invalid pipeline '" +
+                pipelineStr + "'. Valid: deferred, forward");
+    }
 
     // --- shadingModel (optional, defaults to "unlit") ---
     spec.shadingModel = j.value("shadingModel", "unlit");
