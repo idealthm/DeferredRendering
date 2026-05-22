@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.33502.453
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DeferredRendering", "DeferredRendering.vcxproj", "{F072E502-0299-4641-B05D-E0BD21CA7978}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderCompiler", "ShaderCompiler.vcxproj", "{A8B9C0D1-E2F3-4A5B-6C7D-8E9F0A1B2C3D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -15,6 +17,10 @@ Global
 		{F072E502-0299-4641-B05D-E0BD21CA7978}.Debug|x64.Build.0 = Debug|x64
 		{F072E502-0299-4641-B05D-E0BD21CA7978}.Release|x64.ActiveCfg = Release|x64
 		{F072E502-0299-4641-B05D-E0BD21CA7978}.Release|x64.Build.0 = Release|x64
+		{A8B9C0D1-E2F3-4A5B-6C7D-8E9F0A1B2C3D}.Debug|x64.ActiveCfg = Debug|x64
+		{A8B9C0D1-E2F3-4A5B-6C7D-8E9F0A1B2C3D}.Debug|x64.Build.0 = Debug|x64
+		{A8B9C0D1-E2F3-4A5B-6C7D-8E9F0A1B2C3D}.Release|x64.ActiveCfg = Release|x64
+		{A8B9C0D1-E2F3-4A5B-6C7D-8E9F0A1B2C3D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

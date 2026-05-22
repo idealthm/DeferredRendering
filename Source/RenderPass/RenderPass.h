@@ -9,7 +9,7 @@ struct FBTextureDesc;
 class FrameBuffer;
 struct RenderContext;
 class Scene;
-class Shader;
+class Program;
 
 enum class RenderPassType
 {

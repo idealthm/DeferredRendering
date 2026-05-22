@@ -1,57 +1,47 @@
-﻿#include "Material.h"
+#include "Material.h"
 
-#include "Renderer.h"
-#include "Model/Texture.h"
-#include "Shader/ShaderLibrary.h"
+#include "Engine.h"
+#include "Shader/Program.h"
 
-
-void Material::ApplyMaterial(Ref<Shader> shader)
+Material::Material(const MaterialInfo& info)
+	: m_Info(info)
 {
-	shader->Bind();
+	BuildFromReflection(info);
+}
 
-	for (auto& [name, prop] : m_FloatProperty)
+Handle<RHI::HwProgram> Material::GetProgram() const
+{
+	if (m_CachedProgram)
 	{
-		switch (prop.size)
-		{
-		case 1:shader->SetUniform1f(name, GetFloat<float>(prop.offset));break;
-		case 2:shader->SetUniform2f(name, GetFloat<glm::vec2>(prop.offset));break;
-		case 3:shader->SetUniform3f(name, GetFloat<glm::vec3>(prop.offset));break;
-		case 4:shader->SetUniform4f(name, GetFloat<glm::vec4>(prop.offset));break;
-			default: ASSERT(false); break;
-		}
+		return m_CachedProgram;
 	}
 
-	uint32_t startIndex = shader->GetFreeSlotIndex();
-	for (auto& [name, tex] : m_TextureProperty)
-	{
-		tex->Bind(startIndex);
-		shader->SetUniform1i(name, startIndex++);
-	}
+	m_CachedProgram = gEngine->GetDriver().CreateProgram(Program{m_Info.shaderData, m_Info.descriptorSets});
+	return m_CachedProgram;
 }
 
-Ref<Texture2D> Material::GetTexture2D(const std::string& name) const
+void Material::BuildFromReflection(const MaterialInfo& info)
 {
-	auto pos = m_TextureProperty.find(name);
-	return pos == m_TextureProperty.end() ? nullptr : pos->second;
+	m_SamplerBlock = info.sib;
+	m_UniformBlock = info.uib;
+	for (size_t i = 0; i < m_UniformBlock.fields.size(); i++)
+		m_FieldIndex[m_UniformBlock.fields[i].name] = i;
+	for (size_t i = 0; i < m_SamplerBlock.mSamplersInfoList.size(); i++)
+		m_SamplerIndex[m_SamplerBlock.mSamplersInfoList[i].name] = i;
 }
 
-void Material::SetTexture2D(const std::string& name, const Ref<Texture2D>& texture)
+const SamplerInfo* Material::FindSampler(const std::string& name) const
 {
-	m_TextureProperty[name] = texture;
+	const auto it = m_SamplerIndex.find(name);
+	if (it == m_SamplerIndex.end())
+		return nullptr;
+	return &m_SamplerBlock.mSamplersInfoList[it->second];
 }
 
-Ref<Shader> Material::GetShader(RenderPassType PassType) const
+const FieldInfo* Material::FindField(const std::string& name) const
 {
-	return ShaderLibrary::Get().GetShader(m_Domain);
-}
-
-Ref<Material> Material::CreateDefault()
-{
-	auto mat = CreateRef<Material>(EMaterialDomain::Surface, EBlendMode::Opaque);
-	mat->SetTexture2D("uAlbedo", GDefaultTextures.White);
-	mat->SetTexture2D("uNormal", GDefaultTextures.Normal);
-	mat->SetTexture2D("uRoughness", GDefaultTextures.Black);
-	mat->SetTexture2D("uMetallic", GDefaultTextures.Gray);
-	mat->SetTexture2D("uAO", GDefaultTextures.White);
-	return mat;
+	const auto it = m_FieldIndex.find(name);
+	if (it == m_FieldIndex.end())
+		return nullptr;
+	return &m_UniformBlock.fields[it->second];
 }

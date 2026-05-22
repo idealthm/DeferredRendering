@@ -7,6 +7,8 @@
 #include "GLSLGenerator.h"
 #include "IncludeExpander.h"
 #include "MaterialSpec.h"
+#include "Common/Serialization/ChunkContainer.h"
+#include "Common/Serialization/MaterialBinaryChunks.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -145,6 +147,122 @@ static bool RunGlslc(const std::string& glslcPath,
         return false;
     }
 }
+
+// ============================================================
+// Write .matb binary file
+// ============================================================
+static void WriteMaterialBinary(const std::string& fullOutputDir,
+                                const MaterialSpec& spec,
+                                const std::string& vertSource,
+                                const std::string& fragSource,
+                                bool hasSpv)
+{
+	// Read SPV data once (reused across dry-run and real write)
+	MaterialSpirvChunk spirvChunk;
+	if (hasSpv)
+	{
+		auto readSpv = [](const std::string& path, std::vector<uint8_t>& out)
+		{
+			std::ifstream f(path, std::ios::binary | std::ios::ate);
+			if (!f) return;
+			out.resize(static_cast<size_t>(f.tellg()));
+			f.seekg(0);
+			f.read(reinterpret_cast<char*>(out.data()), out.size());
+		};
+		readSpv(fullOutputDir + "/" + spec.name + ".vert.spv", spirvChunk.vertexSpirv);
+		readSpv(fullOutputDir + "/" + spec.name + ".frag.spv", spirvChunk.fragmentSpirv);
+	}
+
+	// Pre-build chunks that don't depend on the archive
+	MaterialGlslChunk glslChunk;
+	glslChunk.vertexGlsl   = vertSource;
+	glslChunk.fragmentGlsl = fragSource;
+
+	MaterialNameChunk    nameChunk   = { spec.name };
+	MaterialVersionChunk versionChunk  = { 1 };
+	MaterialShadingChunk shadingChunk = { spec.shadingModel };
+
+	MaterialDomainChunk domainChunk;
+	if (spec.domain == "surface")      domainChunk.domain = 0;
+	else if (spec.domain == "postprocess") domainChunk.domain = 1;
+	else if (spec.domain == "compute")     domainChunk.domain = 2;
+
+	MaterialRequiredAttributesChunk attrChunk;
+	for (auto attr : spec.requiredAttributes)
+		attrChunk.attributeMask |= (1u << static_cast<uint32_t>(attr));
+
+	MaterialPropertiesChunk propsChunk;
+	for (auto& p : spec.properties)
+	{
+		FlatProperty fp;
+		fp.name = p.name;
+		fp.uniformType = p.kind == PropertyParam::Kind::Uniform
+			? static_cast<uint8_t>(p.uniformType)
+			: uint8_t(0);
+		propsChunk.properties.push_back(std::move(fp));
+	}
+
+	MaterialConstantsChunk constChunk;
+	for (auto& k : spec.constants)
+		constChunk.constants.push_back(k.name);
+
+	auto writeAllChunks = [&](FArchive& ar)
+	{
+		ChunkContainer cc;
+		cc.WriteFileHeader(ar);
+		uint32_t chunkCount = 0;
+
+		auto writeChunk = [&](ChunkType type, auto& chunk)
+		{
+			cc.BeginChunk(ar, type);
+			chunk.Serialize(ar);
+			cc.EndChunk(ar);
+			chunkCount++;
+		};
+
+		if (hasSpv)
+			writeChunk(ChunkType::MaterialSpirv, spirvChunk);
+
+		writeChunk(ChunkType::MaterialGlsl,    glslChunk);
+		writeChunk(ChunkType::MaterialName,    nameChunk);
+		writeChunk(ChunkType::MaterialVersion, versionChunk);
+		writeChunk(ChunkType::MaterialShading, shadingChunk);
+		writeChunk(ChunkType::MaterialDomain,  domainChunk);
+
+		if (!spec.requiredAttributes.empty())
+			writeChunk(ChunkType::MaterialRequiredAttributes, attrChunk);
+
+		if (!spec.properties.empty())
+			writeChunk(ChunkType::MaterialProperties, propsChunk);
+
+		if (!spec.constants.empty())
+			writeChunk(ChunkType::MaterialConstants, constChunk);
+
+		cc.PatchChunkCount(ar, chunkCount);
+		return chunkCount;
+	};
+
+	// Dry run — cursor only, no data copied
+	FArchiveWrite dryAr;
+	const uint32_t chunkCount = writeAllChunks(dryAr);
+
+	// Real write
+	std::vector<uint8_t> buffer(dryAr.Tell());
+	FArchiveWrite ar(buffer.data(), buffer.size());
+	writeAllChunks(ar);
+
+	std::string matbPath = fullOutputDir + "/" + spec.name + ".matb";
+	std::ofstream file(matbPath, std::ios::binary);
+	if (!file)
+	{
+		std::cerr << "matc: error: cannot write " << matbPath << '\n';
+		return;
+	}
+	file.write(reinterpret_cast<const char*>(buffer.data()), buffer.size());
+	std::cout << "matc: wrote " << matbPath << " (" << chunkCount << " chunks)\n";
+}
+
+// ============================================================
 
 int main(int Argc, char* Argv[])
 {
@@ -370,6 +488,10 @@ int main(int Argc, char* Argv[])
             return 1;
         }
     }
+
+    // --- Step 6: Write .matb binary ---
+    WriteMaterialBinary(fullOutputDir, spec, vertSource, fragSource,
+                        !preprocessOnly && !codeOnly);
 
     std::cout << "matc: done.\n";
     return 0;

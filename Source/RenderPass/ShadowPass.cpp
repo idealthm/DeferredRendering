@@ -3,6 +3,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include "Actor.h"
+#include "Engine.h"
 #include "Renderer.h"
 #include "Scene.h"
 #include "Component/ActorComponent.h"
@@ -10,13 +11,12 @@
 #include "Lights/Light.h"
 #include "Model/StaticMesh.h"
 #include "Model/Texture.h"
-#include "RHI/SamplerPool.h"
-#include "Shader/Shader.h"
-#include "Shader/ShaderLibrary.h"
+#include "Shader/Program.h"
+
+using namespace TextureFactory;
 
 ShadowPass::ShadowPass()
 {
-	m_Shader = ShaderLibrary::Get().GetShader("Shaders/ShadowPass", nullptr);
 }
 
 ShadowPass::~ShadowPass()
@@ -35,14 +35,12 @@ void ShadowPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx
 
 	CreateResource(ctx.ShadowMap_Depth, CreateShadowMap(ctx.ShadowWidth));
 
-	if (!ctx.ShadowMap_Depth->GetSampler())
-		ctx.ShadowMap_Depth->SetSampler(SamplerPool::Get().GetOrCreate(ShadowMapSampler()));
 
 	info.Depth = {
-		ctx.ShadowMap_Depth->GetRendererID(),
-		ETextureTarget::Texture2D,
-		FBTextureLoadAction::Clear, 
-		FBTextureStoreAction::Store
+		// ctx.ShadowMap_Depth->GetRendererID(),
+		// ETextureTarget::Texture2D,
+		// FBTextureLoadAction::Clear, 
+		// FBTextureStoreAction::Store
 	};
 
 	// info.Attachments = {
@@ -52,9 +50,7 @@ void ShadowPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx
 
 void ShadowPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 {
-	m_Shader->Bind();
-
-	LightData& data = ctx.LightDataUB->Data;
+	LightData& data = ctx.LightDataUB.edit();
 
 	for (const auto& Actor : scene->GetActors())
 	{
@@ -67,22 +63,21 @@ void ShadowPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 			}  
 		}
 	}
-	ctx.LightDataUB->Update();
+	ctx.LightDataUB.commit(gEngine->GetDriver());
 
-	for (const auto& Actor : scene->GetActors())
-	{
-		if (!Actor->IsCastShadow()) continue;
-		for (auto& Comp : Actor->GetComponents())
-		{
-			if (auto MeshComp = std::dynamic_pointer_cast<StaticMeshComponent>(Comp))
-			{
-				if (MeshComp->GetMesh())
-				for (auto& section : MeshComp->GetMesh()->GetMeshSections())
-				{
-					m_Shader->SetUniformMatrix4f("uModel", MeshComp->GetModelMatrix());
-					section->Draw();
-				}
-			}
-		}
-	}
+	// for (const auto& Actor : scene->GetActors())
+	// {
+	// 	if (!Actor->IsCastShadow()) continue;
+	// 	for (auto& Comp : Actor->GetComponents())
+	// 	{
+	// 		if (auto MeshComp = std::dynamic_pointer_cast<StaticMeshComponent>(Comp))
+	// 		{
+	// 			if (MeshComp->GetMesh())
+	// 			for (auto& section : MeshComp->GetMesh()->GetMeshSections())
+	// 			{
+	// 				section->Draw();
+	// 			}
+	// 		}
+	// 	}
+	// }
 }

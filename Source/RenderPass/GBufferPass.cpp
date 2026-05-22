@@ -1,19 +1,22 @@
-﻿#include "GBufferPass.h"
+#include "GBufferPass.h"
 
 #include "Actor.h"
+#include "Engine.h"
+#include "EngineEnum.h"
 #include "Renderer.h"
 #include "Scene.h"
 #include "Component/ActorComponent.h"
 #include "FrameBuffer/FrameBuffer.h"
 #include "Material/Material.h"
+#include "Material/MaterialInstance.h"
 #include "Model/StaticMesh.h"
-#include "Model/Texture.h"
-#include "RHI/SamplerPool.h"
-#include "Shader/Shader.h"
+#include "RHI/PipelineState.h"
+#include "Shader/Program.h"
+
+using namespace TextureFactory;
 
 GBufferPass::GBufferPass()
 {
-	// CreateScope<Shader>("Shaders/Basic", 10);
 }
 
 void GBufferPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
@@ -24,13 +27,12 @@ void GBufferPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ct
 	info.DSS.depthWrite = true;
 	info.DSS.compareFunc = ECompareFunc::Less;
 
-	// 深度：Clear 以开始新的一帧，Store 供后续 Skybox 或 Transparency 使用
 	CreateResource(ctx.GBuffer_Depth, CreateDepth(info.Width, info.Height));
 
 	info.Depth = {
-		ctx.GBuffer_Depth->GetRendererID(), 
-		FBTextureLoadAction::Clear, 
-		FBTextureStoreAction::Store 
+		// ctx.GBuffer_Depth->GetRendererID(),
+		// FBTextureLoadAction::Clear,
+		// FBTextureStoreAction::Store
 	};
 
 	CreateResource(ctx.GBuffer_Position, CreateGBuffer(info.Width, info.Height, RHI::Format::RGBA16F));
@@ -38,37 +40,31 @@ void GBufferPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ct
 	CreateResource(ctx.GBuffer_Albedo, CreateGBuffer(info.Width, info.Height, RHI::Format::SRGB8));
 	CreateResource(ctx.GBuffer_Material, CreateGBuffer(info.Width, info.Height, RHI::Format::RGBA8));
 
-	if (!ctx.GBuffer_Position->GetSampler())
-		ctx.GBuffer_Position->SetSampler(SamplerPool::Get().GetOrCreate(DefaultClampSampler()));
-	if (!ctx.GBuffer_Normal->GetSampler())
-		ctx.GBuffer_Normal->SetSampler(SamplerPool::Get().GetOrCreate(DefaultClampSampler()));
-	if (!ctx.GBuffer_Albedo->GetSampler())
-		ctx.GBuffer_Albedo->SetSampler(SamplerPool::Get().GetOrCreate(DefaultClampSampler()));
-	if (!ctx.GBuffer_Material->GetSampler())
-		ctx.GBuffer_Material->SetSampler(SamplerPool::Get().GetOrCreate(DefaultClampSampler()));
-
 	info.Attachments = {
-		// Slot 0: World Position (可选，如果内存紧张可通过深度重建)
-		{ ctx.GBuffer_Position->GetRendererID(), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
-		// Slot 1: Normal (RG16F 高精度)
-		{ ctx.GBuffer_Normal->GetRendererID(), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
-		// Slot 2: Albedo (sRGB 开启)
-		{ ctx.GBuffer_Albedo->GetRendererID(), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
-		// Slot 3: Material (PBR 参数: Roughness, Metalness, AO)
-		{ ctx.GBuffer_Material->GetRendererID(), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		// { ctx.GBuffer_Position->GetRendererID(), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		// { ctx.GBuffer_Normal->GetRendererID(), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		// { ctx.GBuffer_Albedo->GetRendererID(), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
+		// { ctx.GBuffer_Material->GetRendererID(), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
 	};
 }
 
 void GBufferPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 {
-	struct RenderItem
+	struct PrimitiveInfo
 	{
-		Ref<Shader> shader;
-		Ref<MeshSection> Section;
-		glm::mat4 ModelTransform;
+		Ref<MaterialInstance> mi;
+		Handle<RHI::HwRenderPrimitive> renderPrimitive;
+		Handle<RHI::HwVertexBufferInfo> vertexBufferInfo;
+		uint32_t indexOffset;
+		uint32_t indexCount;
+		uint32_t index; // PerModelUib Index
+		RHI::PrimitiveType primitiveType = RHI::PrimitiveType::TRIANGLES;
 	};
 
-	std::vector<RenderItem> renderItems;
+	uint32_t instanceCount = 0;
+	auto& ModelTransform = ctx.ModelDataUB.edit().models;
+
+	std::vector<PrimitiveInfo> renderItems;
 	for (const auto& Actor : scene->GetActors())
 	{
 		for (auto& Comp : Actor->GetComponents())
@@ -77,20 +73,48 @@ void GBufferPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 			{
 				if (MeshComp->GetMesh())
 				{
-					for (auto& section : MeshComp->GetMesh()->GetMeshSections())
+					auto& mesh = MeshComp->GetMesh();
+					renderItems.reserve(renderItems.size() + mesh->GetMeshSections().size());
+					for (auto& section : mesh->GetMeshSections())
 					{
-						renderItems.emplace_back(RenderItem{section->GetMaterial()->GetShader(RenderPassType::GBuffer), section, MeshComp->GetModelMatrix()});
+						ModelTransform[instanceCount].ModelTransform = MeshComp->GetModelMatrix();
+
+						renderItems.push_back({
+							section->GetMaterial(),
+							section->GetRenderPrimitiveHandle(),
+							section->GetVertexBufferInfoHandle(),
+							section->GetIndexOffset(),
+							section->GetIndexCount(),
+							instanceCount++,
+							section->GetPrimitiveType()
+						});
 					}
 				}
 			}
 		}
 	}
 
-	for (auto renderItem : renderItems)
+	ASSERT(instanceCount <= CONFIG_MAX_INSTANCES);
+
+	ctx.ModelDataUB.commit(gEngine->GetDriver());
+
+	auto& driver = gEngine->GetDriver();
+
+	RHI::PipelineState state;
+	for (auto& renderItem : renderItems)
 	{
-		renderItem.shader->Bind();
-		renderItem.shader->SetUniformMatrix4f("uModel", renderItem.ModelTransform);
-		renderItem.Section->GetMaterial()->ApplyMaterial(renderItem.shader);
-		renderItem.Section->Draw();
+		auto* mi = renderItem.mi.get();
+		if (!mi) continue;
+
+		mi->CommitUniforms(driver);
+
+		state.program = mi->GetShader();
+		state.vertexBufferInfo = renderItem.vertexBufferInfo;
+		state.rasterState = mi->GetMaterial()->GetRasterState();
+		state.stencilState = mi->GetMaterial()->GetStencilState();
+		state.primitiveType = renderItem.primitiveType;
+
+		driver.draw(state, renderItem.renderPrimitive,
+			renderItem.indexOffset, renderItem.indexCount, 1);
 	}
 }

@@ -25,7 +25,7 @@ struct PropertyParam
 
     Kind kind;
     UniformType uniformType;   // valid when kind == Uniform
-    SamplerType samplerType;   // valid when kind == Sampler
+    RHI::SamplerType samplerType;   // valid when kind == Sampler
     std::string name;
     std::string structName;    // only when uniformType == STRUCT
 };

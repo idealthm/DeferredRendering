@@ -3,15 +3,19 @@
 #include <string>
 #include <common/Core.h>
 
-#include "RHI/HWTexture.h"
-#include "RHI/HWSampler.h"
-#include "RHI/RHITypes.h"
+#include "Common/Handle.h"
+#include "RHI/DriverEnums.h"
+
+namespace RHI
+{
+	struct HwTexture;
+}
 
 enum class EFBTextureFormat;
 
-namespace
+namespace TextureFactory
 {
-	RHI::TextureDesc CreateShadowMap(uint32_t size)
+	inline RHI::TextureDesc CreateShadowMap(uint32_t size)
 	{
 		RHI::TextureDesc result;
 		result.Width = size;
@@ -19,21 +23,11 @@ namespace
 		result.DepthOrLayers = 1;
 		result.MipLevels = 1;
 		result.Format = RHI::Format::Depth24Stencil8;
-		result.Target = RHI::Sampler::Dim2D;
+		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
 	}
 
-	RHI::SamplerParams ShadowMapSampler()
-	{
-		RHI::SamplerParams params{};
-		params.wrapS = RHI::SamplerWrapMode::ClampToEdge;
-		params.wrapT = RHI::SamplerWrapMode::ClampToEdge;
-		params.filterMin = RHI::SamplerMinFilter::Linear;
-		params.filterMag = RHI::SamplerMagFilter::Linear;
-		return params;
-	}
-
-	RHI::TextureDesc CreateFinalColor(uint32_t w, uint32_t h)
+	inline RHI::TextureDesc CreateFinalColor(uint32_t w, uint32_t h)
 	{
 		RHI::TextureDesc result;
 		result.Width = w;
@@ -41,41 +35,11 @@ namespace
 		result.DepthOrLayers = 1;
 		result.MipLevels = 1;
 		result.Format = RHI::Format::SRGBA8;
-		result.Target = RHI::Sampler::Dim2D;
+		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
 	}
 
-	RHI::SamplerParams DefaultClampSampler()
-	{
-		RHI::SamplerParams params{};
-		params.wrapS = RHI::SamplerWrapMode::ClampToEdge;
-		params.wrapT = RHI::SamplerWrapMode::ClampToEdge;
-		params.filterMin = RHI::SamplerMinFilter::Linear;
-		params.filterMag = RHI::SamplerMagFilter::Linear;
-		return params;
-	}
-
-	RHI::SamplerParams DefaultRepeatSampler()
-	{
-		RHI::SamplerParams params{};
-		params.wrapS = RHI::SamplerWrapMode::Repeat;
-		params.wrapT = RHI::SamplerWrapMode::Repeat;
-		params.filterMin = RHI::SamplerMinFilter::Linear;
-		params.filterMag = RHI::SamplerMagFilter::Linear;
-		return params;
-	}
-
-	RHI::SamplerParams DefaultRepeatMipmapSampler()
-	{
-		RHI::SamplerParams params{};
-		params.wrapS = RHI::SamplerWrapMode::Repeat;
-		params.wrapT = RHI::SamplerWrapMode::Repeat;
-		params.filterMin = RHI::SamplerMinFilter::LinearMipmapLinear;
-		params.filterMag = RHI::SamplerMagFilter::Linear;
-		return params;
-	}
-
-	RHI::TextureDesc CreateGBuffer(uint32_t w, uint32_t h, RHI::Format format)
+	inline RHI::TextureDesc CreateGBuffer(uint32_t w, uint32_t h, RHI::Format format)
 	{
 		RHI::TextureDesc result;
 		result.Width = w;
@@ -83,11 +47,11 @@ namespace
 		result.DepthOrLayers = 1;
 		result.MipLevels = 1;
 		result.Format = format;
-		result.Target = RHI::Sampler::Dim2D;
+		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
 	}
 
-	RHI::TextureDesc CreateSkybox(uint32_t w, uint32_t h)
+	inline RHI::TextureDesc CreateSkybox(uint32_t w, uint32_t h)
 	{
 		RHI::TextureDesc result;
 		result.Width = w;
@@ -95,22 +59,11 @@ namespace
 		result.DepthOrLayers = 1;
 		result.MipLevels = 1;
 		result.Format = RHI::Format::RGBA16F;
-		result.Target = RHI::Sampler::Dim2D;
+		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
 	}
 
-	RHI::SamplerParams SkyboxSampler()
-	{
-		RHI::SamplerParams params{};
-		params.wrapS = RHI::SamplerWrapMode::ClampToEdge;
-		params.wrapT = RHI::SamplerWrapMode::ClampToEdge;
-		params.wrapR = RHI::SamplerWrapMode::ClampToEdge;
-		params.filterMin = RHI::SamplerMinFilter::Linear;
-		params.filterMag = RHI::SamplerMagFilter::Linear;
-		return params;
-	}
-
-	RHI::TextureDesc CreateHDRBuffer(uint32_t w, uint32_t h)
+	inline RHI::TextureDesc CreateHDRBuffer(uint32_t w, uint32_t h)
 	{
 		RHI::TextureDesc result;
 		result.Width = w;
@@ -118,119 +71,69 @@ namespace
 		result.DepthOrLayers = 1;
 		result.MipLevels = 1;
 		result.Format = RHI::Format::RGBA16F;
-		result.Target = RHI::Sampler::Dim2D;
+		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
 	}
 
-	RHI::TextureDesc CreateDepth(uint32_t width, uint32_t height)
+	inline RHI::TextureDesc CreateDepth(uint32_t width, uint32_t height)
 	{
 		RHI::TextureDesc result;
 		result.Width = width;
 		result.Height = height;
 		result.DepthOrLayers = 1;
 		result.Format = RHI::Format::Depth24Stencil8;
-		result.Target = RHI::Sampler::Dim2D;
+		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
 	}
-
-	RHI::SamplerParams DepthSampler()
-	{
-		RHI::SamplerParams params{};
-		params.wrapS = RHI::SamplerWrapMode::ClampToEdge;
-		params.wrapT = RHI::SamplerWrapMode::ClampToEdge;
-		return params;
-	}
 }
-
 
 class Texture
 {
 public:
-	virtual ~Texture() = default;
+	class Builder
+	{
+	public:
+		Builder& SetWidth(uint32_t w)          { m_Desc.Width = w; return *this; }
+		Builder& SetHeight(uint32_t h)         { m_Desc.Height = h; return *this; }
+		Builder& SetFormat(RHI::Format f)      { m_Desc.Format = f; return *this; }
+		Builder& SetTarget(RHI::SamplerType t) { m_Desc.Target = t; return *this; }
+		Builder& SetUsage(RHI::TextureUsage u) { m_Desc.Usage = u; return *this; }
+		Builder& SetMipLevels(uint32_t l)      { m_Desc.MipLevels = l; return *this; }
+		Builder& SetDepthOrLayers(uint32_t d)  { m_Desc.DepthOrLayers = d; return *this; }
 
-	bool IsValid() const { return m_HWTexture != nullptr; }
+		Ref<Texture> Build() { return CreateRef<Texture>(m_Desc); }
 
-	void Init(const RHI::TextureDesc& desc, const void* data = nullptr);
+	private:
+		RHI::TextureDesc m_Desc{};
+	};
 
-	void SetSampler(Ref<HWSampler> sampler) { m_Sampler = std::move(sampler); }
-	Ref<HWSampler> GetSampler() const { return m_Sampler; }
+	Texture(const RHI::TextureDesc& desc);
+	virtual ~Texture();
 
-	void GenerateMipmap();
+	bool IsValid() const { return !!m_HWTexture; }
+
+	Handle<RHI::HwTexture> GetHandle() const { return m_HWTexture; }
 
 	const RHI::TextureDesc& GetDesc() const { return m_Desc; }
 
-	void Bind(uint32_t slot = 0);
-	void Unbind();
-
-	uint32_t GetSizeX() const { return m_Desc.Width; }
-	uint32_t GetSizeY() const { return m_Desc.Height; }
-	uint32_t GetSizeZ() const { return m_Desc.DepthOrLayers; }
-
-	uint32_t GetRendererID();
+	uint32_t GetSizeX(int32_t level) const { ASSERT(level < m_Desc.DepthOrLayers);return m_Desc.Width >> level; }
+	uint32_t GetSizeY(int32_t level) const { ASSERT(level < m_Desc.DepthOrLayers);return m_Desc.Height >> level; }
+	uint32_t GetSizeZ(int32_t level) const { ASSERT(level < m_Desc.DepthOrLayers);return m_Desc.DepthOrLayers >> level; }
+	RHI::Format GetFormat() const { return m_Desc.Format; }
+	RHI::TextureUsage GetUsage() const { return m_Desc.Usage; }
+	RHI::SamplerType GetTarget() const { return m_Desc.Target; }
 
 protected:
-	Ref<HWTexture> m_HWTexture;
-	Ref<HWSampler> m_Sampler;
-	RHI::TextureDesc m_Desc;
+	Handle<RHI::HwTexture> m_HWTexture;
+	RHI::TextureDesc  m_Desc;
 };
-
-
-class Texture2D : public Texture
-{
-public:
-	Texture2D(const std::string& path, bool bSRGB = false);
-
-	Texture2D(const RHI::TextureDesc& desc, const void* data = nullptr);
-
-public:
-	static Ref<Texture2D> Create(const std::string& path, bool bSRGB = false);
-	static Ref<Texture2D> Create(const uint32_t& rgba);
-};
-
-
-class Texture2DArray : public Texture
-{
-public:
-	Texture2DArray(const RHI::TextureDesc& desc);
-};
-
-
-class Texture3D : public Texture
-{
-public:
-	Texture3D();
-	Texture3D(const RHI::TextureDesc& desc, const void* data);
-};
-
-
-class TextureCube : public Texture
-{
-public:
-	enum CubeFace
-	{
-		Right,
-		Left,
-		Top,
-		Bottom,
-		Front,
-		Back,
-	};
-	TextureCube(const RHI::TextureDesc& desc);
-
-	void SetData(const void* data, uint32_t size);
-	void SetFaceData(uint32_t srcName, uint32_t srcTarget, int32_t srcLevel, int32_t srcX, int32_t srcY, int32_t srcZ,
-		CubeFace face);
-
-	const RHI::TextureDesc& GetDesc() { return m_Desc; }
-};
-
 
 struct DefaultTextures
 {
-	Ref<Texture2D> White;
-	Ref<Texture2D> Black;
-	Ref<Texture2D> Normal;
-	Ref<Texture2D> Gray;
+	Ref<Texture> White;
+	Ref<Texture> Black;
+	Ref<Texture> Normal;
+	Ref<Texture> Gray;
 };
 
 template <typename T>

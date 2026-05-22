@@ -23,6 +23,12 @@ constexpr auto CreateScope(Args&& ... args)
 #define BIT(x) (1 << (x))
 #define ASSERT(x) if(!(x)) __debugbreak();
 
+#ifdef __GNUC__
+#define UTILS_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define UTILS_UNLIKELY(x) (x)
+#endif
+
 void GLClearError();
 bool GLLogCall(const char* function, const char* file, int line);
 

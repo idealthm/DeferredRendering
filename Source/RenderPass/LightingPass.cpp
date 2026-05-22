@@ -1,17 +1,18 @@
-﻿#include "LightingPass.h"
+#include "LightingPass.h"
 
+#include "Engine.h"
 #include "Scene.h"
 #include "FrameBuffer/FrameBuffer.h"
 #include "Lights/Light.h"
+#include "Material/MaterialInstance.h"
 #include "Model/Texture.h"
-#include "RHI/SamplerPool.h"
-#include "Shader/Shader.h"
-#include "glad/glad.h"
-#include "Shader/ShaderLibrary.h"
+#include "RHI/TextureSampler.h"
+#include "Shader/Program.h"
+
+using namespace TextureFactory;
 
 LightingPass::LightingPass()
 {
-	m_Shader = ShaderLibrary::Get().GetShader("Shaders/DirectionLight", nullptr);
 }
 
 void LightingPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
@@ -25,13 +26,10 @@ void LightingPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& c
 
 	CreateResource(ctx.LightMap_SceneColor, CreateHDRBuffer(info.Width, info.Height));
 
-	if (!ctx.LightMap_SceneColor->GetSampler())
-		ctx.LightMap_SceneColor->SetSampler(SamplerPool::Get().GetOrCreate(DefaultClampSampler()));
-
 	// 输入：此时 ctx.GBuffer_Normal 等纹理已由前面 Pass 生成
 	// 输出：如果前面 Skybox 已经画了，这里 LoadAction 应该是 Load，否则会覆盖天空
 	info.Attachments = {
-		{ ctx.LightMap_SceneColor->GetRendererID(), FBTextureLoadAction::Load, FBTextureStoreAction::Store }
+		// { ctx.LightMap_SceneColor->GetRendererID(), FBTextureLoadAction::Load, FBTextureStoreAction::Store }
 	};
 }
 
@@ -44,7 +42,7 @@ void LightingPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 		{
 			if (auto Light = std::dynamic_pointer_cast<DirectionLightComponent>(Comp))
 			{
-				LightInfo& info = ctx.LightDataUB->Data.lights[index++];
+				LightInfo& info = ctx.LightDataUB.edit().lights[index++];
 				info.position = Light->GetLocation();
 				info.color = Light->GetColor();
 				info.type = 0;
@@ -53,35 +51,18 @@ void LightingPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 			}
 		}
 	}
-	ctx.LightDataUB->Data.NumLights = index;
-	ctx.LightDataUB->Update();
+	ctx.LightDataUB.edit().NumLights = index;
+	ctx.LightDataUB.commit(gEngine->GetDriver());
 
-	uint32_t freeSlot = m_Shader->GetFreeSlotIndex();
+	m_MaterialInstance->SetParameter("gPosition", ctx.GBuffer_Position->GetHandle(), TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("gNormal", ctx.GBuffer_Normal->GetHandle()  , TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("gAlbedo", ctx.GBuffer_Albedo->GetHandle(), TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("gMaterial", ctx.GBuffer_Material->GetHandle(), TextureSampler::LinearClamp());
 
-	m_Shader->Bind();
-	ctx.GBuffer_Position->Bind(freeSlot);
-	m_Shader->SetUniform1i("gPosition", freeSlot++);
+	m_MaterialInstance->SetParameter("uIBL_PreFilterMap", ctx.IBL_PreFilterMap->GetHandle(), TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("gShadowMap", ctx.ShadowMap_Depth->GetHandle(), TextureSampler::Shadow());
+	m_MaterialInstance->SetParameter("uIrradianceMap", ctx.IBL_IrradianceMap->GetHandle(), TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("uBRDF_LUT", ctx.BRDF_LUT->GetHandle(), TextureSampler::LinearClamp());
 
-	ctx.GBuffer_Normal->Bind(freeSlot);
-	m_Shader->SetUniform1i("gNormal", freeSlot++);
-
-	ctx.GBuffer_Albedo->Bind(freeSlot);
-	m_Shader->SetUniform1i("gAlbedo", freeSlot++);
-
-	ctx.GBuffer_Material->Bind(freeSlot);
-	m_Shader->SetUniform1i("gMaterial", freeSlot++);
-
-	ctx.ShadowMap_Depth->Bind(freeSlot);
-	m_Shader->SetUniform1i("gShadowMap", freeSlot++);
-
-	ctx.IBL_IrradianceMap->Bind(freeSlot);
-	m_Shader->SetUniform1i("uIrradianceMap", freeSlot++);
-
-	ctx.BRDF_LUT->Bind(freeSlot);
-	m_Shader->SetUniform1i("uBRDF_LUT", freeSlot++);
-
-	ctx.IBL_PreFilterMap->Bind(freeSlot);
-	m_Shader->SetUniform1i("uIBL_PreFilterMap", freeSlot++);
-
-	m_ScreenQuad.Draw();
+	// TODO: set up pipeline state and call driver.draw() with m_ScreenQuad
 }

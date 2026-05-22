@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 
+#include "Engine.h"
 #include "Layers/Layer.h"
 #include "RenderPipeline.h"
 #include "Renderer.h"
@@ -35,9 +36,11 @@ Application::Application(const ApplicationSpecification& specification)
 	if (!m_Specification.WorkingDirectory.empty())
 		std::filesystem::current_path(m_Specification.WorkingDirectory);
 
-	m_Window = CreateScope<Window>(WindowProperties{m_Specification.Name, SCR_WIDTH, SCR_HEIGHT});
+	m_Window = CreateScope<Window>(WindowProperties{m_Specification.Name, SCR_WIDTH , SCR_HEIGHT});
 	m_Window->SetEventCallback(BIND_FUNCTION_FN(Application::OnEvent));
 
+	gEngine = new Engine();
+	gEngine->Init();
 	Renderer::Get().Init(SCR_WIDTH, SCR_HEIGHT);
 
 	m_ImGuiLayer = new ImGuiLayer();
@@ -86,13 +89,13 @@ void Application::OnEvent(Event& e)
 		switch (e.GetKeyCode())
 		{
 			case Key::Escape: m_Running = false; return true;
-			case Key::F1: ctx.FrameDataUB->Data.RenderMode = 1; return true;
-			case Key::F2: ctx.FrameDataUB->Data.RenderMode = 2; return true;
-			case Key::F3: ctx.FrameDataUB->Data.RenderMode = 3; return true;
-			case Key::F4: ctx.FrameDataUB->Data.RenderMode = 4; return true;
-			case Key::F5: ctx.FrameDataUB->Data.RenderMode = 5; return true;
-			case Key::F6: ctx.FrameDataUB->Data.RenderMode = 6; return true;
-			case Key::F7: ctx.FrameDataUB->Data.RenderMode = 7; return true;
+			// case Key::F1: ctx.FrameDataUB->Data.RenderMode = 1; return true;
+			// case Key::F2: ctx.FrameDataUB->Data.RenderMode = 2; return true;
+			// case Key::F3: ctx.FrameDataUB->Data.RenderMode = 3; return true;
+			// case Key::F4: ctx.FrameDataUB->Data.RenderMode = 4; return true;
+			// case Key::F5: ctx.FrameDataUB->Data.RenderMode = 5; return true;
+			// case Key::F6: ctx.FrameDataUB->Data.RenderMode = 6; return true;
+			// case Key::F7: ctx.FrameDataUB->Data.RenderMode = 7; return true;
 		}
 		return false;
 	});
@@ -124,12 +127,12 @@ void Application::Run()
 					layer->OnUpdate(timestep);
 			}
 
-			m_ImGuiLayer->Begin();
-			{
-				for (Layer* layer : m_LayerStack)
-					layer->OnImGuiRender();
-			}
-			m_ImGuiLayer->End();
+			// m_ImGuiLayer->Begin();
+			// {
+			// 	for (Layer* layer : m_LayerStack)
+			// 		layer->OnImGuiRender();
+			// }
+			// m_ImGuiLayer->End();
 		}
 
 		m_Window->Update();

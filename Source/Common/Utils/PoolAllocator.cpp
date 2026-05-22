@@ -21,7 +21,7 @@ namespace Utils
 		Node* head = static_cast<Node*>(b);
 
 		Node* cur = head;
-		for (int i = 0; i < n - 1; ++i)
+		for (size_t i = 1; i < n; ++i)
 		{
 			cur->next = PointerMath::add(cur, d);
 			cur = cur->next;
@@ -29,7 +29,7 @@ namespace Utils
 
 		cur->next = nullptr;
 
-		ASSERT(cur < end && PointerMath::add(cur, e) <= end);
+		ASSERT(cur < end && PointerMath::add(cur, d) <= end);
 
 		return head;
 	}

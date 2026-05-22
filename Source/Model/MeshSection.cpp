@@ -1,35 +1,31 @@
-﻿#include "MeshSection.h"
+#include "MeshSection.h"
 
-#include <array>
-
-#include "Texture.h"
-#include "IndexBuffer/IndexBuffer.h"
-#include "VertexArray/VertexArray.h"
-#include "VertexBuffer/VertexBuffer.h"
-#include "glad/glad.h"
 #include "Material/Material.h"
+#include "Material/MaterialInstance.h"
+#include "RHI/VertexBuffer.h"
 
-std::array<std::string, 6> TypeToUniform = {"uAlbedoMap", "uNormalMap", "uRoughnessMap", "uMetallicMap","uAOMap", "uHeightMap"};
-
-MeshSection::MeshSection(const Ref<VertexArray>& vertexArr, const Ref<IndexBuffer>& indexBuf, Ref<Material> material)
-	: m_VertexArray(vertexArr), m_IndexBuffer(indexBuf), m_Material(material)
+MeshSection::MeshSection(const Ref<RHI::RenderPrimitive>& primitive, uint32_t indexOffset, uint32_t indexCount,
+                         Ref<MaterialInstance> material)
+	: m_RenderPrimitive(primitive), m_IndexOffset(indexOffset), m_IndexCount(indexCount), m_Material(material)
 {
 }
 
-void MeshSection::SetMaterial(const Ref<Material>& material)
+void MeshSection::SetMaterial(const Ref<MaterialInstance>& material)
 {
 	m_Material = material;
 }
 
-Ref<Material> MeshSection::GetMaterial()
+Ref<MaterialInstance> MeshSection::GetMaterial()
 {
 	return m_Material;
 }
 
-void MeshSection::Draw() const
+Handle<RHI::HwVertexBufferInfo> MeshSection::GetVertexBufferInfoHandle() const
 {
-	m_VertexArray->Bind();
-	m_IndexBuffer->Bind();
+	return m_RenderPrimitive->GetDesc().vertexBuffer->GetVertexBufferInfoHandle();
+}
 
-	glDrawElements(GL_TRIANGLES, m_IndexBuffer->GetCount(), GL_UNSIGNED_INT, 0);
+RHI::PrimitiveType MeshSection::GetPrimitiveType() const
+{
+	return m_RenderPrimitive->GetDesc().primitiveType;
 }

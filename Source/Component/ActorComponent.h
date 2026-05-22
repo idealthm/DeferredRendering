@@ -8,7 +8,6 @@
 
 class StaticMesh;
 class Shape;
-class Shader;
 
 class ActorComponent
 {

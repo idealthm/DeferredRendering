@@ -1,14 +1,17 @@
 #pragma once
 #include "common/Core.h"
-
-class MeshSection;
+#include "RHI/RenderPrimitive.h"
 
 class ScreenQuad
 {
 public:
 	ScreenQuad();
-	void Draw() const;
+
+	Handle<RHI::HwRenderPrimitive> GetRenderPrimitiveHandle() const;
+	Handle<RHI::HwVertexBufferInfo> GetVertexBufferInfoHandle() const;
 
 private:
-	Ref<MeshSection> m_MeshSection;
+	Ref<RHI::RenderPrimitive> m_RenderPrimitive;
+	uint32_t m_IndexOffset = 0;
+	uint32_t m_IndexCount = 0;
 };

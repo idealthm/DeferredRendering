@@ -1,4 +1,4 @@
-﻿layout (location = 0) out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
 in vec2 vTexCoords;
 
 uniform sampler2D uHdrSceneColor; // 之前 Lighting Pass 算出来的 HDR 纹理

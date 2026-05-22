@@ -7,7 +7,6 @@
 #include "FrameBuffer/FrameBuffer.h"
 #include "Lights/Light.h"
 #include "Model/Texture.h"
-#include "RHI/SamplerPool.h"
 #include "RenderPass/GBufferPass.h"
 #include "RenderPass/ShadowPass.h"
 #include "RenderPass/LightingPass.h"
@@ -16,25 +15,23 @@
 
 RenderPipeline::RenderPipeline()
 {
-	m_Context.BRDF_LUT = CreateRef<Texture2D>("Assets/textures/ibl_brdf_lut.png");
-	{
-		RHI::SamplerParams brdfParams{};
-		brdfParams.wrapS = RHI::SamplerWrapMode::ClampToEdge;
-		brdfParams.wrapT = RHI::SamplerWrapMode::ClampToEdge;
-		brdfParams.filterMin = RHI::SamplerMinFilter::LinearMipmapLinear;
-		brdfParams.filterMag = RHI::SamplerMagFilter::Linear;
-		m_Context.BRDF_LUT->SetSampler(SamplerPool::Get().GetOrCreate(brdfParams));
-	}
+	// m_Context.BRDF_LUT = CreateRef<Texture>("Assets/textures/ibl_brdf_lut.png");
 	m_Context.FrameBuffer = CreateScope<FrameBuffer>();
-	m_Context.FrameDataUB = CreateScope<ParamBuffer<FrameData>>(0);
-	m_Context.LightDataUB = CreateScope<ParamBuffer<LightData>>(1);
 	m_Context.ShadowWidth = 2048.f * 1;
 	m_Context.ShadowHeight = 2048.f * 1;
 
-	GDefaultTextures.White  = Texture2D::Create(0xFFFFFFFF);
-	GDefaultTextures.Black  = Texture2D::Create(0xFF000000);
-	GDefaultTextures.Gray   = Texture2D::Create(0xFF808080);
-	GDefaultTextures.Normal = Texture2D::Create(0xFFFF8080);
+	auto defaultTexBuilder = Texture::Builder()
+		.SetWidth(1).SetHeight(1)
+		.SetFormat(RHI::Format::RGBA8)
+		.SetTarget(RHI::SamplerType::SAMPLER_2D)
+		.SetMipLevels(0)
+		.SetUsage(RHI::TextureUsage::SAMPLEABLE)
+		.SetDepthOrLayers(1);
+
+	GDefaultTextures.White  = defaultTexBuilder.Build();
+	GDefaultTextures.Black  = defaultTexBuilder.Build();
+	GDefaultTextures.Gray   = defaultTexBuilder.Build();
+	GDefaultTextures.Normal = defaultTexBuilder.Build();
 
 	m_GBufferPass = CreateRef<GBufferPass>();
 	m_ShadowPass = CreateRef<ShadowPass>();
@@ -45,11 +42,11 @@ RenderPipeline::RenderPipeline()
 
 void RenderPipeline::Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize)
 {
-	StartPass(scene, m_ShadowPass, viewportSize);
+	// StartPass(scene, m_ShadowPass, viewportSize);
 	StartPass(scene, m_GBufferPass, viewportSize);
-	StartPass(scene, m_LightPass, viewportSize);
-	StartPass(scene, m_SkyLightPass, viewportSize);
-	StartPass(scene, m_ToneMappingPass, viewportSize);
+	// StartPass(scene, m_LightPass, viewportSize);
+	// StartPass(scene, m_SkyLightPass, viewportSize);
+	// StartPass(scene, m_ToneMappingPass, viewportSize);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

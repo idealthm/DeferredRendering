@@ -12,6 +12,6 @@ public:
 	void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx) override;
 private:
 	RHI::TextureDesc	m_Desc;
-	Ref<Shader>			m_Shader;
+	Ref<Program>			m_Shader;
 	UnitCube			m_UnitCube;
 };

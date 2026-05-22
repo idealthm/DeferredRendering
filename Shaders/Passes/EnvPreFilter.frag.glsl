@@ -1,4 +1,4 @@
-﻿#include <PBR/BRDF.glsl>
+#include <PBR/BRDF.glsl>
 
 out vec4 FragColor;
 in vec3 vTexCoords;

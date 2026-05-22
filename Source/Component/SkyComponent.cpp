@@ -1,6 +1,6 @@
 ﻿#include "SkyComponent.h"
 
-#include "Shader/Shader.h"
+#include "Shader/Program.h"
 
 void SkyComponent::SetCubeMapTexture(Ref<TextureCube> cubeMapTexture)
 {

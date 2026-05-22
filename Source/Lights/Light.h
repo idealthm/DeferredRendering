@@ -2,26 +2,6 @@
 #include "Actor.h"
 #include "Component/ActorComponent.h"
 
-struct alignas(16) LightInfo {
-	glm::vec3 position;   // w: 影响半径 (Range / Attenuation Radius)
-	float range;
-
-	glm::vec3 color;     // w: 强度 (Intensity)
-	float intensity;
-
-	glm::vec3 direction; // w: 光源类型 (0: 方向光, 1: 点光源, 2: 聚光灯)
-	int32_t type;
-
-	glm::vec4 params;    // x: 聚光灯内角, y: 聚光灯外角, z: 是否产生阴影, w: 预留
-}; 
-
-struct alignas(16) LightData
-{
-	LightInfo lights[16];
-	glm::mat4 uLightVP;
-	int32_t NumLights;
-};
-
 class LightComponent : public SceneComponent
 {
 public:

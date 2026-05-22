@@ -1,4 +1,4 @@
-﻿#include "../PBR/BRDF.glsl"
+#include "../PBR/BRDF.glsl"
 #include "../Common/Structures.glsl"
 
 uniform sampler2D gPosition;
