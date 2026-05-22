@@ -1,4 +1,4 @@
-﻿#include <PBR/Lights.glsl>
+#include <PBR/Lights.glsl>
 #include <PBR/BRDF.glsl>
 #include <Common/Structures.glsl>
 
@@ -8,14 +8,14 @@ in vec2 vTexCoords;
 
 #define NR_POINT_LIGHTS 4
 
-uniform sampler2D gPosition;
-uniform sampler2D gNormal;
-uniform sampler2D gAlbedo;
-uniform sampler2D gMaterial;
-uniform sampler2D gShadowMap;
-uniform sampler2D uBRDF_LUT;
-uniform samplerCube uIrradianceMap;
-uniform samplerCube uIBL_PreFilterMap;
+layout(binding = 0) uniform sampler2D gPosition;
+layout(binding = 1) uniform sampler2D gNormal;
+layout(binding = 2) uniform sampler2D gAlbedo;
+layout(binding = 3) uniform sampler2D gMaterial;
+layout(binding = 4) uniform sampler2D gShadowMap;
+layout(binding = 5) uniform sampler2D uBRDF_LUT;
+layout(binding = 6) uniform samplerCube uIrradianceMap;
+layout(binding = 7) uniform samplerCube uIBL_PreFilterMap;
 
 uniform int uDebugMode;
 

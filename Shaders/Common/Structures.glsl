@@ -1,4 +1,4 @@
-﻿// Structures.glsl
+// Structures.glsl
 struct Light {
     vec4 position;  // w: 光源类型 (0: 方向光, 1: 点光源, 2: 聚光灯)
     vec4 color;     // w: 强度 (Intensity)

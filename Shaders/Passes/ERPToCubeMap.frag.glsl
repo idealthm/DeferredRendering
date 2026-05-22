@@ -1,4 +1,4 @@
-﻿
+
 in vec3 vTexCoords;
 
 uniform sampler2D uHDRMap;

@@ -1,112 +1,49 @@
-﻿#pragma once
-#include <map>
+#pragma once
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-#include "common/Core.h"
-#include "Shader/Shader.h"
+#include "Common/Handle.h"
+#include "SpirvReflect/ShaderParse.h"
 
-
-enum class RenderPassType;
-enum class EShaderType;
-class Texture2D;
-
-template<typename T, typename enable = void> struct Length;
-
-template<>
-struct Length<float>
+namespace RHI
 {
-	static constexpr uint32_t value = 1;
-};
+	struct HwProgram;
+}
 
-template<typename T>
-struct Length<T, decltype(std::declval<T>().length())>
-{
-	static constexpr uint32_t value = T().length();
-};
-
-enum class EMaterialDomain
-{
-	Surface,
-	PostProcess,
-	Compute,
-	UI,
-};
-
-enum class EBlendMode
-{
-	Opaque,
-	Mask,
-	Transparency
-};
+class Program;
 
 class Material
 {
 public:
-	Material(EMaterialDomain domain, EBlendMode blendMode)
-		: m_Domain(domain), m_BlendMode(blendMode)
-	{
-	};
+	Material() = default;
+	Material(const MaterialInfo& info);
 
-	struct floatInfo
-	{
-		uint32_t offset;
-		uint32_t size;
-	};
+	Handle<RHI::HwProgram> GetProgram() const;
+	// Build from SPIR-V reflection; only MaterialParams UBO + samplers
+	void BuildFromReflection(const MaterialInfo& info);
 
-	void ApplyMaterial(Ref<Shader> shader);
+	const BufferInterfaceBlock& GetUniformBlock() const { return m_UniformBlock; }
+	descriptor_binding_t GetUniformBinding() const { return m_UniformBlock.binding; }
 
-	template<typename T>
-	void SetFloat(const std::string& name, const T& value)
-	{
-		auto pos = this->m_FloatProperty.find(name);
-		if (pos == this->m_FloatProperty.end())
-		{
-			constexpr uint32_t length = Length<T>::value;
-			m_FloatProperty.emplace(name, {m_Floats.size(), value.length()});
-			if constexpr (!std::is_same_v<T, float>)
-				for (int i = 0; i < length; i++) m_Floats.emplace_back(value[i]);
-			else
-				m_Floats.emplace_back(value);
-		}
-		else
-		{
-			if (pos->second.size != Length<T>::value) {ASSERT(false);}
-			*(T *)&m_Floats[pos->second.offset] = value;
-		}
-	}
+	const SamplerInterfaceBlock& GetSamplerBlock() const { return m_SamplerBlock; }
+	const SamplerInfo* FindSampler(const std::string& name) const;
 
-	template<typename T>
-	T GetFloat(const std::string& name)
-	{
-		auto pos = this->m_FloatProperty.find(name);
-		if (pos == this->m_FloatProperty.end())
-		{
-			return T();
-		}
-		return *(T *)&m_Floats[pos->second.offset];
-	}
+	const FieldInfo* FindField(const std::string& name) const;
+	const std::vector<FieldInfo>& GetFields() const { return m_UniformBlock.fields; }
 
-	template<typename T>
-	T GetFloat(uint32_t offset)
-	{
-		return *(T *)&m_Floats[offset];
-	}
-
-	Ref<Texture2D> GetTexture2D(const std::string& name) const;
-	void SetTexture2D(const std::string& name, const Ref<Texture2D>& texture);
-
-	EMaterialDomain	GetDomain() const { return m_Domain; }
-	EBlendMode	GetBlendMode() const { return m_BlendMode; }
-	Ref<Shader> GetShader(RenderPassType PassType) const;
-
-	static Ref<Material> CreateDefault();
+	RHI::RasterState GetRasterState() const { return m_RasterState; }
+	RHI::StencilState GetStencilState() const { return m_StencilState; }
 
 private:
-	EMaterialDomain m_Domain = EMaterialDomain::Surface;
-	EBlendMode m_BlendMode = EBlendMode::Opaque;
+	RHI::RasterState m_RasterState;
+	RHI::StencilState m_StencilState;
 
-	std::vector<float> m_Floats;
-	std::map<std::string, floatInfo> m_FloatProperty;
-	std::map<std::string, Ref<Texture2D>> m_TextureProperty;
+	MaterialInfo             m_Info;
+	mutable Handle<RHI::HwProgram>   m_CachedProgram;
+
+	BufferInterfaceBlock m_UniformBlock;
+	std::unordered_map<std::string, size_t> m_FieldIndex;
+	SamplerInterfaceBlock m_SamplerBlock;
+	std::unordered_map<std::string, size_t> m_SamplerIndex;
 };

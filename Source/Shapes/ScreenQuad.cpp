@@ -1,14 +1,23 @@
 #include "ScreenQuad.h"
 #include "MeshBuilder.h"
 #include "Model/MeshSection.h"
+#include "RHI/VertexBuffer.h"
 
 ScreenQuad::ScreenQuad()
 {
 	auto mesh = MeshBuilder::BuildQuad(nullptr);
-	m_MeshSection = mesh->GetMeshSections()[0];
+	auto& section = mesh->GetMeshSections()[0];
+	m_RenderPrimitive = mesh->GetRenderPrimitive();
+	m_IndexOffset = section->GetIndexOffset();
+	m_IndexCount = section->GetIndexCount();
 }
 
-void ScreenQuad::Draw() const
+Handle<RHI::HwRenderPrimitive> ScreenQuad::GetRenderPrimitiveHandle() const
 {
-	m_MeshSection->Draw();
+	return m_RenderPrimitive->GetHandle();
+}
+
+Handle<RHI::HwVertexBufferInfo> ScreenQuad::GetVertexBufferInfoHandle() const
+{
+	return m_RenderPrimitive->GetDesc().vertexBuffer->GetVertexBufferInfoHandle();
 }

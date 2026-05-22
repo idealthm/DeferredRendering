@@ -1,13 +1,53 @@
-﻿#pragma once
-#include "Common/Core.h"
+#pragma once
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "SpirvReflect/ShaderParse.h"
 
 class UniformBuffer
 {
 public:
-	UniformBuffer(uint32_t size, uint32_t binding);
-	virtual ~UniformBuffer();
+	UniformBuffer() = default;
+	explicit UniformBuffer(size_t size);
 
-	virtual void Update(const void* data, uint32_t size, uint32_t offset = 0);
+	void Clear(size_t size);
+
+	// Typed access by field name
+	template<typename T>
+	bool SetValue(uint16_t offset, const T& value);
+
+	template<typename T>
+	bool GetValue(uint16_t offset, T& outValue) const;
+
+	// Raw data access (for Commit)
+	const uint8_t* GetData() const { return m_Data.data(); }
+	uint8_t* data() { return m_Data.data(); }
+	uint32_t GetSize() const { return static_cast<uint32_t>(m_Data.size()); }
+
+	// Dirty tracking
+	bool IsDirty() const { return m_Dirty; }
+	void ClearDirty() { m_Dirty = false; }
+	void MarkDirty() { m_Dirty = true; }
+
 private:
-	uint32_t m_RendererID = 0;
+	std::vector<uint8_t> m_Data;
+	uint32_t m_BlockSize = 0;
+	bool m_Dirty = false;
 };
+
+template<typename T>
+bool UniformBuffer::SetValue(uint16_t offset, const T& value)
+{
+	std::memcpy(m_Data.data() + offset, &value, sizeof(T));
+	return m_Dirty = true;
+}
+
+template<typename T>
+bool UniformBuffer::GetValue(uint16_t offset, T& outValue) const
+{
+	std::memcpy(&outValue, m_Data.data() + offset, sizeof(T));
+	return true;
+}

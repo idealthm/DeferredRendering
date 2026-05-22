@@ -4,7 +4,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include "Model/StaticMesh.h"
-#include "Shader/Shader.h"
+#include "Shader/Program.h"
 
 SceneComponent::SceneComponent(const glm::vec3& location, const glm::vec3& rotation, const glm::vec3& scale3D)
 	: m_Transform(location, rotation, scale3D)

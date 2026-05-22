@@ -3,6 +3,7 @@
 #include "Handle.h"
 #include "Utils/PoolAllocator.h"
 
+
 template<size_t P0, size_t P1, size_t P2>
 class HandleAllocator
 {
@@ -10,9 +11,9 @@ public:
 	// HandleId encoding: [ generation:8bit | offset:24bit ]
 	// offset is relative to mHeapArea.begin(), so max pool size = 16 MB
 	static constexpr uint32_t OFFSET_BITS = 24;
-	static constexpr uint32_t GEN_BITS = 8;
+	static constexpr uint32_t AGE_BITS = 8;
 	static constexpr uint32_t OFFSET_MASK = (1u << OFFSET_BITS) - 1;
-	static constexpr uint32_t GEN_MASK = (1u << GEN_BITS) - 1;
+	static constexpr uint32_t AGE_MASK = (1u << AGE_BITS) - 1;
 
 	explicit HandleAllocator(size_t poolSize)
 		: mHeapArea(poolSize)
@@ -26,60 +27,137 @@ public:
 	HandleAllocator& operator=(HandleAllocator&&) = delete;
 
 	template<typename D>
-	Handle<D> allocate()
+	HandleBase::HandleId allocateHandle() noexcept
 	{
-		constexpr size_t bucketSize = getBucketSize<D>();
-		uint8_t poolAge;
-		void* p = mAllocator.alloc(bucketSize, Allocator::MIN_ALIGNMENT, sizeof(typename Allocator::Node), &poolAge);
-		ASSERT(p);
-
-		D* obj = ::new (p) D();
-
-		uint32_t offset = uint32_t((char*)p - (char*)mHeapArea.begin());
-		ASSERT(offset <= OFFSET_MASK);
-
-		// bump generation stored in the Node before this element
-		auto* node = static_cast<typename Allocator::Node*>(p) - 1;
-		node->generation = (node->generation + 1) & GEN_MASK;
-		if (node->generation == 0) { node->generation = 1; }
-
-		HandleBase::HandleId id = (uint32_t(node->generation) << OFFSET_BITS) | offset;
-		return Handle<D>(id);
+		constexpr size_t BUKET_SIZE = getBucketSize<D>();
+		return allocateHandleInPool<BUKET_SIZE>();
 	}
 
 	template<typename D>
-	void deallocate(Handle<D>& handle)
+	void deallocateHandle(HandleBase::HandleId id) noexcept
 	{
-		if (!handle) return;
-
-		void* p = pointerFromHandle(handle);
-		auto* node = static_cast<typename Allocator::Node*>(p) - 1;
-
-		D* obj = static_cast<D*>(p);
-		obj->~D();
-
-		constexpr size_t bucketSize = getBucketSize<D>();
-		mAllocator.free(p, bucketSize, node->age);
-
-		handle = Handle<D>();
+		constexpr size_t BUKET_SIZE = getBucketSize<D>();
+		deallocateHandleFormPool<BUKET_SIZE>(id);
 	}
 
-	template<typename D>
-	D* get(Handle<D> handle) const
+	std::pair<void*, uint32_t> handleToPointer(HandleBase::HandleId id) const noexcept
 	{
-		if (!handle) return nullptr;
+		if (isPoolHandle(id))
+		{
+			char* const base = (char*)mHeapArea.begin();
+			uint32_t tag = id & (AGE_MASK << OFFSET_BITS);
+			size_t const offset = (id & OFFSET_MASK) * Allocator::getAlignment();
+			return {static_cast<void*>(base + offset), tag};
+		}
+		return std::pair<void*, uint32_t>{handleToPointerSlow(id), 0};
+	}
 
-		HandleBase::HandleId id = handle.GetId();
-		uint32_t offset = id & OFFSET_MASK;
-		uint32_t gen = (id >> OFFSET_BITS) & GEN_MASK;
+	inline HandleBase::HandleId arenaPointerToHandle(void* p, uint32_t tag) const noexcept {
+		char* const base = (char*)mHeapArea.begin();
+		size_t const offset = (char*)p - base;
+		ASSERT((offset % Allocator::getAlignment()) == 0);
+		auto id = HandleBase::HandleId(offset / Allocator::getAlignment());
+		id |= tag & (AGE_MASK << OFFSET_BITS);
+		return id;
+	}
 
-		if (offset >= mHeapArea.size()) return nullptr;
+	template<size_t SIZE>
+	HandleBase::HandleId allocateHandleInPool() noexcept
+	{
+		uint8_t age;
+		void* p = mAllocator.alloc(SIZE, alignof(std::max_align_t), 0, &age);
+		if (p)
+		{
+			uint32_t tag = (uint32_t(age) << OFFSET_BITS);
+			return arenaPointerToHandle(p, tag);
+		}
+		return allocateHandleSlow(SIZE);
+	}
 
-		void* p = (char*)mHeapArea.begin() + offset;
+	template<size_t SIZE>
+	void deallocateHandleFormPool(HandleBase::HandleId id) noexcept
+	{
+		if (isPoolHandle(id))
+		{
+			auto [p, tag] = handleToPointer(id);
+			const uint8_t age = tag >> OFFSET_BITS;
+			mAllocator.free(p, SIZE, age);
+		}
+		else
+		{
+			deallocateHandleSlow(id, SIZE);
+		}
+	}
+
+	bool isPoolHandle(HandleBase::HandleId id) const 
+	{
+		// TODO: distinguish between pool and non-pool handles
+		return true;
+	}
+
+	void* handleToPointerSlow(HandleBase::HandleId) const;
+	HandleBase::HandleId allocateHandleSlow(uint32_t size);
+	void deallocateHandleSlow(HandleBase::HandleId id, size_t size);
+
+	template<typename D, typename... Args>
+	Handle<D> allocateAndConstruct(Args&&... args)
+	{
+		Handle<D> h{allocateHandle<D>()};
+		D* addr = handle_cast<D*>(h);
+		::new (addr) D(std::forward<Args>(args)...);
+		return h;
+	}
+
+	template<typename D, typename B, typename ... ARGS>
+	std::enable_if_t<std::is_base_of_v<B, D>, D>*
+	destroyAndConstruct(Handle<B> const& handle, ARGS&& ... args)
+	{
+		ASSERT(handle);
+		D* addr = handle_cast<D*>(const_cast<Handle<B>&>(handle));
+		ASSERT(addr);
+		// currently we implement construct<> with dtor+ctor, we could use operator= also
+		// but all our dtors are trivial, ~D() is actually a noop.
+		addr->~D();
+		new(addr) D(std::forward<ARGS>(args)...);
+		return addr;
+	}
+
+	template <typename B, typename D,
+			typename = std::enable_if_t<std::is_base_of_v<B, D>, D>>
+	void deallocate(Handle<B>& handle, D const* p) noexcept {
+		// allow to destroy the nullptr, similarly to operator delete
+		if (p) {
+			p->~D();
+			deallocateHandle<D>(handle.GetId());
+		}
+	}
+
+	template<typename Dp, typename B>
+	std::enable_if_t<std::is_pointer_v<Dp> && std::is_base_of_v<B, std::remove_pointer_t<Dp>>, Dp>
+	handle_cast(const Handle<B>& handle) const
+	{
+		auto [p, tag] = handleToPointer(handle.GetId());
 		auto* node = static_cast<typename Allocator::Node*>(p) - 1;
-		if (node->generation != gen) return nullptr;
+		auto age = tag >> OFFSET_BITS;
+		ASSERT(node->age == age);
 
-		return static_cast<D*>(p);
+		return static_cast<Dp>(p);
+	}
+
+	template<typename B>
+	bool is_valid(Handle<B>& handle) {
+		if (!handle) {
+			// null handles are invalid
+			return false;
+		}
+		auto [p, tag] = handleToPointer(handle.getId());
+		if (isPoolHandle(handle.getId())) {
+			uint8_t const age = (tag >> OFFSET_BITS) & (( 1 << AGE_BITS) - 1);
+			auto const pNode = static_cast<typename Allocator::Node*>(p);
+			uint8_t const expectedAge = pNode[-1].age;
+			return expectedAge == age;
+		}
+		return p != nullptr;
 	}
 
 private:
@@ -91,27 +169,11 @@ private:
 		return P2;
 	}
 
-	void* pointerFromHandle(HandleBase handle) const
-	{
-		HandleBase::HandleId id = handle.GetId();
-		uint32_t offset = id & OFFSET_MASK;
-		uint32_t gen = (id >> OFFSET_BITS) & GEN_MASK;
-
-		ASSERT(offset < mHeapArea.size());
-
-		void* p = (char*)mHeapArea.begin() + offset;
-		auto* node = static_cast<typename Allocator::Node*>(p) - 1;
-		ASSERT(node->generation == gen);
-
-		return p;
-	}
-
 	class Allocator {
 		friend class HandleAllocator;
 		static constexpr size_t MIN_ALIGNMENT = alignof(std::max_align_t);
 		struct Node {
-			uint8_t age;        // 4-bit pool-level double-free detection
-			uint8_t generation; // 8-bit handle-level stale access detection
+			uint8_t age;
 		};
 		template<size_t SIZE>
 		using Pool = Utils::PoolAllocator<SIZE, MIN_ALIGNMENT, sizeof(Node)>;
@@ -121,26 +183,7 @@ private:
 		const Utils::AreaPolicy::HeapArea& mArea;
 		bool mUseAfterFreeCheckDisabled;
 	public:
-		explicit Allocator(const Utils::AreaPolicy::HeapArea& area, bool disableUseAfterFreeCheck)
-			: mArea(area)
-			, mUseAfterFreeCheckDisabled(disableUseAfterFreeCheck)
-		{
-			const size_t totalSize = area.size();
-			const size_t totalWeight = P0 + P1 + P2;
-			char* const base = static_cast<char*>(area.begin());
-
-			size_t size0 = totalSize * P0 / totalWeight;
-			size_t size1 = totalSize * P1 / totalWeight;
-			size_t size2 = totalSize - size0 - size1;
-
-			// Align sub-area sizes to element boundaries
-			size0 = (size0 / P0) * P0;
-			size1 = (size1 / P1) * P1;
-
-			mPool0 = Pool<P0>(base, size0);
-			mPool1 = Pool<P1>(base + size0, size1);
-			mPool2 = Pool<P2>(base + size0 + size1, size2);
-		}
+		explicit Allocator(const Utils::AreaPolicy::HeapArea& area, bool disableUseAfterFreeCheck);
 
 		static constexpr size_t getAlignment() noexcept { return MIN_ALIGNMENT; }
 
@@ -175,3 +218,46 @@ private:
 	Utils::AreaPolicy::HeapArea mHeapArea; // declared before mAllocator (init order)
 	Allocator mAllocator;
 };
+
+template <size_t P0, size_t P1, size_t P2>
+void* HandleAllocator<P0, P1, P2>::handleToPointerSlow(HandleBase::HandleId) const
+{
+	// TODO: find id in heap memory map.
+	return nullptr;
+}
+
+template <size_t P0, size_t P1, size_t P2>
+HandleBase::HandleId HandleAllocator<P0, P1, P2>::allocateHandleSlow(uint32_t size)
+{
+	// TODO: Allocate Form malloc.
+	ASSERT(0);
+	return 0;
+}
+
+template <size_t P0, size_t P1, size_t P2>
+void HandleAllocator<P0, P1, P2>::deallocateHandleSlow(HandleBase::HandleId id, size_t size)
+{
+	// TODO: Deallocate by free.
+	ASSERT(0);
+}
+
+template <size_t P0, size_t P1, size_t P2>
+HandleAllocator<P0, P1, P2>::Allocator::Allocator(const Utils::AreaPolicy::HeapArea& area,
+	bool disableUseAfterFreeCheck): mArea(area)
+									, mUseAfterFreeCheckDisabled(disableUseAfterFreeCheck)
+{
+	memset(area.data(), 0, area.size());
+
+	const size_t totalSize = area.size();
+	const size_t totalWeight = P0 + P1 + P2;
+	size_t const count = totalSize / totalWeight;
+	char* const p0 = static_cast<char*>(area.begin());
+	char* const p1 = p0 + count * P0;
+	char* const p2 = p1 + count * P1;
+
+	mPool0 = Pool<P0>(p0, count * P0);
+	mPool1 = Pool<P1>(p1, count * P1);
+	mPool2 = Pool<P2>(p2, count * P2);
+}
+
+using HandleAllocatorGL = HandleAllocator<32, 96, 136>;

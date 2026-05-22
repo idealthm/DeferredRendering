@@ -423,6 +423,24 @@
     <ClInclude Include="Source\Scene.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Source\RHI\GL\GLBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RHI\GL\GLDriver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RHI\HwBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RHI\TextureSampler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Model\Asset.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="Source\UnifromBuffer\UniformBuffer.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -509,6 +527,13 @@
     <ClCompile Include="Source\Scene.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Source\RHI\GL\GLBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+
     <ClCompile Include="Source\UnifromBuffer\UniformBuffer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>

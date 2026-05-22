@@ -76,9 +76,9 @@ uint32_t GetGLTexTarget(ETextureTarget target);
 struct FBTextureAttachment
 {
 	uint32_t					RendererID;
-	ETextureTarget			Target = ETextureTarget::Texture2D;
-	FBTextureLoadAction		LoadAction;
-	FBTextureStoreAction	StoreAction;
+	ETextureTarget				Target = ETextureTarget::Texture2D;
+	FBTextureLoadAction			LoadAction;
+	FBTextureStoreAction		StoreAction;
 	uint32_t					MipLevel;
 
 	FBTextureAttachment()

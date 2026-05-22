@@ -4,25 +4,15 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+#include "UibStruct.h"
 #include "FrameBuffer/FrameBuffer.h"
 #include "UnifromBuffer/ParamBuffer.h"
 
 class Scene;
 class RenderPass;
 class RenderPipeline;
-class Texture2D;
-class TextureCube;
-struct LightData;
+class Texture;
 
-struct FrameData
-{
-    glm::mat4 m_ViewProjection;
-    glm::mat4 m_Projection;
-    glm::mat4 m_InvViewProjection;
-    glm::mat4 m_InvProjection;
-    glm::vec3 m_CameraPosition;
-    int RenderMode;
-};
 
 struct RenderContext
 {
@@ -32,33 +22,34 @@ struct RenderContext
     glm::u32vec2 viewportSize = {1600, 900};
     float ShadowWidth, ShadowHeight;
 
-    Ref<Texture2D> BRDF_LUT;
+    Ref<Texture> BRDF_LUT;
 
-    Ref<Texture2D> GBuffer_Position;
-    Ref<Texture2D> GBuffer_Normal;
-    Ref<Texture2D> GBuffer_Albedo;
-    Ref<Texture2D> GBuffer_Material;
-    Ref<Texture2D> GBuffer_Depth;
+    Ref<Texture> GBuffer_Position;
+    Ref<Texture> GBuffer_Normal;
+    Ref<Texture> GBuffer_Albedo;
+    Ref<Texture> GBuffer_Material;
+    Ref<Texture> GBuffer_Depth;
 
-    Ref<Texture2D> Test;
+    Ref<Texture> Test;
 
-    Ref<Texture2D> ShadowMap_Depth;
+    Ref<Texture> ShadowMap_Depth;
 
-    Ref<Texture2D> LightMap_SceneColor;
-    Ref<Texture2D> LightMap_SceneDepth;
+    Ref<Texture> LightMap_SceneColor;
+    Ref<Texture> LightMap_SceneDepth;
 
-    Ref<TextureCube> ERP_Cubemap;
-    Ref<TextureCube> IBL_IrradianceMap;
-    Ref<TextureCube> IBL_PreFilterMap;
+    Ref<Texture> ERP_Cubemap;
+    Ref<Texture> IBL_IrradianceMap;
+    Ref<Texture> IBL_PreFilterMap;
 
-    Ref<Texture2D> Sky_SceneColor;
+    Ref<Texture> Sky_SceneColor;
 
     Ref<FrameBuffer> FrameBuffer;
 
-    Ref<Texture2D> Final_SceneColor;
+    Ref<Texture> Final_SceneColor;
 
-    Ref<ParamBuffer<FrameData>> FrameDataUB;
-    Ref<ParamBuffer<LightData>> LightDataUB;
+    TypedUniformBuffer<PerViewUib> FrameDataUB;
+    TypedUniformBuffer<LightData> LightDataUB;
+    TypedUniformBuffer<ModelData> ModelDataUB;
 };
 
 class Renderer

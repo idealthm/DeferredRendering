@@ -11,6 +11,5 @@ public:
 	void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx) override;
 
 private:
-	Ref<Shader> m_Shader;
 	UnitCube	m_UnitCube;
 };

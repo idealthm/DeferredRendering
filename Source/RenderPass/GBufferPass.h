@@ -1,5 +1,5 @@
-﻿#pragma once
-#include <string>
+#pragma once
+#include <memory>
 
 #include "RenderPass.h"
 #include "FrameBuffer/FrameBuffer.h"
@@ -11,8 +11,7 @@ class GBufferPass : public RenderPass
 {
 public:
 	GBufferPass();
-	virtual ~GBufferPass() = default;
 
-	virtual void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx) override;
+	void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx) override;
 	virtual void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx);
 };

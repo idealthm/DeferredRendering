@@ -1,4 +1,4 @@
-﻿in vec3 vPosition;
+in vec3 vPosition;
 in vec2 vTexCoords;
 in mat3 vTBN;
 
@@ -44,4 +44,4 @@ void main()
     float metallic = texture(uMetallic, vTexCoords).r;
     float ao = texture(uAO, vTexCoords).r;
     gMaterial = vec4(roughness, metallic, ao, 1.0);
-};
+}

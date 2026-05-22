@@ -62,7 +62,7 @@
       <PreprocessorDefinitions>DR_DEBUG;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>Default</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)vendor\includes\glad;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
+      <AdditionalOptions>/Zc:static_assert- /FS %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessToFile>false</PreprocessToFile>
       <SupportJustMyCode>false</SupportJustMyCode>
@@ -71,19 +71,22 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)vendor\lib;$(SolutionDir)vendor\dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mtd.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Shlwapi.lib;assimp-vc143-mtd.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>msvcrt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
     <Manifest>
-      <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
+      <AdditionalOptions>/Zc:static_assert- /FS</AdditionalOptions>
     </Manifest>
     <PreBuildEvent>
       <Command>setlocal
 if not exist "$(TargetDir)" mkdir "$(TargetDir)"
 copy /Y "D:\Dev\DeferredRendering\vendor\dll\assimp-vc143-mtd.dll" "$(TargetDir)"
 if %errorlevel% neq 0 exit /b 1
+for %%f in ("$(ProjectDir)Material\*.mat") do (
+  "$(SolutionDir)Binaries\$(Platform)\$(Configuration)\ShaderCompiler.exe" "%%f" --target opengl4.5 --template-dir "$(ProjectDir)Template" -o CompiledMaterials || exit /b 1
+)
 endlocal</Command>
-      <Message>Copy Target Dll file to Outdir </Message>
+      <Message>Copy DLL + compile all .mat shaders to SPIR-V</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -95,7 +98,7 @@ endlocal</Command>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)vendor\includes\glad;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
+      <AdditionalOptions>/Zc:static_assert- /FS</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
@@ -104,7 +107,7 @@ endlocal</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>assimp-vc143-mtd.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Shlwapi.lib;assimp-vc143-mtd.lib;glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)vendor\lib;$(SolutionDir)vendor\dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -118,13 +121,17 @@ endlocal</Command>
 if not exist "$(TargetDir)" mkdir "$(TargetDir)"
 copy /Y "D:\Dev\DeferredRendering\vendor\dll\assimp-vc143-mtd.dll" "$(TargetDir)"
 if %errorlevel% neq 0 exit /b 1
+for %%f in ("$(ProjectDir)Material\*.mat") do (
+  "$(SolutionDir)Binaries\$(Platform)\$(Configuration)\ShaderCompiler.exe" "%%f" --target opengl4.5 --template-dir "$(ProjectDir)Template" -o CompiledMaterials || exit /b 1
+)
 endlocal</Command>
-      <Message>Copy Target Dll file to Outdir </Message>
+      <Message>Copy DLL + compile all .mat shaders to SPIR-V</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Shaders\Passes\ERPToCubeMap.frag.glsl" />
     <ClInclude Include="Source\Actor.h" />
+    <ClInclude Include="Source\Assimp\Util.h" />
     <ClInclude Include="Source\Camera\Camera.h" />
     <ClInclude Include="Source\Camera\CameraController.h" />
     <ClInclude Include="Source\Common\Core.h" />
@@ -136,11 +143,17 @@ endlocal</Command>
     <ClInclude Include="Source\Common\MouseCode.h" />
     <ClInclude Include="Source\Common\Timestep.h" />
     <ClInclude Include="Source\Common\Utils.h" />
+    <ClInclude Include="Source\Common\Utils\BitmaskEnum.h" />
+    <ClInclude Include="Source\Common\Utils\Bitset.h" />
     <ClInclude Include="Source\Common\Utils\PoolAllocator.h" />
+    <ClInclude Include="Source\Common\Serialization\ChunkContainer.h" />
+    <ClInclude Include="Source\Common\Serialization\MaterialBinaryArchive.h" />
+    <ClInclude Include="Source\Common\Serialization\MaterialBinaryChunks.h" />
     <ClInclude Include="Source\Component\ActorComponent.h" />
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Component\SkyComponent.h" />
     <ClInclude Include="Source\Delegates\DelegateBase.h" />
+    <ClInclude Include="Source\EngineEnum.h" />
     <ClInclude Include="Source\Events\ApplicationEvent.h" />
     <ClInclude Include="Source\Events\Event.h" />
     <ClInclude Include="Source\Events\Input.h" />
@@ -149,17 +162,18 @@ endlocal</Command>
     <ClInclude Include="Source\FrameBuffer\FrameBuffer.h" />
     <ClInclude Include="Source\GraphicContext.h" />
     <ClInclude Include="Source\Guid.h" />
-    <ClInclude Include="Source\IndexBuffer\IndexBuffer.h" />
     <ClInclude Include="Source\Layers\EditorLayer.h" />
     <ClInclude Include="Source\Layers\ImGuiLayer.h" />
     <ClInclude Include="Source\Layers\Layer.h" />
     <ClInclude Include="Source\Lights\Light.h" />
     <ClInclude Include="Source\Material\Material.h" />
+    <ClInclude Include="Source\Material\MaterialEnums.h" />
+    <ClInclude Include="Source\Material\MaterialInstance.h" />
+    <ClInclude Include="Source\Material\MaterialLibrary.h" />
     <ClInclude Include="Source\MeshManger.h" />
     <ClInclude Include="Source\Model\MeshSection.h" />
     <ClInclude Include="Source\Model\StaticMesh.h" />
     <ClInclude Include="Source\Model\Texture.h" />
-    <ClInclude Include="Source\Model\Util.h" />
     <ClInclude Include="Source\Panel\EditorPanel.h" />
     <ClInclude Include="Source\Panel\OutlinePanel.h" />
     <ClInclude Include="Source\Panel\PropertyPanel.h" />
@@ -175,29 +189,39 @@ endlocal</Command>
     <ClInclude Include="Source\RenderPass\ShadowPass.h" />
     <ClInclude Include="Source\RenderPass\SkyLightPass.h" />
     <ClInclude Include="Source\RenderPass\ToneMapping.h" />
-    <ClInclude Include="Source\RHI\GL\GLSampler.h" />
+    <ClInclude Include="Source\RenderTarget.h" />
+    <ClInclude Include="Source\RHI\BindingMap.h" />
+    <ClInclude Include="Source\RHI\BufferDescriptor.h" />
+    <ClInclude Include="Source\RHI\BufferLayout.h" />
+    <ClInclude Include="Source\RHI\CallbackHandle.h" />
+    <ClInclude Include="Source\RHI\GL\GLBufferObject.h" />
+    <ClInclude Include="Source\Engine.h" />
+    <ClInclude Include="Source\RHI\GL\GLDriver.h" />
+    <ClInclude Include="Source\RHI\GL\GLHelper.h" />
+    <ClInclude Include="Source\RHI\GL\GLProgram.h" />
     <ClInclude Include="Source\RHI\GL\GLTexture.h" />
-    <ClInclude Include="Source\RHI\HWSampler.h" />
-    <ClInclude Include="Source\RHI\HWTexture.h" />
+    <ClInclude Include="Source\RHI\GL\OpenGLContext.h" />
+    <ClInclude Include="Source\RHI\PipelineState.h" />
+    <ClInclude Include="Source\RHI\PixelBufferDescriptor.h" />
+    <ClInclude Include="Source\RHI\RenderPrimitive.h" />
     <ClInclude Include="Source\RHI\RendererAPI.h" />
-    <ClInclude Include="Source\RHI\RHITypes.h" />
-    <ClInclude Include="Source\RHI\SamplerPool.h" />
+    <ClInclude Include="Source\RHI\RHIDriver.h" />
+    <ClInclude Include="Source\RHI\TargetBufferInfo.h" />
+    <ClInclude Include="Source\RHI\TextureSampler.h" />
+    <ClInclude Include="Source\RHI\VertexBuffer.h" />
+    <ClInclude Include="Source\RHI\IndexBuffer.h" />
     <ClInclude Include="Source\Scene.h" />
-    <ClInclude Include="Source\ShaderPreprocessor\ShaderDefines.h" />
-    <ClInclude Include="Source\ShaderPreprocessor\ShaderLoader.h" />
-    <ClInclude Include="Source\ShaderPreprocessor\TokenList.h" />
-    <ClInclude Include="Source\Shader\Shader.h" />
-    <ClInclude Include="Source\Shader\ShaderLibrary.h" />
+    <ClInclude Include="Source\Shader\Program.h" />
     <ClInclude Include="Source\Shapes\MeshBuilder.h" />
     <ClInclude Include="Source\Shapes\ScreenQuad.h" />
     <ClInclude Include="Source\Shapes\UnitCube.h" />
     <ClInclude Include="Source\SkyLightActor.h" />
+    <ClInclude Include="Source\SpirvReflect\ShaderParse.h" />
+    <ClInclude Include="Source\SpirvReflect\spirv_reflect.h" />
     <ClInclude Include="Source\stb_images\stb_image.h" />
+    <ClInclude Include="Source\UibStruct.h" />
     <ClInclude Include="Source\UnifromBuffer\ParamBuffer.h" />
     <ClInclude Include="Source\UnifromBuffer\UniformBuffer.h" />
-    <ClInclude Include="Source\VertexArray\VertexArray.h" />
-    <ClInclude Include="Source\VertexBuffer\VertexBuffer.h" />
-    <ClInclude Include="Source\VertexBuffer\VertexBufferLayout.h" />
     <ClInclude Include="Source\Windows\Window.h" />
     <ClInclude Include="vendor\includes\assimp\aabb.h" />
     <ClInclude Include="vendor\includes\assimp\ai_assert.h" />
@@ -370,78 +394,11 @@ endlocal</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Actor.cpp" />
-    <ClCompile Include="Source\Camera\Camera.cpp" />
-    <ClCompile Include="Source\Camera\CameraController.cpp" />
-    <ClCompile Include="Source\Common\Handle.cpp" />
-    <ClCompile Include="Source\Common\HandleAllocator.cpp" />
-    <ClCompile Include="Source\Common\LayerStack.cpp" />
-    <ClCompile Include="Source\Common\Math.cpp" />
-    <ClCompile Include="Source\Common\Timestep.cpp" />
-    <ClCompile Include="Source\Common\Utils.cpp" />
-    <ClCompile Include="Source\Common\Utils\PoolAllocator.cpp" />
-    <ClCompile Include="Source\Component\ActorComponent.cpp" />
-    <ClCompile Include="Source\Application.cpp" />
-    <ClCompile Include="Source\Component\SkyComponent.cpp" />
-    <ClCompile Include="Source\Delegates\DelegateBase.cpp" />
-    <ClCompile Include="Source\Events\Input.cpp" />
-    <ClCompile Include="Source\FrameBuffer\FrameBuffer.cpp" />
-    <ClCompile Include="Source\glad.c" />
-    <ClCompile Include="Source\GraphicContext.cpp" />
-    <ClCompile Include="Source\Guid.cpp" />
-    <ClCompile Include="Source\IndexBuffer\IndexBuffer.cpp" />
-    <ClCompile Include="Source\Layers\EditorLayer.cpp" />
-    <ClCompile Include="Source\Layers\ImGuiBuild.cpp" />
-    <ClCompile Include="Source\Layers\ImGuiLayer.cpp" />
-    <ClCompile Include="Source\Layers\Layer.cpp" />
-    <ClCompile Include="Source\Lights\Light.cpp" />
-    <ClCompile Include="Source\Main.cpp" />
-    <ClCompile Include="Source\Material\Material.cpp" />
-    <ClCompile Include="Source\MeshManger.cpp" />
-    <ClCompile Include="Source\Model\MeshSection.cpp" />
-    <ClCompile Include="Source\Model\StaticMesh.cpp" />
-    <ClCompile Include="Source\Model\Texture.cpp" />
-    <ClCompile Include="Source\Model\Util.cpp" />
-    <ClCompile Include="Source\Panel\EditorPanel.cpp" />
-    <ClCompile Include="Source\Panel\OutlinePanel.cpp" />
-    <ClCompile Include="Source\Panel\PropertyPanel.cpp" />
-    <ClCompile Include="Source\Panel\ScenePanel.cpp" />
-    <ClCompile Include="Source\Renderer.cpp" />
-    <ClCompile Include="Source\RenderPipeline.cpp" />
-    <ClCompile Include="Source\RenderPass\CubeMapConvolution.cpp" />
-    <ClCompile Include="Source\RenderPass\EnvPreFilter.cpp" />
-    <ClCompile Include="Source\RenderPass\ERPPass.cpp" />
-    <ClCompile Include="Source\RenderPass\GBufferPass.cpp" />
-    <ClCompile Include="Source\RenderPass\LightingPass.cpp" />
-    <ClCompile Include="Source\RenderPass\RenderPass.cpp" />
-    <ClCompile Include="Source\RenderPass\ShadowPass.cpp" />
-    <ClCompile Include="Source\RenderPass\SkyLightPass.cpp" />
-    <ClCompile Include="Source\RenderPass\ToneMapping.cpp" />
-    <ClCompile Include="Source\RHI\GL\GLSampler.cpp" />
-    <ClCompile Include="Source\RHI\GL\GLTexture.cpp" />
-    <ClCompile Include="Source\RHI\HWSampler.cpp" />
-    <ClCompile Include="Source\RHI\HWTexture.cpp" />
-    <ClCompile Include="Source\RHI\RHITypes.cpp" />
-    <ClCompile Include="Source\RHI\SamplerPool.cpp" />
-    <ClCompile Include="Source\Scene.cpp" />
-    <ClCompile Include="Source\ShaderPreprocessor\ShaderDefines.cpp" />
-    <ClCompile Include="Source\ShaderPreprocessor\ShaderLoader.cpp" />
-    <ClCompile Include="Source\ShaderPreprocessor\TokenList.cpp" />
-    <ClCompile Include="Source\Shader\Shader.cpp" />
-    <ClCompile Include="Source\Shader\ShaderLibrary.cpp" />
-    <ClCompile Include="Source\Shapes\MeshBuilder.cpp" />
-    <ClCompile Include="Source\Shapes\ScreenQuad.cpp" />
-    <ClCompile Include="Source\Shapes\UnitCube.cpp" />
-    <ClCompile Include="Source\SkyLightActor.cpp" />
-    <ClCompile Include="Source\stb_images\stb_image.cpp" />
-    <ClCompile Include="Source\UnifromBuffer\ParamBuffer.cpp" />
-    <ClCompile Include="Source\UnifromBuffer\UniformBuffer.cpp" />
-    <ClCompile Include="Source\VertexArray\VertexArray.cpp" />
-    <ClCompile Include="Source\VertexBuffer\VertexBuffer.cpp" />
-    <ClCompile Include="Source\VertexBuffer\VertexBufferLayout.cpp">
+    <ClCompile Include="Source\Assimp\Util.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <Optimization>Disabled</Optimization>
-      <SupportJustMyCode>true</SupportJustMyCode>
+      <SupportJustMyCode>false</SupportJustMyCode>
       <AssemblerOutput>NoListing</AssemblerOutput>
       <AssemblerListingLocation>D:\Dev\DeferredRendering\Intermediate\x64\Debug\</AssemblerListingLocation>
       <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
@@ -510,9 +467,85 @@ endlocal</Command>
       <PreprocessorDefinitions>DR_DEBUG;_DEBUG;_CONSOLE;_UNICODE;UNICODE;</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>D:\Dev\DeferredRendering\Source;D:\Dev\DeferredRendering\vendor\includes\glad;D:\Dev\DeferredRendering\vendor\includes;D:\Dev\DeferredRendering\SubModule\glm;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:static_assert-</AdditionalOptions>
+      <AdditionalOptions>/Zc:static_assert- /FS</AdditionalOptions>
       <LinkCompiled>true</LinkCompiled>
     </ClCompile>
+    <ClCompile Include="Source\Camera\Camera.cpp" />
+    <ClCompile Include="Source\Camera\CameraController.cpp" />
+    <ClCompile Include="Source\Common\Handle.cpp" />
+    <ClCompile Include="Source\Common\HandleAllocator.cpp" />
+    <ClCompile Include="Source\Common\LayerStack.cpp" />
+    <ClCompile Include="Source\Common\Math.cpp" />
+    <ClCompile Include="Source\Common\Timestep.cpp" />
+    <ClCompile Include="Source\Common\Utils.cpp" />
+    <ClCompile Include="Source\Common\Utils\Bitset.cpp" />
+    <ClCompile Include="Source\Common\Utils\PoolAllocator.cpp" />
+    <ClCompile Include="Source\Component\ActorComponent.cpp" />
+    <ClCompile Include="Source\Application.cpp" />
+    <ClCompile Include="Source\Component\SkyComponent.cpp" />
+    <ClCompile Include="Source\Delegates\DelegateBase.cpp" />
+    <ClCompile Include="Source\Events\Input.cpp" />
+    <ClCompile Include="Source\FrameBuffer\FrameBuffer.cpp" />
+    <ClCompile Include="Source\glad.c" />
+    <ClCompile Include="Source\GraphicContext.cpp" />
+    <ClCompile Include="Source\Guid.cpp" />
+    <ClCompile Include="Source\Layers\EditorLayer.cpp" />
+    <ClCompile Include="Source\Layers\ImGuiBuild.cpp" />
+    <ClCompile Include="Source\Layers\ImGuiLayer.cpp" />
+    <ClCompile Include="Source\Layers\Layer.cpp" />
+    <ClCompile Include="Source\Lights\Light.cpp" />
+    <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\Material\Material.cpp" />
+    <ClCompile Include="Source\Material\MaterialInstance.cpp" />
+    <ClCompile Include="Source\Material\MaterialLibrary.cpp" />
+    <ClCompile Include="Source\MeshManger.cpp" />
+    <ClCompile Include="Source\Model\MeshSection.cpp" />
+    <ClCompile Include="Source\Model\StaticMesh.cpp" />
+    <ClCompile Include="Source\Model\Texture.cpp" />
+    <ClCompile Include="Source\Panel\EditorPanel.cpp" />
+    <ClCompile Include="Source\Panel\OutlinePanel.cpp" />
+    <ClCompile Include="Source\Panel\PropertyPanel.cpp" />
+    <ClCompile Include="Source\Panel\ScenePanel.cpp" />
+    <ClCompile Include="Source\Renderer.cpp" />
+    <ClCompile Include="Source\RenderPipeline.cpp" />
+    <ClCompile Include="Source\RenderPass\CubeMapConvolution.cpp" />
+    <ClCompile Include="Source\RenderPass\EnvPreFilter.cpp" />
+    <ClCompile Include="Source\RenderPass\ERPPass.cpp" />
+    <ClCompile Include="Source\RenderPass\GBufferPass.cpp" />
+    <ClCompile Include="Source\RenderPass\LightingPass.cpp" />
+    <ClCompile Include="Source\RenderPass\RenderPass.cpp" />
+    <ClCompile Include="Source\RenderPass\ShadowPass.cpp" />
+    <ClCompile Include="Source\RenderPass\SkyLightPass.cpp" />
+    <ClCompile Include="Source\RenderPass\ToneMapping.cpp" />
+    <ClCompile Include="Source\RenderTarget.cpp" />
+    <ClCompile Include="Source\RHI\BindingMap.cpp" />
+    <ClCompile Include="Source\RHI\BufferDescriptor.cpp" />
+    <ClCompile Include="Source\RHI\CallbackHandle.cpp" />
+    <ClCompile Include="Source\RHI\RenderPrimitive.cpp" />
+    <ClCompile Include="Source\RHI\VertexBuffer.cpp" />
+    <ClCompile Include="Source\RHI\IndexBuffer.cpp" />
+    <ClCompile Include="Source\RHI\GL\GLDescriptorSet.cpp" />
+    <ClCompile Include="Source\RHI\GL\GLDriver.cpp" />
+    <ClCompile Include="Source\RHI\GL\GLHelper.cpp" />
+    <ClCompile Include="Source\RHI\GL\GLProgram.cpp" />
+    <ClCompile Include="Source\Engine.cpp" />
+    <ClCompile Include="Source\RHI\GL\OpenGLContext.cpp" />
+    <ClCompile Include="Source\RHI\PipelineState.cpp" />
+    <ClCompile Include="Source\RHI\PixelBufferDescriptor.cpp" />
+    <ClCompile Include="Source\Scene.cpp" />
+    <ClCompile Include="Source\Shader\Program.cpp" />
+    <ClCompile Include="Source\Shapes\MeshBuilder.cpp" />
+    <ClCompile Include="Source\Shapes\ScreenQuad.cpp" />
+    <ClCompile Include="Source\Shapes\UnitCube.cpp" />
+    <ClCompile Include="Source\SkyLightActor.cpp" />
+    <ClCompile Include="Source\SpirvReflect\ShaderParse.cpp" />
+    <ClCompile Include="Source\SpirvReflect\SpirvReflectTest.cpp" />
+    <ClCompile Include="Source\SpirvReflect\spirv_reflect.c" />
+    <ClCompile Include="Source\SpirvReflect\spirv_reflect.cpp" />
+    <ClCompile Include="Source\stb_images\stb_image.cpp" />
+    <ClCompile Include="Source\UibStruct.cpp" />
+    <ClCompile Include="Source\UnifromBuffer\ParamBuffer.cpp" />
+    <ClCompile Include="Source\UnifromBuffer\UniformBuffer.cpp" />
     <ClCompile Include="Source\Windows\Window.cpp" />
     <ClCompile Include="vendor\includes\ImGui\GraphEditor.cpp" />
     <ClCompile Include="vendor\includes\ImGui\ImCurveEdit.cpp" />
@@ -671,6 +704,9 @@ endlocal</Command>
     <Content Include="Assets\textures\toy_box_normal.png" />
     <Content Include="Assets\textures\window.png" />
     <Content Include="Assets\textures\wood.png" />
+    <Content Include="Material\Lit.mat" />
+    <Content Include="Material\Model.mat" />
+    <Content Include="Material\Shape.mat" />
     <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_AmbientOcclusion.jpg" />
     <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_BaseColor.jpg" />
     <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_Height.png" />
@@ -683,9 +719,7 @@ endlocal</Command>
     <Content Include="Shaders\Common\Structures.glsl" />
     <Content Include="Shaders\DirectionLight.frag.glsl" />
     <Content Include="Shaders\DirectionLight.vert.glsl" />
-    <Content Include="Shaders\GbufferDebug.glsl" />
     <Content Include="Shaders\GBufferHelper.glsl" />
-    <Content Include="Shaders\GeometryPass.glsl" />
     <Content Include="Shaders\Passes\CubeMapConvolution.frag.glsl" />
     <Content Include="Shaders\Passes\CubeMapConvolution.vert.glsl" />
     <Content Include="Shaders\Passes\DeferredLighting.frag.glsl" />
@@ -704,10 +738,32 @@ endlocal</Command>
     <Content Include="Shaders\PBR\Lights.glsl" />
     <Content Include="Shaders\ShadowPass.frag.glsl" />
     <Content Include="Shaders\ShadowPass.vert.glsl" />
+    <Content Include="Source\RHI\DriverEnums.h" />
+    <Content Include="Source\RHI\GL\GLDescriptorSet.h" />
+    <Content Include="Source\RHI\GL\GLDescriptorSetLayout.h" />
+    <Content Include="Template\common_defines.glsl" />
+    <Content Include="Template\surface_builtins.glsl" />
+    <Content Include="Template\surface_deferred_main.fs" />
+    <Content Include="Template\surface_deferred_main.vs" />
+    <Content Include="Template\surface_getters.fs" />
+    <Content Include="Template\surface_getters.vs" />
+    <Content Include="Template\surface_forward_main.fs" />
+    <Content Include="Template\surface_material_input.fs" />
+    <Content Include="Template\surface_material_input.vs" />
+    <Content Include="Template\surface_forward_main.vs" />
+    <Content Include="Template\surface_varying.glsl" />
     <Content Include="vendor\includes\assimp\.editorconfig" />
     <Content Include="vendor\includes\assimp\config.h.in" />
     <Content Include="vendor\includes\assimp\module.modulemap" />
     <Content Include="vendor\includes\assimp\revision.h.in" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Template\surface_shading_lit.fs" />
+    <Compile Include="Template\surface_shading_unlit.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Shaders\Template\" />
+    <Folder Include="Source\ShaderPreprocessor\" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

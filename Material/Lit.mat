@@ -1,5 +1,6 @@
 {
     "name": "lit",
+    "pipeline": "deferred",
     "shadingModel": "lit",
     "variables": ["uv"],
     "properties": [

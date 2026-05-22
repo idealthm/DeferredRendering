@@ -1,4 +1,4 @@
-﻿// BRDF.glsl
+// BRDF.glsl
 const float PI = 3.14159265359;
 
 // 1. 法线分布函数 (Normal Distribution Function) - Trowbridge-Reitz GGX

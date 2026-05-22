@@ -1,14 +1,24 @@
 #include "UnitCube.h"
 #include "MeshBuilder.h"
 #include "Model/MeshSection.h"
+#include "Material/Material.h"
+#include "RHI/VertexBuffer.h"
 
 UnitCube::UnitCube(const Ref<Material>& material)
 {
 	auto mesh = MeshBuilder::BuildCube(material);
-	m_MeshSection = mesh->GetMeshSections()[0];
+	auto& section = mesh->GetMeshSections()[0];
+	m_RenderPrimitive = mesh->GetRenderPrimitive();
+	m_IndexOffset = section->GetIndexOffset();
+	m_IndexCount = section->GetIndexCount();
 }
 
-void UnitCube::Draw() const
+Handle<RHI::HwRenderPrimitive> UnitCube::GetRenderPrimitiveHandle() const
 {
-	m_MeshSection->Draw();
+	return m_RenderPrimitive->GetHandle();
+}
+
+Handle<RHI::HwVertexBufferInfo> UnitCube::GetVertexBufferInfoHandle() const
+{
+	return m_RenderPrimitive->GetDesc().vertexBuffer->GetVertexBufferInfoHandle();
 }

@@ -3,6 +3,8 @@
 #include "RenderPass.h"
 #include "Shapes/ScreenQuad.h"
 
+class MaterialInstance;
+class Material;
 class FrameBuffer;
 
 class LightingPass : public RenderPass
@@ -16,6 +18,8 @@ public:
 	void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx) override;
 
 private:
-	Ref<Shader> m_Shader;
+	Ref<Program> m_Shader;
 	ScreenQuad  m_ScreenQuad;
+	Ref<Material> m_Material;
+	Ref<MaterialInstance> m_MaterialInstance;
 };

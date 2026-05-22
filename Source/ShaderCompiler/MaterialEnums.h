@@ -4,6 +4,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "RHI/RHIDriver.h"
+
 /**
  * Uniform property types — map to std140 uniform block members
  */
@@ -79,50 +81,41 @@ inline bool IsValidUniformType(const std::string& s)
     return sStringToUniformType.find(s) != sStringToUniformType.end();
 }
 
-/**
- * Sampler property types — map to separate sampler uniforms
- */
-enum class SamplerType : uint8_t {
-    SAMPLER_2D,
-    SAMPLER_2D_ARRAY,
-    SAMPLER_CUBEMAP,
-    SAMPLER_3D,
-    SAMPLER_CUBEMAP_ARRAY,
-};
 
-inline const char* SamplerTypeToGLSL(SamplerType t)
+
+inline const char* SamplerTypeToGLSL(RHI::SamplerType t)
 {
     switch (t)
     {
-    case SamplerType::SAMPLER_2D:               return "sampler2D";
-    case SamplerType::SAMPLER_2D_ARRAY:         return "sampler2DArray";
-    case SamplerType::SAMPLER_CUBEMAP:          return "samplerCube";
-    case SamplerType::SAMPLER_3D:               return "sampler3D";
-    case SamplerType::SAMPLER_CUBEMAP_ARRAY:    return "samplerCubeArray";
+    case RHI::SamplerType::SAMPLER_2D:               return "sampler2D";
+    case RHI::SamplerType::SAMPLER_2D_ARRAY:         return "sampler2DArray";
+    case RHI::SamplerType::SAMPLER_CUBEMAP:          return "samplerCube";
+    case RHI::SamplerType::SAMPLER_3D:               return "sampler3D";
+    case RHI::SamplerType::SAMPLER_CUBEMAP_ARRAY:    return "samplerCubeArray";
     }
     return "";
 }
 
-inline SamplerType ParseSamplerType(const std::string& s)
+inline RHI::SamplerType ParseSamplerType(const std::string& s)
 {
-    static const std::unordered_map<std::string, SamplerType> map = {
-        {"sampler2d",           SamplerType::SAMPLER_2D},
-        {"sampler2dArray",      SamplerType::SAMPLER_2D_ARRAY},
-        {"samplerCubemap",      SamplerType::SAMPLER_CUBEMAP},
-        {"sampler3d",           SamplerType::SAMPLER_3D},
-        {"samplerCubemapArray", SamplerType::SAMPLER_CUBEMAP_ARRAY},
+    static const std::unordered_map<std::string, RHI::SamplerType> map = {
+        {"sampler2d",           RHI::SamplerType::SAMPLER_2D},
+        {"sampler2dArray",      RHI::SamplerType::SAMPLER_2D_ARRAY},
+        {"samplerCubemap",      RHI::SamplerType::SAMPLER_CUBEMAP},
+        {"sampler3d",           RHI::SamplerType::SAMPLER_3D},
+        {"samplerCubemapArray", RHI::SamplerType::SAMPLER_CUBEMAP_ARRAY},
     };
     return map.at(s);
 }
 
 inline bool IsValidSamplerType(const std::string& s)
 {
-    static const std::unordered_map<std::string, SamplerType> map = {
-        {"sampler2d",           SamplerType::SAMPLER_2D},
-        {"sampler2dArray",      SamplerType::SAMPLER_2D_ARRAY},
-        {"samplerCubemap",      SamplerType::SAMPLER_CUBEMAP},
-        {"sampler3d",           SamplerType::SAMPLER_3D},
-        {"samplerCubemapArray", SamplerType::SAMPLER_CUBEMAP_ARRAY},
+    static const std::unordered_map<std::string, RHI::SamplerType> map = {
+        {"sampler2d",           RHI::SamplerType::SAMPLER_2D},
+        {"sampler2dArray",      RHI::SamplerType::SAMPLER_2D_ARRAY},
+        {"samplerCubemap",      RHI::SamplerType::SAMPLER_CUBEMAP},
+        {"sampler3d",           RHI::SamplerType::SAMPLER_3D},
+        {"samplerCubemapArray", RHI::SamplerType::SAMPLER_CUBEMAP_ARRAY},
     };
     return map.find(s) != map.end();
 }
