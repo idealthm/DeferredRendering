@@ -3,10 +3,9 @@
 #include <string>
 #include <vector>
 
-#include "Material/MaterialEnums.h"
-#include "ShaderCompiler/MaterialEnums.h"
+#include "Common/Material/MaterialCommon.h"
 
-enum class Pipeline;
+enum class FieldType : uint8_t;
 
 struct ConstantParam
 {
@@ -17,6 +16,8 @@ struct ConstantParam
 struct VariableParam
 {
     std::string name;
+    FieldType varType;
+    uint8_t location = 0;
 };
 
 struct PropertyParam
@@ -24,10 +25,10 @@ struct PropertyParam
     enum class Kind : uint8_t { Uniform, Sampler };
 
     Kind kind;
-    UniformType uniformType;   // valid when kind == Uniform
-    RHI::SamplerType samplerType;   // valid when kind == Sampler
+    UniformType uniformType;
+    RHI::SamplerType samplerType;
     std::string name;
-    std::string structName;    // only when uniformType == STRUCT
+    std::string structName;
 };
 
 struct OutputParam
@@ -39,9 +40,9 @@ struct OutputParam
 struct MaterialSpec
 {
     std::string name;
-    Pipeline    pipeline;                           // "deferred" | "forward"
-    std::string shadingModel;                   // "unlit" | "lit" | ...
-    std::string domain;                         // "surface" | "postprocess" | "compute"
+    Pipeline pipeline;
+    std::string shadingModel;
+    MaterialDomain domain;
     std::vector<VertexAttribute> requiredAttributes;
     std::vector<ConstantParam> constants;
     std::vector<VariableParam> variables;

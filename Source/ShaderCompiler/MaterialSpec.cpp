@@ -1,5 +1,6 @@
 #include "MaterialSpec.h"
 #include "GLSLGenerator.h"
+#include "MaterialEnums.h"
 
 #include <stdexcept>
 #include <unordered_map>
@@ -61,9 +62,9 @@ static MaterialSpec ParseMaterialSpecImpl(const json& j)
     {
         std::string pipelineStr = j.value("pipeline", "deferred");
         if (pipelineStr == "deferred")
-            spec.pipeline = Pipeline::Deferred;
+            spec.pipeline = Pipeline::DEFERRED;
         else if (pipelineStr == "forward")
-            spec.pipeline = Pipeline::Forward;
+            spec.pipeline = Pipeline::FORWARD;
         else
             throw std::runtime_error("material '" + spec.name + "': invalid pipeline '" +
                 pipelineStr + "'. Valid: deferred, forward");
@@ -75,9 +76,16 @@ static MaterialSpec ParseMaterialSpecImpl(const json& j)
     // --- domain (required) ---
     if (!j.contains("domain"))
         throw std::runtime_error("material '" + spec.name + "': missing required field 'domain'");
-    spec.domain = j["domain"].get<std::string>();
-    if (spec.domain != "surface" && spec.domain != "postprocess" && spec.domain != "compute")
-        throw std::runtime_error("material '" + spec.name + "': invalid domain '" + spec.domain +
+    
+    std::string domainStr = j["domain"].get<std::string>();
+    if (domainStr == "surface")
+        spec.domain = MaterialDomain::SURFACE;
+    else if (domainStr == "postprocess")
+        spec.domain = MaterialDomain::POST_PROCESS;
+    else if (domainStr == "compute")
+        spec.domain = MaterialDomain::COMPUTE;
+    else
+        throw std::runtime_error("material '" + spec.name + "': invalid domain '" + domainStr +
             "'. Valid: surface, postprocess, compute");
 
     // --- require (optional) ---

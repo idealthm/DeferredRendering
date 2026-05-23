@@ -1,35 +1,10 @@
 #pragma once
 
-#include <cstdint>
 #include <string>
 #include <unordered_map>
 
+#include "Common/Material/MaterialCommon.h"
 #include "RHI/RHIDriver.h"
-
-/**
- * Uniform property types — map to std140 uniform block members
- */
-enum class UniformType : uint8_t {
-    BOOL,
-    BOOL2,
-    BOOL3,
-    BOOL4,
-    FLOAT,
-    FLOAT2,
-    FLOAT3,
-    FLOAT4,
-    INT,
-    INT2,
-    INT3,
-    INT4,
-    UINT,
-    UINT2,
-    UINT3,
-    UINT4,
-    MAT3,
-    MAT4,
-    STRUCT,
-};
 
 inline const char* UniformTypeToGLSL(UniformType t)
 {
@@ -58,27 +33,38 @@ inline const char* UniformTypeToGLSL(UniformType t)
     return "";
 }
 
-static const std::unordered_map<std::string, UniformType> sStringToUniformType = {
-    {"bool",  UniformType::BOOL},  {"bool2",  UniformType::BOOL2},
-    {"bool3", UniformType::BOOL3}, {"bool4",  UniformType::BOOL4},
-    {"float", UniformType::FLOAT}, {"float2",  UniformType::FLOAT2},
-    {"float3", UniformType::FLOAT3}, {"float4",  UniformType::FLOAT4},
-    {"int",   UniformType::INT},   {"int2",   UniformType::INT2},
-    {"int3",  UniformType::INT3},  {"int4",   UniformType::INT4},
-    {"uint",  UniformType::UINT},  {"uint2",  UniformType::UINT2},
-    {"uint3", UniformType::UINT3}, {"uint4",  UniformType::UINT4},
-    {"mat3",  UniformType::MAT3},  {"mat4",   UniformType::MAT4},
-    {"struct", UniformType::STRUCT},
-};
+inline bool IsValidUniformType(const std::string& s)
+{
+    static const std::unordered_map<std::string, UniformType> map = {
+        {"bool",  UniformType::BOOL},  {"bool2",  UniformType::BOOL2},
+        {"bool3", UniformType::BOOL3}, {"bool4",  UniformType::BOOL4},
+        {"float", UniformType::FLOAT}, {"float2",  UniformType::FLOAT2},
+        {"float3", UniformType::FLOAT3}, {"float4",  UniformType::FLOAT4},
+        {"int",   UniformType::INT},   {"int2",   UniformType::INT2},
+        {"int3",  UniformType::INT3},  {"int4",   UniformType::INT4},
+        {"uint",  UniformType::UINT},  {"uint2",  UniformType::UINT2},
+        {"uint3", UniformType::UINT3}, {"uint4",  UniformType::UINT4},
+        {"mat3",  UniformType::MAT3},  {"mat4",   UniformType::MAT4},
+        {"struct", UniformType::STRUCT},
+    };
+    return map.find(s) != map.end();
+}
 
 inline UniformType ParseUniformType(const std::string& s)
 {
-    return sStringToUniformType.at(s);
-}
-
-inline bool IsValidUniformType(const std::string& s)
-{
-    return sStringToUniformType.find(s) != sStringToUniformType.end();
+    static const std::unordered_map<std::string, UniformType> map = {
+        {"bool",  UniformType::BOOL},  {"bool2",  UniformType::BOOL2},
+        {"bool3", UniformType::BOOL3}, {"bool4",  UniformType::BOOL4},
+        {"float", UniformType::FLOAT}, {"float2",  UniformType::FLOAT2},
+        {"float3", UniformType::FLOAT3}, {"float4",  UniformType::FLOAT4},
+        {"int",   UniformType::INT},   {"int2",   UniformType::INT2},
+        {"int3",  UniformType::INT3},  {"int4",   UniformType::INT4},
+        {"uint",  UniformType::UINT},  {"uint2",  UniformType::UINT2},
+        {"uint3", UniformType::UINT3}, {"uint4",  UniformType::UINT4},
+        {"mat3",  UniformType::MAT3},  {"mat4",   UniformType::MAT4},
+        {"struct", UniformType::STRUCT},
+    };
+    return map.at(s);
 }
 
 
