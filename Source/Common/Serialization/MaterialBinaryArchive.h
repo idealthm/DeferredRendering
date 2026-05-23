@@ -48,38 +48,21 @@ enum class ChunkType : uint64_t
     MaterialShadowMultiplier        = charTo64bitNum("MAT_SHML"),
 };
 
-// ── FArchive (abstract base) ────────────────────────────────────────────────
+// ── FArchive (abstract interface) ───────────────────────────────────────────
 class FArchive
 {
 public:
     virtual ~FArchive() = default;
 
-    bool IsLoading() const { return m_IsLoading; }
-    bool IsSaving()  const { return !m_IsLoading; }
-    bool IsDryRun()  const { return m_Start == nullptr; }
+    virtual bool IsLoading() const = 0;
+    bool IsSaving() const { return !IsLoading(); }
 
     virtual void Serialize(void* data, size_t size) = 0;
-
-    void Seek(size_t pos)
-    {
-        if (m_Start)
-            m_Cursor = m_Start + pos;
-        else
-            m_Cursor = reinterpret_cast<uint8_t*>(pos);
-    }
-
-    size_t Tell() const
-    {
-        if (m_Start)
-            return static_cast<size_t>(m_Cursor - m_Start);
-        return reinterpret_cast<size_t>(m_Cursor);
-    }
-
+    virtual void Seek(size_t pos) = 0;
+    virtual size_t Tell() const = 0;
+    virtual uint8_t* GetCursor() const = 0;
     void Skip(size_t bytes) { Seek(Tell() + bytes); }
-    bool IsEof() const { return m_Start && m_Cursor >= m_End; }
-
-    const uint8_t* GetData() const { return m_Start; }
-    uint8_t* GetCursor() const { return m_Cursor; }
+    virtual bool IsEof() const = 0;
 
     // ── Friend operators ─────────────────────────────────────────────────
     friend FArchive& operator<<(FArchive& ar, uint32_t& v) { ar.Serialize(&v, sizeof(v)); return ar; }
@@ -113,12 +96,6 @@ public:
         }
         return ar;
     }
-
-protected:
-    uint8_t* m_Start    = nullptr;
-    uint8_t* m_Cursor   = nullptr;
-    uint8_t* m_End      = nullptr;
-    bool     m_IsLoading = false;
 };
 
 // ── FArchiveWrite ───────────────────────────────────────────────────────────
@@ -133,8 +110,10 @@ public:
     {
         m_Start  = m_Cursor = static_cast<uint8_t*>(buffer);
         m_End    = m_Start + capacity;
-        m_IsLoading = false;
     }
+
+    bool IsLoading() const override { return false; }
+    bool IsDryRun()  const { return m_Start == nullptr; }
 
     void Serialize(void* data, size_t size) override
     {
@@ -148,6 +127,31 @@ public:
             std::memcpy(m_Cursor, data, size);
         m_Cursor += size;
     }
+
+    void Seek(size_t pos) override
+    {
+        if (m_Start)
+            m_Cursor = m_Start + pos;
+        else
+            m_Cursor = reinterpret_cast<uint8_t*>(pos);
+    }
+
+    size_t Tell() const override
+    {
+        if (m_Start)
+            return static_cast<size_t>(m_Cursor - m_Start);
+        return reinterpret_cast<size_t>(m_Cursor);
+    }
+
+    bool IsEof() const override { return m_Start && m_Cursor >= m_End; }
+
+    const uint8_t* GetData() const { return m_Start; }
+    uint8_t* GetCursor() const override { return m_Cursor; }
+
+protected:
+    uint8_t* m_Start  = nullptr;
+    uint8_t* m_Cursor = nullptr;
+    uint8_t* m_End    = nullptr;
 };
 
 // ── FArchiveRead ────────────────────────────────────────────────────────────
@@ -156,12 +160,14 @@ class FArchiveRead : public FArchive
 public:
     FArchiveRead() = default;
 
+    // Reference external buffer — caller owns the memory.
     FArchiveRead(const void* data, size_t size)
     {
         m_Start  = m_Cursor = const_cast<uint8_t*>(static_cast<const uint8_t*>(data));
         m_End    = m_Start + size;
-        m_IsLoading = true;
     }
+
+    bool IsLoading() const override { return true; }
 
     void Serialize(void* data, size_t size) override
     {
@@ -170,7 +176,23 @@ public:
         m_Cursor += size;
     }
 
+    void Seek(size_t pos) override
+    {
+        m_Cursor = m_Start + pos;
+    }
+
+    size_t Tell() const override
+    {
+        return static_cast<size_t>(m_Cursor - m_Start);
+    }
+
+    bool IsEof() const override { return m_Cursor >= m_End; }
+
+    const uint8_t* GetData() const { return m_Start; }
+    uint8_t* GetCursor() const override { return m_Cursor; }
+
     // Create a sub-archive over the next `size` bytes, advancing this cursor.
+    // The sub-archive references our data — it must not outlive this archive.
     FArchiveRead Slice(size_t size)
     {
         size_t clamped = (m_Cursor + size <= m_End) ? size : static_cast<size_t>(m_End - m_Cursor);
@@ -178,6 +200,11 @@ public:
         m_Cursor += clamped;
         return sub;
     }
+
+protected:
+    uint8_t* m_Start  = nullptr;
+    uint8_t* m_Cursor = nullptr;
+    uint8_t* m_End    = nullptr;
 };
 
 // ── Container operators (free functions) ────────────────────────────────────
@@ -212,4 +239,3 @@ std::enable_if_t<std::is_enum_v<E>, FArchive&> operator<<(FArchive& ar, E& v)
         v = static_cast<E>(raw);
     return ar;
 }
-
