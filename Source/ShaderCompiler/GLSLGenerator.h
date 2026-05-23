@@ -3,18 +3,14 @@
 #include <sstream>
 #include <string>
 
+#include "Common/Material/MaterialCommon.h"
+
 struct MaterialSpec;
 
 enum class ShaderStage
 {
     Vertex,
     Fragment
-};
-
-enum class Pipeline
-{
-    Deferred,
-    Forward
 };
 
 /**

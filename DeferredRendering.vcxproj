@@ -148,7 +148,7 @@ endlocal</Command>
     <ClInclude Include="Source\Common\Utils\PoolAllocator.h" />
     <ClInclude Include="Source\Common\Serialization\ChunkContainer.h" />
     <ClInclude Include="Source\Common\Serialization\MaterialBinaryArchive.h" />
-    <ClInclude Include="Source\Common\Serialization\MaterialBinaryChunks.h" />
+    <ClInclude Include="Source\Common\Serialization\MaterialChunks.h" />
     <ClInclude Include="Source\Component\ActorComponent.h" />
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Component\SkyComponent.h" />
@@ -168,6 +168,7 @@ endlocal</Command>
     <ClInclude Include="Source\Lights\Light.h" />
     <ClInclude Include="Source\Material\Material.h" />
     <ClInclude Include="Source\Material\MaterialEnums.h" />
+    <ClInclude Include="Source\Material\MaterialParser.h" />
     <ClInclude Include="Source\Material\MaterialInstance.h" />
     <ClInclude Include="Source\Material\MaterialLibrary.h" />
     <ClInclude Include="Source\MeshManger.h" />
@@ -216,8 +217,6 @@ endlocal</Command>
     <ClInclude Include="Source\Shapes\ScreenQuad.h" />
     <ClInclude Include="Source\Shapes\UnitCube.h" />
     <ClInclude Include="Source\SkyLightActor.h" />
-    <ClInclude Include="Source\SpirvReflect\ShaderParse.h" />
-    <ClInclude Include="Source\SpirvReflect\spirv_reflect.h" />
     <ClInclude Include="Source\stb_images\stb_image.h" />
     <ClInclude Include="Source\UibStruct.h" />
     <ClInclude Include="Source\UnifromBuffer\ParamBuffer.h" />
@@ -497,6 +496,7 @@ endlocal</Command>
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Material\Material.cpp" />
     <ClCompile Include="Source\Material\MaterialInstance.cpp" />
+    <ClCompile Include="Source\Material\MaterialParser.cpp" />
     <ClCompile Include="Source\Material\MaterialLibrary.cpp" />
     <ClCompile Include="Source\MeshManger.cpp" />
     <ClCompile Include="Source\Model\MeshSection.cpp" />
@@ -538,10 +538,6 @@ endlocal</Command>
     <ClCompile Include="Source\Shapes\ScreenQuad.cpp" />
     <ClCompile Include="Source\Shapes\UnitCube.cpp" />
     <ClCompile Include="Source\SkyLightActor.cpp" />
-    <ClCompile Include="Source\SpirvReflect\ShaderParse.cpp" />
-    <ClCompile Include="Source\SpirvReflect\SpirvReflectTest.cpp" />
-    <ClCompile Include="Source\SpirvReflect\spirv_reflect.c" />
-    <ClCompile Include="Source\SpirvReflect\spirv_reflect.cpp" />
     <ClCompile Include="Source\stb_images\stb_image.cpp" />
     <ClCompile Include="Source\UibStruct.cpp" />
     <ClCompile Include="Source\UnifromBuffer\ParamBuffer.cpp" />

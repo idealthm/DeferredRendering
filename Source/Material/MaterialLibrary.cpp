@@ -1,7 +1,7 @@
 #include "MaterialLibrary.h"
 
 #include "Material.h"
-#include "SpirvReflect/ShaderParse.h"
+#include "MaterialParser.h"
 
 MaterialLibrary& MaterialLibrary::Get()
 {
@@ -11,13 +11,10 @@ MaterialLibrary& MaterialLibrary::Get()
 
 Ref<Material> MaterialLibrary::BuildMaterial(const std::string& name)
 {
-	std::string vertSpvPath = "Material/CompiledMaterials/" + name + "/" + name + ".vert.spv";
-	std::string fragSpvPath = "Material/CompiledMaterials/" + name + "/" + name + ".frag.spv";
+	std::string matbPath = "Material/CompiledMaterials/" + name + "/" + name + ".matb";
 
-	ShaderParser parser(vertSpvPath, fragSpvPath);
-	if (!parser.IsValid()) return nullptr;
-
-	return CreateRef<Material>(parser.GetMaterialInfo());
+	MaterialParser parser(matbPath);
+	return CreateRef<Material>(parser);
 }
 
 Ref<Material> MaterialLibrary::GetMaterial(const std::string& name)
