@@ -149,6 +149,8 @@ endlocal</Command>
     <ClInclude Include="Source\Common\Serialization\ChunkContainer.h" />
     <ClInclude Include="Source\Common\Serialization\MaterialBinaryArchive.h" />
     <ClInclude Include="Source\Common\Serialization\MaterialChunks.h" />
+    <ClInclude Include="Source\Common\Material\MaterialCommon.h" />
+    <ClInclude Include="Source\Common\Material\MaterialTypes.h" />
     <ClInclude Include="Source\Component\ActorComponent.h" />
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Component\SkyComponent.h" />
