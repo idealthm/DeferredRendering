@@ -93,6 +93,7 @@
     <ClInclude Include="Source\Common\Serialization\ChunkContainer.h" />
     <ClInclude Include="Source\Common\Serialization\MaterialBinaryArchive.h" />
     <ClInclude Include="Source\Common\Serialization\MaterialChunks.h" />
+    <ClInclude Include="Source\Common\Material\MaterialTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\ShaderCompiler\MatcMain.cpp" />

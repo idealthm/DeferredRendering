@@ -4,20 +4,12 @@
 #include <vector>
 
 #include "Common/Material/MaterialCommon.h"
-
-enum class FieldType : uint8_t;
+#include "Common/Material/MaterialTypes.h"
 
 struct ConstantParam
 {
-    std::string type;   // "float", "int", "bool", "vec3", etc.
+    std::string type;
     std::string name;
-};
-
-struct VariableParam
-{
-    std::string name;
-    FieldType varType;
-    uint8_t location = 0;
 };
 
 struct PropertyParam
@@ -33,7 +25,7 @@ struct PropertyParam
 
 struct OutputParam
 {
-    std::string type;   // "color" or "depth"
+    std::string type;
     std::string name;
 };
 
@@ -52,8 +44,4 @@ struct MaterialSpec
     std::string fragmentCode;
 };
 
-/**
- * Parse a MaterialSpec from a JSON string.
- * Throws std::runtime_error on malformed JSON or invalid material spec.
- */
 MaterialSpec ParseMaterialSpec(const std::string& jsonString);
