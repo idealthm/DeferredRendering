@@ -109,3 +109,4 @@ enum class Property : uint8_t {
     SPECULAR_FACTOR,         //!< float, lit shading models only, except subsurface and cloth
     SPECULAR_COLOR_FACTOR,   //!< float3, lit shading models only, except subsurface and cloth
 };
+

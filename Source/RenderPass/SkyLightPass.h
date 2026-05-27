@@ -7,8 +7,8 @@ class SkyLightPass : public RenderPass
 public:
 	SkyLightPass();
 
-	void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx) override;
-	void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx) override;
+	void Setup(RenderContext& ctx) override;
+	void Execute(Ref<Scene> scene, RenderContext& ctx) override;
 
 private:
 	UnitCube	m_UnitCube;

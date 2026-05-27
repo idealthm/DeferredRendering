@@ -363,6 +363,102 @@ namespace RHI_Internal
 		}
 	}
 
+	const char* getGLError(GLenum error) noexcept
+	{
+		const char* string = "unknown";
+		switch (error) {
+		case GL_NO_ERROR:
+			string = "GL_NO_ERROR";
+			break;
+		case GL_INVALID_ENUM:
+			string = "GL_INVALID_ENUM";
+			break;
+		case GL_INVALID_VALUE:
+			string = "GL_INVALID_VALUE";
+			break;
+		case GL_INVALID_OPERATION:
+			string = "GL_INVALID_OPERATION";
+			break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION:
+			string = "GL_INVALID_FRAMEBUFFER_OPERATION";
+			break;
+		case GL_OUT_OF_MEMORY:
+			string = "GL_OUT_OF_MEMORY";
+			break;
+		default:
+			break;
+		}
+		return string;
+	}
+
+	GLenum checkGLError(std::ostream& out, const char* function, size_t line) noexcept
+	{
+		GLenum const error = glGetError();
+		if (error != GL_NO_ERROR) {
+			const char* string = getGLError(error);
+			out << "OpenGL error " << std::hex << error << " (" << string << ") in \""
+				<< function << "\" at line " << std::dec << line << std::endl;
+		}
+		return error;
+	}
+
+	void assertGLError(std::ostream& out, const char* function, size_t line) noexcept
+	{
+		GLenum const err = checkGLError(out, function, line);
+		if (err != GL_NO_ERROR) {
+			__debugbreak();
+		}
+	}
+
+	const char* getFramebufferStatus(GLenum status) noexcept
+	{
+		const char* string = "unknown";
+		switch (status) {
+		case GL_FRAMEBUFFER_COMPLETE:
+			string = "GL_FRAMEBUFFER_COMPLETE";
+			break;
+		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+			string = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+			break;
+		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+			string = "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+			break;
+		case GL_FRAMEBUFFER_UNSUPPORTED:
+			string = "GL_FRAMEBUFFER_UNSUPPORTED";
+			break;
+#ifndef FILAMENT_SILENCE_NOT_SUPPORTED_BY_ES2
+		case GL_FRAMEBUFFER_UNDEFINED:
+			string = "GL_FRAMEBUFFER_UNDEFINED";
+			break;
+		case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+			string = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+			break;
+#endif
+		default:
+			break;
+		}
+		return string;
+	}
+
+	GLenum checkFramebufferStatus(std::ostream& out, GLenum target, const char* function, size_t line) noexcept
+	{
+		GLenum const status = glCheckFramebufferStatus(target);
+		if (status != GL_FRAMEBUFFER_COMPLETE) {
+			const char* string = getFramebufferStatus(status);
+			out << "OpenGL framebuffer error " << std::hex << status << " (" << string << ") in \""
+				<< function << "\" at line " << std::dec << line << std::endl;
+		}
+		return status;
+	}
+
+	void assertFramebufferStatus(std::ostream& out, GLenum target, const char* function, size_t line) noexcept
+	{
+		GLenum const status = checkFramebufferStatus(out, target, function, line);
+		if (status != GL_FRAMEBUFFER_COMPLETE) {
+			__debugbreak();
+		}
+	}
+
 	uint32_t GetGLBlendFunctionMode(BlendFunction func)
 	{
 		switch (func)

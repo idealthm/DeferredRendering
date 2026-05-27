@@ -7,7 +7,7 @@ class Material;
 class UnitCube
 {
 public:
-	UnitCube(const Ref<Material>& material = nullptr);
+	UnitCube();
 
 	Handle<RHI::HwRenderPrimitive> GetRenderPrimitiveHandle() const;
 	Handle<RHI::HwVertexBufferInfo> GetVertexBufferInfoHandle() const;

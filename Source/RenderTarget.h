@@ -42,6 +42,9 @@ struct RenderTargetDesc
 	uint8_t mLayerCount = 1;
 };
 
+template<> struct EnableIntegerOperators<AttachmentPoint> : public std::true_type {};
+template<> struct EnableBitMaskOperators<AttachmentPoint> : public std::true_type {};
+
 
 class RenderTarget
 {
@@ -49,28 +52,20 @@ public:
 	class Builder
 	{
 	public:
-		Builder& SetWidth(uint32_t w)             { m_Desc.w = w; return *this; }
-		Builder& SetHeight(uint32_t h)            { m_Desc.h = h; return *this; }
-		Builder& SetSamples(uint8_t s)            { m_Desc.mSamples = s; return *this; }
-		Builder& SetLayerCount(uint8_t l)         { m_Desc.mLayerCount = l; return *this; }
-		Builder& SetColorAttachment(uint32_t index, const Attachment& a)
-		{
-			m_Desc.mAttachments[index] = a;
-			return *this;
-		}
-		Builder& SetDepthAttachment(const Attachment& a)
-		{
-			m_Desc.mAttachments[(uint32_t)AttachmentPoint::DEPTH] = a;
-			return *this;
-		}
-		Ref<RenderTarget> Build() { return CreateRef<RenderTarget>(m_Desc); }
+		Builder& texture(AttachmentPoint attachment, const Ref<Texture>& texture);
+		Builder& mipLevel(AttachmentPoint attachment, uint8_t level);
+		Builder& face(AttachmentPoint attachment, RHI::TextureCubemapFace face);
+		Builder& layer(AttachmentPoint attachment, uint8_t layer);
+		Builder& layerCount(AttachmentPoint attachment, uint8_t layerCount, uint8_t baseLayer = 0);
+		
+		Ref<RenderTarget> Build();
 
-	private:
 		RenderTargetDesc m_Desc{};
 	};
 
-	RenderTarget(RenderTargetDesc& desc);
+	RenderTarget(Builder& builder);
 	virtual ~RenderTarget();
+	Handle<RHI::HwRenderTarget> GetHandle() const {return m_Handle;}
 
 private:
 	Handle<RHI::HwRenderTarget> m_Handle;

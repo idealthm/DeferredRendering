@@ -1,7 +1,6 @@
 ﻿#include "SkyLightActor.h"
 
 #include "RenderPipeline.h"
-#include "Renderer.h"
 #include "Component/SkyComponent.h"
 #include "RenderPass/CubeMapConvolution.h"
 #include "RenderPass/EnvPreFilter.h"
@@ -15,9 +14,8 @@ SkyLightActor::SkyLightActor()
 
 void SkyLightActor::OnSpawn()
 {
-	auto& ctx = Renderer::Get().GetPipeline().GetContext();
-	Renderer::Get().StartPass(m_WeakScene.lock(), CreateRef<ERPPass>("Assets/textures/hdr/newport_loft.hdr", 512), {512, 512}, ctx);
-	Renderer::Get().StartPass(m_WeakScene.lock(), CreateRef<CubeMapConvolution>(), {32, 32}, ctx);
-	Renderer::Get().StartPass(m_WeakScene.lock(), CreateRef<EnvPreFilter>(), {32, 32}, ctx);
+	RenderPipeline::Get().StartPass(m_WeakScene.lock(), CreateRef<ERPPass>("Assets/textures/hdr/newport_loft.hdr", 512), {512, 512});
+	RenderPipeline::Get().StartPass(m_WeakScene.lock(), CreateRef<CubeMapConvolution>(), {32, 32});
+	RenderPipeline::Get().StartPass(m_WeakScene.lock(), CreateRef<EnvPreFilter>(), {32, 32});
 }
 

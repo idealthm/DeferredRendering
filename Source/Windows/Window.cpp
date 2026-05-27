@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "GraphicContext.h"
-#include "Renderer.h"
 #include "Scene.h"
 #include "Events/ApplicationEvent.h"
 #include "Events/KeyEvent.h"

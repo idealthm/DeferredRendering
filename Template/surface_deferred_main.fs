@@ -1,5 +1,8 @@
 
-layout(location = 0) out vec4 fragColor;
+layout(location = 0) out vec3 gAlbedo;
+layout(location = 1) out vec3 gNormal;
+layout(location = 2) out vec3 gPosition;
+layout(location = 3) out vec3 gRMS;
 
 void main() {
     // filament_lodBias = frameUniforms.lodBias;
@@ -17,5 +20,11 @@ void main() {
     // Invoke user code
     material(inputs);
 
-    fragColor = evaluateMaterial(inputs);
+    gAlbedo = inputs.baseColor.xyz;
+
+    gRMS = vec3(inputs.roughness, inputs.metallic, inputs.ambientOcclusion);
+
+    gNormal = inputs.normal;
+
+    gPosition = vertex_worldPosition.xyz;
 }

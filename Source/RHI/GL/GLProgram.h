@@ -23,7 +23,7 @@ public:
 
 	bool use(RHI::GLDriver* driver, RHI::OpenGLContext* context);
 
-	void InitializeProgramState(RHI::OpenGLContext& context, GLuint program,const Program::DescriptorSetInfo& info);
+	void InitializeProgramState(RHI::OpenGLContext& context, GLuint program, DescriptorSetInfo& info);
 
 	GLuint getBufferBinding(descriptor_set_t set, descriptor_binding_t binding) const noexcept;
 

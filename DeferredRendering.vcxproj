@@ -47,6 +47,7 @@
     <OutDir>$(SolutionDir)Binaries\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>$(IncludePath)</IncludePath>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)Binaries\$(Platform)\$(Configuration)\</OutDir>
@@ -54,6 +55,7 @@
     <AllProjectIncludesArePublic>false</AllProjectIncludesArePublic>
     <AllProjectBMIsArePublic>false</AllProjectBMIsArePublic>
     <IncludePath>$(IncludePath)</IncludePath>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -155,13 +157,13 @@ endlocal</Command>
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Component\SkyComponent.h" />
     <ClInclude Include="Source\Delegates\DelegateBase.h" />
+    <ClInclude Include="Source\DescriptorSetLayout.h" />
     <ClInclude Include="Source\EngineEnum.h" />
     <ClInclude Include="Source\Events\ApplicationEvent.h" />
     <ClInclude Include="Source\Events\Event.h" />
     <ClInclude Include="Source\Events\Input.h" />
     <ClInclude Include="Source\Events\KeyEvent.h" />
     <ClInclude Include="Source\Events\MouseEvent.h" />
-    <ClInclude Include="Source\FrameBuffer\FrameBuffer.h" />
     <ClInclude Include="Source\GraphicContext.h" />
     <ClInclude Include="Source\Guid.h" />
     <ClInclude Include="Source\Layers\EditorLayer.h" />
@@ -181,7 +183,7 @@ endlocal</Command>
     <ClInclude Include="Source\Panel\OutlinePanel.h" />
     <ClInclude Include="Source\Panel\PropertyPanel.h" />
     <ClInclude Include="Source\Panel\ScenePanel.h" />
-    <ClInclude Include="Source\Renderer.h" />
+    <ClInclude Include="Source\RenderContext.h" />
     <ClInclude Include="Source\RenderPipeline.h" />
     <ClInclude Include="Source\RenderPass\CubeMapConvolution.h" />
     <ClInclude Include="Source\RenderPass\EnvPreFilter.h" />
@@ -197,6 +199,7 @@ endlocal</Command>
     <ClInclude Include="Source\RHI\BufferDescriptor.h" />
     <ClInclude Include="Source\RHI\BufferLayout.h" />
     <ClInclude Include="Source\RHI\CallbackHandle.h" />
+    <ClInclude Include="Source\RHI\DescriptorSet.h" />
     <ClInclude Include="Source\RHI\GL\GLBufferObject.h" />
     <ClInclude Include="Source\Engine.h" />
     <ClInclude Include="Source\RHI\GL\GLDriver.h" />
@@ -485,8 +488,8 @@ endlocal</Command>
     <ClCompile Include="Source\Application.cpp" />
     <ClCompile Include="Source\Component\SkyComponent.cpp" />
     <ClCompile Include="Source\Delegates\DelegateBase.cpp" />
+    <ClCompile Include="Source\DescriptorSetLayout.cpp" />
     <ClCompile Include="Source\Events\Input.cpp" />
-    <ClCompile Include="Source\FrameBuffer\FrameBuffer.cpp" />
     <ClCompile Include="Source\glad.c" />
     <ClCompile Include="Source\GraphicContext.cpp" />
     <ClCompile Include="Source\Guid.cpp" />
@@ -508,7 +511,7 @@ endlocal</Command>
     <ClCompile Include="Source\Panel\OutlinePanel.cpp" />
     <ClCompile Include="Source\Panel\PropertyPanel.cpp" />
     <ClCompile Include="Source\Panel\ScenePanel.cpp" />
-    <ClCompile Include="Source\Renderer.cpp" />
+
     <ClCompile Include="Source\RenderPipeline.cpp" />
     <ClCompile Include="Source\RenderPass\CubeMapConvolution.cpp" />
     <ClCompile Include="Source\RenderPass\EnvPreFilter.cpp" />
@@ -523,6 +526,7 @@ endlocal</Command>
     <ClCompile Include="Source\RHI\BindingMap.cpp" />
     <ClCompile Include="Source\RHI\BufferDescriptor.cpp" />
     <ClCompile Include="Source\RHI\CallbackHandle.cpp" />
+    <ClCompile Include="Source\RHI\DescriptorSet.cpp" />
     <ClCompile Include="Source\RHI\RenderPrimitive.cpp" />
     <ClCompile Include="Source\RHI\VertexBuffer.cpp" />
     <ClCompile Include="Source\RHI\IndexBuffer.cpp" />

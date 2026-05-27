@@ -3,32 +3,25 @@
 #include <string>
 #include <vector>
 
+#include "Common/Material/MaterialTypes.h"
 #include "RHI/BindingMap.h"
-#include "RHI/DriverEnums.h"
 
 class Program
 {
 	friend class Material;
 public:
 	static constexpr uint8_t SHADER_TYPE_COUNT = 3;
-	struct Descriptor {
-		std::string name;
-		RHI::DescriptorType type;
-		uint8_t binding;
-	};
-
-	using DescriptorBindingsInfo = std::vector<Descriptor>;
-	using DescriptorSetInfo = std::array<DescriptorBindingsInfo, MAX_DESCRIPTOR_SET_COUNT>;
-	using ShaderBlob = std::vector<uint8_t>;
-	using ShaderSource = std::array<ShaderBlob, SHADER_TYPE_COUNT>;
+	using ShaderBlob            = std::vector<uint8_t>;
+	using ShaderSource          = std::array<ShaderBlob, SHADER_TYPE_COUNT>;
 
 	Program(const ShaderSource& shadersSource, const DescriptorSetInfo& descriptorSetInfo);
+	Program(Program&& other) = default;
 	~Program();
 
-	const ShaderSource& GetShadersSource() const {return m_ShadersSource;}
-	const DescriptorSetInfo& GetDescriptorBindings() const {return m_DescriptorBindings;}
+	ShaderSource& GetShadersSource() {return m_ShadersSource;}
+	DescriptorSetInfo& GetDescriptorBindings() {return m_DescriptorBindings;}
 
-	std::string getName() const;
+	const std::string& getName() const;
 
 private:
 	std::string m_Name;

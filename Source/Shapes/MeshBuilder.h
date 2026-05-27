@@ -9,6 +9,6 @@ class Material;
 
 namespace MeshBuilder
 {
-    Ref<StaticMesh> BuildCube(const Ref<Material>& material);
-    Ref<StaticMesh> BuildQuad(const Ref<Material>& material);
+    Ref<StaticMesh> BuildCube();
+    Ref<StaticMesh> BuildQuad();
 }

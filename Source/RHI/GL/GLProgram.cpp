@@ -1,10 +1,13 @@
 ﻿#include "GLProgram.h"
 
+#include <algorithm>
+
 #include "GLDriver.h"
 #include "Shader/Program.h"
+#include "RHI/DriverEnums.h"
 
 GLProgram::GLProgram(RHI::GLDriver* driver, Program&& program) noexcept
-	: HwProgram(std::move(program.getName()))
+	: HwProgram(program.getName())
 {
 	driver->CompileShader(program.GetShadersSource(), gl.program);
 	InitializeProgramState(driver->GetContext(), gl.program, program.GetDescriptorBindings());
@@ -15,13 +18,23 @@ bool GLProgram::use(RHI::GLDriver* driver, RHI::OpenGLContext* context)
 	return false;
 }
 
-void GLProgram::InitializeProgramState(RHI::OpenGLContext& context, GLuint program, const Program::DescriptorSetInfo& info)
+void GLProgram::InitializeProgramState(RHI::OpenGLContext& context, GLuint program, DescriptorSetInfo& info)
 {
+    for (auto& entry : info)
+    {
+        std::sort(entry.begin(), entry.end(), [](const Descriptor& l, const Descriptor& r)
+        {
+            return l.binding < r.binding;
+        });
+    }
+
+    context.useProgram(program);
+
     GLuint binding = 0;
     GLuint tmu = 0;
 
 	for (descriptor_set_t set = 0; set < MAX_DESCRIPTOR_SET_COUNT; set++) {
-        for (Program::Descriptor const& entry: info[set]) {
+        for (Descriptor const& entry: info[set]) {
             switch (entry.type)
             {
                 case RHI::DescriptorType::UNIFORM_BUFFER:

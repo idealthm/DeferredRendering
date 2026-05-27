@@ -17,6 +17,10 @@ enum class ShaderStage
  * Set the template directory from which template .vs/.fs files are loaded.
  * Must be called before GenerateVertexShader / GenerateFragmentShader.
  */
+const char* VertexAttributeToGLSLType(VertexAttribute attr);
+const char* VertexAttributeToName(VertexAttribute attr);
+int VertexAttributeToLocation(VertexAttribute attr);
+
 void SetTemplateDirectory(const std::string& dir);
 
 /**

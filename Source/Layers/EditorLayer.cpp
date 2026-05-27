@@ -59,7 +59,7 @@ void EditorLayer::LoadScene(std::string path)
 	// auto Cube = m_Scene->SpawnActor<StaticMeshActor>(glm::vec3(1.0f, 5.0f, 0.0f), glm::vec3(-90.f, 0.0f, 0.0f), glm::vec3(2.0f, 2.0f, 2.0f));
 	// Cube->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/TreeStump/TreeStump.json"));
 
-	Ref<StaticMesh> PlaneMesh = MeshBuilder::BuildCube(gEngine->GetDefaultShapeMaterial());
+	Ref<StaticMesh> PlaneMesh = MeshBuilder::BuildCube();
 	PlaneActor->SetStaticMesh(PlaneMesh);
 
 	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.json"));
@@ -87,15 +87,15 @@ void EditorLayer::OnUpdate(Timestep ts)
 
 	m_CameraController->OnUpdate(ts);
 
-	// auto& FrameData = Renderer::Get().GetPipeline().GetContext().FrameDataUB->Data;
-	// FrameData.m_Projection = m_EditorCamera->GetProjectionMatrix(1.0 * Renderer::Get().GetPipeline().GetContext().viewportSize.x / Renderer::Get().GetPipeline().GetContext().viewportSize.y);
+	// auto& FrameData = RenderPipeline::Get().GetContext().FrameDataUB->Data;
+	// FrameData.m_Projection = m_EditorCamera->GetProjectionMatrix(1.0 * RenderPipeline::Get().GetContext().viewportSize.x / RenderPipeline::Get().GetContext().viewportSize.y);
 	// FrameData.m_ViewProjection = m_EditorCamera->GetViewMatrix();
 	// FrameData.m_CameraPosition = m_EditorCamera->GetPosition();
 	// FrameData.m_InvProjection = glm::inverse(FrameData.m_Projection);
 	// FrameData.m_InvViewProjection = glm::inverse(FrameData.m_ViewProjection);
-	// Renderer::Get().GetPipeline().GetContext().FrameDataUB->Update();
+	// RenderPipeline::Get().GetContext().FrameDataUB->Update();
 
-	Renderer::Get().GetPipeline().Render(m_ActiveScene, Renderer::Get().GetPipeline().GetContext().viewportSize);
+	RenderPipeline::Get().Render(m_ActiveScene, RenderPipeline::Get().GetContext().viewportSize);
 }
 
 void EditorLayer::OnEvent(Event& event)

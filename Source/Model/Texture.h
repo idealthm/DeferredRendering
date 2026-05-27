@@ -21,7 +21,7 @@ namespace TextureFactory
 		result.Width = size;
 		result.Height = size;
 		result.DepthOrLayers = 1;
-		result.MipLevels = 1;
+		result.LevelCount = 1;
 		result.Format = RHI::Format::Depth24Stencil8;
 		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
@@ -33,7 +33,7 @@ namespace TextureFactory
 		result.Width = w;
 		result.Height = h;
 		result.DepthOrLayers = 1;
-		result.MipLevels = 1;
+		result.LevelCount = 1;
 		result.Format = RHI::Format::SRGBA8;
 		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
@@ -45,9 +45,10 @@ namespace TextureFactory
 		result.Width = w;
 		result.Height = h;
 		result.DepthOrLayers = 1;
-		result.MipLevels = 1;
+		result.LevelCount = 1;
 		result.Format = format;
 		result.Target = RHI::SamplerType::SAMPLER_2D;
+		result.Usage = RHI::TextureUsage::COLOR_ATTACHMENT | RHI::TextureUsage::SAMPLEABLE;
 		return result;
 	}
 
@@ -57,7 +58,7 @@ namespace TextureFactory
 		result.Width = w;
 		result.Height = h;
 		result.DepthOrLayers = 1;
-		result.MipLevels = 1;
+		result.LevelCount = 1;
 		result.Format = RHI::Format::RGBA16F;
 		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
@@ -69,7 +70,7 @@ namespace TextureFactory
 		result.Width = w;
 		result.Height = h;
 		result.DepthOrLayers = 1;
-		result.MipLevels = 1;
+		result.LevelCount = 1;
 		result.Format = RHI::Format::RGBA16F;
 		result.Target = RHI::SamplerType::SAMPLER_2D;
 		return result;
@@ -81,8 +82,10 @@ namespace TextureFactory
 		result.Width = width;
 		result.Height = height;
 		result.DepthOrLayers = 1;
+		result.LevelCount = 1;
 		result.Format = RHI::Format::Depth24Stencil8;
 		result.Target = RHI::SamplerType::SAMPLER_2D;
+		result.Usage = RHI::TextureUsage::DEPTH_ATTACHMENT;
 		return result;
 	}
 }
@@ -98,7 +101,7 @@ public:
 		Builder& SetFormat(RHI::Format f)      { m_Desc.Format = f; return *this; }
 		Builder& SetTarget(RHI::SamplerType t) { m_Desc.Target = t; return *this; }
 		Builder& SetUsage(RHI::TextureUsage u) { m_Desc.Usage = u; return *this; }
-		Builder& SetMipLevels(uint32_t l)      { m_Desc.MipLevels = l; return *this; }
+		Builder& SetMipLevels(uint32_t l)      { m_Desc.LevelCount = l; return *this; }
 		Builder& SetDepthOrLayers(uint32_t d)  { m_Desc.DepthOrLayers = d; return *this; }
 
 		Ref<Texture> Build() { return CreateRef<Texture>(m_Desc); }
@@ -107,12 +110,20 @@ public:
 		RHI::TextureDesc m_Desc{};
 	};
 
+	struct LodRange {
+		// 0,0 means lod-range unset (all levels are available)
+		uint8_t first = 0;  // first lod
+		uint8_t last = 0;   // 1 past last lod
+		bool empty() const noexcept { return first == last; }
+		size_t size() const noexcept { return last - first; }
+	};
+
 	Texture(const RHI::TextureDesc& desc);
 	virtual ~Texture();
 
-	bool IsValid() const { return !!m_HWTexture; }
+	bool IsValid() const { return !!m_Handle; }
 
-	Handle<RHI::HwTexture> GetHandle() const { return m_HWTexture; }
+	Handle<RHI::HwTexture> GetHandle() const { return m_Handle; }
 
 	const RHI::TextureDesc& GetDesc() const { return m_Desc; }
 
@@ -123,8 +134,23 @@ public:
 	RHI::TextureUsage GetUsage() const { return m_Desc.Usage; }
 	RHI::SamplerType GetTarget() const { return m_Desc.Target; }
 
+	void UpdateLodRange(uint8_t baseLevel, uint8_t levelCount);
+	void GenerateMipmaps();
+
+	bool TextureHandleCanMutate() const;
+
+	bool hasAllLods(LodRange const range) const noexcept {
+		return range.first == 0 && range.last == m_Desc.LevelCount;
+	}
+
+	Handle<RHI::HwTexture> GetHandleForSampling() const;
+	void setHandleForSampling(Handle<RHI::HwTexture> handle) const;
+
 protected:
-	Handle<RHI::HwTexture> m_HWTexture;
+	Handle<RHI::HwTexture> m_Handle;
+	mutable Handle<RHI::HwTexture> m_HandleForSampling;
+	LodRange m_LodRange;
+	mutable LodRange m_ActiveLodRange;
 	RHI::TextureDesc  m_Desc;
 };
 

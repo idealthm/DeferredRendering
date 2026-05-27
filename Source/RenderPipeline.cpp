@@ -2,9 +2,8 @@
 
 #include <glad/glad.h>
 
-#include "Renderer.h"
+#include "Engine.h"
 #include "Scene.h"
-#include "FrameBuffer/FrameBuffer.h"
 #include "Lights/Light.h"
 #include "Model/Texture.h"
 #include "RenderPass/GBufferPass.h"
@@ -13,18 +12,22 @@
 #include "RenderPass/SkyLightPass.h"
 #include "RenderPass/ToneMapping.h"
 
-RenderPipeline::RenderPipeline()
+RenderPipeline& RenderPipeline::Get()
 {
-	// m_Context.BRDF_LUT = CreateRef<Texture>("Assets/textures/ibl_brdf_lut.png");
-	m_Context.FrameBuffer = CreateScope<FrameBuffer>();
-	m_Context.ShadowWidth = 2048.f * 1;
-	m_Context.ShadowHeight = 2048.f * 1;
+	static RenderPipeline instance;
+	return instance;
+}
+
+void RenderPipeline::Init(uint32_t width, uint32_t height)
+{
+	m_Context.ShadowWidth  = 2048.f;
+	m_Context.ShadowHeight = 2048.f;
 
 	auto defaultTexBuilder = Texture::Builder()
 		.SetWidth(1).SetHeight(1)
 		.SetFormat(RHI::Format::RGBA8)
 		.SetTarget(RHI::SamplerType::SAMPLER_2D)
-		.SetMipLevels(0)
+		.SetMipLevels(1)
 		.SetUsage(RHI::TextureUsage::SAMPLEABLE)
 		.SetDepthOrLayers(1);
 
@@ -33,17 +36,36 @@ RenderPipeline::RenderPipeline()
 	GDefaultTextures.Gray   = defaultTexBuilder.Build();
 	GDefaultTextures.Normal = defaultTexBuilder.Build();
 
-	m_GBufferPass = CreateRef<GBufferPass>();
-	m_ShadowPass = CreateRef<ShadowPass>();
-	m_LightPass = CreateRef<LightingPass>();
-	m_SkyLightPass = CreateRef<SkyLightPass>();
+	m_GBufferPass    = CreateRef<GBufferPass>();
+	m_ShadowPass     = CreateRef<ShadowPass>();
+	m_LightPass      = CreateRef<LightingPass>();
+	m_SkyLightPass   = CreateRef<SkyLightPass>();
 	m_ToneMappingPass = CreateRef<ToneMapping>();
+}
+
+void RenderPipeline::Shutdown()
+{
+	m_GBufferPass    = nullptr;
+	m_ShadowPass     = nullptr;
+	m_LightPass      = nullptr;
+	m_SkyLightPass   = nullptr;
+	m_ToneMappingPass = nullptr;
+
+	GDefaultTextures.White  = nullptr;
+	GDefaultTextures.Black  = nullptr;
+	GDefaultTextures.Gray   = nullptr;
+	GDefaultTextures.Normal = nullptr;
+}
+
+void RenderPipeline::OnWindowResize(int32_t width, int32_t height)
+{
+	gEngine->GetDriver().SetViewport(0, 0, width, height);
 }
 
 void RenderPipeline::Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize)
 {
-	// StartPass(scene, m_ShadowPass, viewportSize);
 	StartPass(scene, m_GBufferPass, viewportSize);
+	// StartPass(scene, m_ShadowPass, viewportSize);
 	// StartPass(scene, m_LightPass, viewportSize);
 	// StartPass(scene, m_SkyLightPass, viewportSize);
 	// StartPass(scene, m_ToneMappingPass, viewportSize);
@@ -51,15 +73,12 @@ void RenderPipeline::Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void RenderPipeline::StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass, const glm::u32vec2& viewportSize)
+void RenderPipeline::StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass,
+                               const glm::u32vec2& viewportSize)
 {
 	for (uint32_t i = 0; i < renderPass->GetRenderTimes(); i++)
 	{
-		FBAttachmentInfo FBInfo;
-		FBInfo.Width = viewportSize.x;
-		FBInfo.Height = viewportSize.y;
-		renderPass->Setup(FBInfo, i, m_Context);
-		m_Context.FrameBuffer->Attach(FBInfo);
-		renderPass->Execute(scene, i, m_Context);
+		renderPass->Setup(m_Context);
+		renderPass->Execute(scene, m_Context);
 	}
 }

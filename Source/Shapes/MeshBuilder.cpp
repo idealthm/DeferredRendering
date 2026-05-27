@@ -1,5 +1,6 @@
 #include "MeshBuilder.h"
 
+#include "Engine.h"
 #include "Material/Material.h"
 #include "Material/MaterialInstance.h"
 #include "Model/MeshSection.h"
@@ -94,18 +95,18 @@ static Asset BuildAssetFromInterleaved(const float* raw, size_t vertexCount,
     Part part;
     part.offset = 0;
     part.count = indices.size();
-    part.mi = CreateRef<MaterialInstance>(material.get());
+    part.mi = CreateRef<MaterialInstance>(material);
     mesh.parts.push_back(part);
     asset.meshes.push_back(mesh);
 
     return asset;
 }
 
-Ref<StaticMesh> MeshBuilder::BuildCube(const Ref<Material>& material)
+Ref<StaticMesh> MeshBuilder::BuildCube()
 {
     constexpr int stride = 11; // pos(3)+normal(3)+uv(2)+tangent(3)
     constexpr size_t vertexCount = 24;
-    Asset asset = BuildAssetFromInterleaved(cubeRaw, vertexCount, cubeIndices, stride, material);
+    Asset asset = BuildAssetFromInterleaved(cubeRaw, vertexCount, cubeIndices, stride, gEngine->GetDefaultShapeMaterial());
     return StaticMesh::Create(asset);
 }
 
@@ -118,7 +119,7 @@ static float QuadRaw[] = {
      1.0f, -1.0f,
 };
 
-Ref<StaticMesh> MeshBuilder::BuildQuad(const Ref<Material>& material)
+Ref<StaticMesh> MeshBuilder::BuildQuad()
 {
     Asset asset;
     asset.indices = QuadIndices;
@@ -142,7 +143,7 @@ Ref<StaticMesh> MeshBuilder::BuildQuad(const Ref<Material>& material)
     Part part;
     part.offset = 0;
     part.count = static_cast<uint32_t>(QuadIndices.size());
-    part.mi = CreateRef<MaterialInstance>(material.get());
+    part.mi = CreateRef<MaterialInstance>(gEngine->GetDefaultShapeMaterial());
     mesh.parts.push_back(part);
     asset.meshes.push_back(mesh);
 

@@ -1,14 +1,11 @@
 #include "UniformBuffer.h"
 
 UniformBuffer::UniformBuffer(size_t size)
-	: m_BlockSize(size)
+	: m_BlockSize(size), m_Buffer(m_Storage), m_Dirty(true)
 {
-}
-
-void UniformBuffer::Clear(size_t size)
-{
-	m_BlockSize = size;
-	m_Data.resize(m_BlockSize);
-	std::fill(m_Data.begin(), m_Data.end(), 0);
-	m_Dirty = true;
+	if (size > sizeof(m_Storage))
+	{
+		m_Buffer = malloc(size);
+	}
+	memset(m_Buffer, 0, size);
 }

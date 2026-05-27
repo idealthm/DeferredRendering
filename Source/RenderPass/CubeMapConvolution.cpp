@@ -3,8 +3,6 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
-#include "Renderer.h"
-#include "FrameBuffer/FrameBuffer.h"
 #include "Model/Texture.h"
 #include "Shader/Program.h"
 
@@ -12,26 +10,19 @@ CubeMapConvolution::CubeMapConvolution()
 {
 }
 
-void CubeMapConvolution::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
+void CubeMapConvolution::Setup(RenderContext& ctx)
 {
-	info.Width = 32;
-	info.Height = 32;
-
+	
 	RHI::TextureDesc desc;
 	desc.Width = 32;
 	desc.Height = 32;
-	desc.MipLevels = 5;
+	desc.LevelCount = 5;
 	desc.Format = RHI::Format::RGBA16F;
 	desc.Target = RHI::SamplerType::SAMPLER_CUBEMAP;
 	CreateResource(ctx.IBL_IrradianceMap, desc);
-	ETextureTarget target = (ETextureTarget)((uint32_t)ETextureTarget::Positive_X + step);
-
-		// {ctx.IBL_IrradianceMap->GetHandle(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store}
-	info.Attachments = {
-	};
 }
 
-void CubeMapConvolution::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
+void CubeMapConvolution::Execute(Ref<Scene> scene, RenderContext& ctx)
 {
 
 	// 投影矩阵：90度 FOV，1:1 宽高比

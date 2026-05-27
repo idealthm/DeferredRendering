@@ -5,6 +5,6 @@
         "normal": "normal.png",
         "roughness": "roughness.jpg",
         "metallic" : "specular.jpg",
-        "aO": "ao.jpg"
+        "ao": "ao.jpg"
     }
 }

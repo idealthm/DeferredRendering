@@ -1,6 +1,9 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <iosfwd>
+
+#include "glad/glad.h"
 #include "RHI/DriverEnums.h"
 
 
@@ -28,4 +31,22 @@ namespace RHI_Internal { // 仅用于内部实现文件，不暴露给上层
 	uint32_t GetGLBlendEquationMode(BlendEquation eq);
 	uint32_t GetGLCullingMode(CullingMode mode);
 	uint32_t GetGLStencilOperation(StencilOperation op);
+
+	const char* getGLError(GLenum error) noexcept;
+	GLenum checkGLError(std::ostream& out, const char* function, size_t line) noexcept;
+	void assertGLError(const char* function, size_t line) noexcept;
+
+	const char* getFramebufferStatus(GLenum status) noexcept;
+	GLenum checkFramebufferStatus(std::ostream& out, GLenum target, const char* function, size_t line) noexcept;
+	void assertFramebufferStatus(std::ostream& out, GLenum target, const char* function, size_t line) noexcept;
 }
+
+#ifdef NDEBUG
+#   define CHECK_GL_ERROR(out)
+#   define CHECK_GL_ERROR_NON_FATAL(out)
+#   define CHECK_GL_FRAMEBUFFER_STATUS(out, target)
+#else
+#   define CHECK_GL_ERROR(out) { RHI_Internal::assertGLError(out, __func__, __LINE__); }
+#   define CHECK_GL_ERROR_NON_FATAL(out) { RHI_Internal::checkGLError(out, __func__, __LINE__); }
+#   define CHECK_GL_FRAMEBUFFER_STATUS(out, target) { RHI_Internal::assertFramebufferStatus(out, target, __func__, __LINE__); }
+#endif

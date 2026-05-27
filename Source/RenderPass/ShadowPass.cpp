@@ -4,14 +4,9 @@
 
 #include "Actor.h"
 #include "Engine.h"
-#include "Renderer.h"
 #include "Scene.h"
-#include "Component/ActorComponent.h"
-#include "FrameBuffer/FrameBuffer.h"
 #include "Lights/Light.h"
-#include "Model/StaticMesh.h"
 #include "Model/Texture.h"
-#include "Shader/Program.h"
 
 using namespace TextureFactory;
 
@@ -23,32 +18,16 @@ ShadowPass::~ShadowPass()
 {
 }
 
-void ShadowPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
+void ShadowPass::Setup(RenderContext& ctx)
 {
-	info.Width = ctx.ShadowWidth; 
-	info.Height = ctx.ShadowHeight;
-	info.NumSamples = 1;
-
-	info.DSS.depthTest =true;
-	info.DSS.depthWrite = true;
-	info.DSS.compareFunc = ECompareFunc::Less;
-
 	CreateResource(ctx.ShadowMap_Depth, CreateShadowMap(ctx.ShadowWidth));
-
-
-	info.Depth = {
-		// ctx.ShadowMap_Depth->GetRendererID(),
-		// ETextureTarget::Texture2D,
-		// FBTextureLoadAction::Clear, 
-		// FBTextureStoreAction::Store
-	};
 
 	// info.Attachments = {
 	// 	{ &ctx.Test, CreateGBuffer(ctx.ShadowWidth, ctx.ShadowHeight, ETextureFormat::RGBA16F, false), FBTextureLoadAction::Clear, FBTextureStoreAction::Store },
 	// };
 }
 
-void ShadowPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
+void ShadowPass::Execute(Ref<Scene> scene, RenderContext& ctx)
 {
 	LightData& data = ctx.LightDataUB.edit();
 
@@ -63,7 +42,7 @@ void ShadowPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 			}  
 		}
 	}
-	ctx.LightDataUB.commit(gEngine->GetDriver());
+	// ctx.LightDataUB.commit(gEngine->GetDriver());
 
 	// for (const auto& Actor : scene->GetActors())
 	// {

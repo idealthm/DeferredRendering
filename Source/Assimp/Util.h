@@ -24,5 +24,5 @@ namespace Util {
         static Ref<StaticMesh> LoadAssetInternal(const std::string& path, Ref<MaterialInstance> material);
     };
 
-    Ref<Texture> LoadTexture(const std::string& path, bool srgb, bool hasAlpha, bool generateMipmap); 
+    Ref<Texture> LoadTexture(const std::string& path, bool srgb, bool generateMipmap); 
 }

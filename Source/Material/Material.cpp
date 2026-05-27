@@ -1,6 +1,7 @@
 #include "Material.h"
 
 #include "Engine.h"
+#include "EngineEnum.h"
 #include "MaterialParser.h"
 #include "Shader/Program.h"
 
@@ -12,7 +13,16 @@ Material::Material(MaterialParser& parser)
 	parser.Get<ChunkSpirv>(spirv);
 	m_ShaderData[0] = std::move(spirv.vertexSpirv);
 	m_ShaderData[1] = std::move(spirv.fragmentSpirv);
-	parser.Get<ChunkDescriptorSetLayout>(m_DescriptorSets);
+	parser.Get<ChunkDescriptorSetBindings>(m_DescriptorSetLayouts);
+
+	// DescriptorSetLayout from .matb
+	std::array<RHI::DescriptorSetLayout, 2> descLayouts;
+	if (parser.Get<ChunkDescriptorSetLayout>(descLayouts))
+	{
+		auto& driver = gEngine->GetDriver();
+		m_DescriptorSetLayout = {driver, std::move(descLayouts[0])};
+		// m_PerViewDescriptorSetLayout = {driver, std::move(descLayouts[1])};
+	}
 
 	for (size_t i = 0; i < m_UniformBlock.fields.size(); i++)
 		m_FieldIndex[m_UniformBlock.fields[i].name] = i;
@@ -27,7 +37,7 @@ Handle<RHI::HwProgram> Material::GetProgram() const
 		return m_CachedProgram;
 	}
 
-	m_CachedProgram = gEngine->GetDriver().CreateProgram(Program{m_ShaderData, m_DescriptorSets});
+	m_CachedProgram = gEngine->GetDriver().CreateProgram(Program{m_ShaderData, m_DescriptorSetLayouts});
 	return m_CachedProgram;
 }
 

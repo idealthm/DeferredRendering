@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Renderer.h"
 #include "RHI/RenderPrimitive.h"
 
 class MaterialInstance;
