@@ -7,8 +7,8 @@ class CubeMapConvolution : public RenderPass
 public:
 	CubeMapConvolution();
 	uint32_t GetRenderTimes() override { return 6; }
-	void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx) override;
-	void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx) override;
+	void Setup(RenderContext& ctx) override;
+	void Execute(Ref<Scene> scene, RenderContext& ctx) override;
 
 private:
 	Ref<Program>	m_Shader;

@@ -205,8 +205,8 @@ namespace RHI
 	struct TextureDesc {
 		uint32_t	Width = 1;
 		uint32_t	Height = 1;
-		uint32_t	DepthOrLayers = 1;   // 3D纹理的深度 或 数组纹理的层数
-		uint32_t	MipLevels = 1;
+		uint8_t	DepthOrLayers = 1;   // 3D纹理的深度 或 数组纹理的层数
+		uint8_t	LevelCount = 1;
 		Format  	Format = Format::RGBA8;
 		SamplerType		Target = SamplerType::SAMPLER_2D;
 		TextureUsage Usage = TextureUsage::DEFAULT;
@@ -214,7 +214,7 @@ namespace RHI
 		bool operator==(const TextureDesc& other) const
 		{
 			return Width == other.Width && Height == other.Height && DepthOrLayers == other.DepthOrLayers
-				&& MipLevels == other.MipLevels && Format == other.Format && Target == other.Target;
+				&& LevelCount == other.LevelCount && Format == other.Format && Target == other.Target;
 		}
 		bool operator!=(const TextureDesc& other) const { return !(*this == other); }
 	};
@@ -279,7 +279,7 @@ struct SamplerParams { // NOLINT
         bool operator()(SamplerParams lhs, SamplerParams rhs) const noexcept {
             auto* pLhs = reinterpret_cast<uint32_t const*>(reinterpret_cast<char const*>(&lhs));
             auto* pRhs = reinterpret_cast<uint32_t const*>(reinterpret_cast<char const*>(&rhs));
-            return *pLhs == *pRhs;
+            return *pLhs < *pRhs;
         }
     };
 
@@ -662,7 +662,7 @@ struct RenderPassParams {
 };
 
 struct DescriptorSetLayout {
-    std::array<DescriptorSetLayoutBinding, 16> bindings;
+    std::vector<DescriptorSetLayoutBinding> bindings;
 };
 
 static constexpr bool isDepthFormat(Format format) noexcept {

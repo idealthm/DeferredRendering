@@ -8,6 +8,7 @@
 #include "IncludeExpander.h"
 #include "MaterialSpec.h"
 #include "Common/Serialization/MaterialChunks.h"
+#include "EngineEnum.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -148,6 +149,73 @@ static bool RunGlslc(const std::string& glslcPath,
 }
 
 // ============================================================
+// std140 layout helpers
+// ============================================================
+struct Std140Info { uint32_t size; uint32_t alignment; };
+
+static Std140Info GetStd140Info(UniformType t)
+{
+	switch (t)
+	{
+	case UniformType::BOOL:  return {4, 4};
+	case UniformType::BOOL2: return {8, 8};
+	case UniformType::BOOL3: return {12, 16};
+	case UniformType::BOOL4: return {16, 16};
+	case UniformType::FLOAT: return {4, 4};
+	case UniformType::FLOAT2: return {8, 8};
+	case UniformType::FLOAT3: return {12, 16};
+	case UniformType::FLOAT4: return {16, 16};
+	case UniformType::INT:   return {4, 4};
+	case UniformType::INT2:  return {8, 8};
+	case UniformType::INT3:  return {12, 16};
+	case UniformType::INT4:  return {16, 16};
+	case UniformType::UINT:  return {4, 4};
+	case UniformType::UINT2: return {8, 8};
+	case UniformType::UINT3: return {12, 16};
+	case UniformType::UINT4: return {16, 16};
+	case UniformType::MAT3:  return {48, 16};
+	case UniformType::MAT4:  return {64, 16};
+	case UniformType::STRUCT: return {0, 0};
+	}
+	return {0, 0};
+}
+
+static FieldType UniformTypeToFieldType(UniformType t)
+{
+	switch (t)
+	{
+	case UniformType::BOOL:  return FieldType::BOOL;
+	case UniformType::BOOL2: return FieldType::BOOL2;
+	case UniformType::BOOL3: return FieldType::BOOL3;
+	case UniformType::BOOL4: return FieldType::BOOL4;
+	case UniformType::FLOAT: return FieldType::FLOAT;
+	case UniformType::FLOAT2: return FieldType::FLOAT2;
+	case UniformType::FLOAT3: return FieldType::FLOAT3;
+	case UniformType::FLOAT4: return FieldType::FLOAT4;
+	case UniformType::INT:   return FieldType::INT;
+	case UniformType::INT2:  return FieldType::INT2;
+	case UniformType::INT3:  return FieldType::INT3;
+	case UniformType::INT4:  return FieldType::INT4;
+	case UniformType::UINT:  return FieldType::UINT;
+	case UniformType::UINT2: return FieldType::UINT2;
+	case UniformType::UINT3: return FieldType::UINT3;
+	case UniformType::UINT4: return FieldType::UINT4;
+	case UniformType::MAT3:  return FieldType::MAT3;
+	case UniformType::MAT4:  return FieldType::MAT4;
+	case UniformType::STRUCT: return FieldType::STRUCT;
+	}
+	return FieldType::FLOAT;
+}
+
+static uint32_t ComputeStd140Size(UniformType t, const std::string& structName)
+{
+	if (t == UniformType::STRUCT)
+		return 0; // struct size unknown at compile time — placeholder
+	auto info = GetStd140Info(t);
+	return info.size;
+}
+
+// ============================================================
 // Write .matb binary file
 // ============================================================
 
@@ -215,6 +283,140 @@ static void WriteMaterialBinary(const std::string& fullOutputDir,
 	for (auto& k : spec.constants)
 		constants.push_back(k.name);
 
+	// ── Build UIB (uniform interface block) ──────────────────────────
+	BufferInterfaceBlock uib;
+	uib.instanceName = "materialParams";
+	uib.structName   = "MaterialParams";
+	uib.layout       = MemoryLayout::std_140;
+
+	uint32_t fieldOffset = 0;
+	for (auto& p : spec.properties)
+	{
+		if (p.kind != PropertyParam::Kind::Uniform)
+			continue;
+
+		Std140Info info = GetStd140Info(p.uniformType);
+		uint32_t aligned = (fieldOffset + info.alignment - 1) & ~(info.alignment - 1);
+
+		FieldInfo field;
+		field.name       = p.name;
+		field.offset     = static_cast<uint16_t>(aligned);
+		field.stride     = static_cast<uint8_t>(info.size);
+		field.type       = UniformTypeToFieldType(p.uniformType);
+		field.structName = p.structName;
+		uib.fields.push_back(std::move(field));
+
+		fieldOffset = aligned + info.size;
+	}
+	// Align struct size to 16
+	uib.size = (fieldOffset + 15) & ~15u;
+
+	// ── Build SIB (sampler interface block) ──────────────────────────
+	SamplerInterfaceBlock sib;
+	sib.mName = spec.name;
+
+	descriptor_binding_t samplerBinding = 1; // start after UBO
+	size_t samplerIndex = 0;
+	for (auto& p : spec.properties)
+	{
+		if (p.kind != PropertyParam::Kind::Sampler)
+			continue;
+		if (samplerIndex >= sib.mSamplersInfoList.size())
+			break;
+
+		SamplerInfo& s = sib.mSamplersInfoList[samplerIndex++];
+		s.name    = p.name;
+		s.sampler = p.samplerType;
+		s.binding = samplerBinding++;
+	}
+
+	// ── Build DescriptorSetBindings (per-set binding list) ───────────
+	DescriptorSetInfo descBindings{};
+
+	auto& setView = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_VIEW)];
+	setView.push_back({ "FrameUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
+		static_cast<uint8_t>(PerViewBindingPoint::FRAME_UNIFORM) });
+
+	auto& setRenderable = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_RENDERABLE)];
+	setRenderable.push_back({ "ObjectUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
+		static_cast<uint8_t>(PerRenderableBindingPoint::OBJECT_UNIFORM) });
+
+	auto& setMat = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_MATERIAL)];
+	setMat.push_back({ "MaterialParams", RHI::DescriptorType::UNIFORM_BUFFER,
+		static_cast<uint8_t>(PerMaterialBindingPoint::MATERIAL_UNIFORM) });
+
+	samplerBinding = 1; // just for this set. (0 for ubo)
+	for (auto& p : spec.properties)
+	{
+		if (p.kind != PropertyParam::Kind::Sampler)
+			continue;
+		setMat.push_back({"materialParams_" + p.name, RHI::DescriptorType::SAMPLER, (uint8_t)setMat.size() });
+	}
+
+	if (spec.pipeline == Pipeline::DEFERRED)
+	{
+		auto& setGBuffer = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::G_BUFFER)];
+		setGBuffer.push_back({ "gAlbedo",   RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_ALBEDO) });
+		setGBuffer.push_back({ "gNormal",   RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_NORMAL) });
+		setGBuffer.push_back({ "gPosition", RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_POSITION) });
+		setGBuffer.push_back({ "gMaterial", RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_MATERIAL) });
+	}
+
+	// ── Build DescriptorSetLayout (GPU layout objects) ───────────────────
+	std::array<RHI::DescriptorSetLayout, 2> descSetLayouts{};
+
+	// Layout[0]: PER_MATERIAL bindings
+	{
+		auto& layout = descSetLayouts[0].bindings;
+		auto& src = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_MATERIAL)];
+		layout.resize(src.size());
+		for (size_t i = 0; i < src.size(); i++)
+		{
+			layout[i].type       = src[i].type;
+			layout[i].binding    = src[i].binding;
+			layout[i].stageFlags = RHI::ShaderStageFlags::ALL_SHADER_STAGE_FLAGS;
+			layout[i].count      = 1;
+		}
+	}
+
+	// Layout[1]: G_BUFFER bindings (deferred only)
+	if (spec.pipeline == Pipeline::DEFERRED)
+	{
+		auto& layout = descSetLayouts[1].bindings;
+		auto& src = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::G_BUFFER)];
+		layout.resize(src.size());
+		for (size_t i = 0; i < src.size(); i++)
+		{
+			layout[i].type       = src[i].type;
+			layout[i].binding    = src[i].binding;
+			layout[i].stageFlags = RHI::ShaderStageFlags::FRAGMENT;
+			layout[i].count      = 1;
+		}
+	}
+
+	// ── Build AttributeInfo (vertex inputs / fragment outputs) ───────
+	ChunkAttributeInfo::Container attrInfo;
+
+	for (VertexAttribute attr : spec.requiredAttributes)
+	{
+		VariableParam v;
+		v.name     = VertexAttributeToName(attr);
+		v.location = static_cast<uint8_t>(VertexAttributeToLocation(attr));
+		const char* glsl = VertexAttributeToGLSLType(attr);
+		if      (std::strcmp(glsl, "vec2")  == 0) v.type = FieldType::FLOAT2;
+		else if (std::strcmp(glsl, "uvec4") == 0) v.type = FieldType::UINT4;
+		else                                       v.type = FieldType::FLOAT4;
+		attrInfo.inputs.push_back(v);
+	}
+
+	// Fragment output: default fragColor at location 0
+	attrInfo.outputs.push_back({ "fragColor", FieldType::FLOAT4, 0 });
+	for (auto& o : spec.outputs)
+	{
+		FieldType ft = (o.type == "color") ? FieldType::FLOAT4 : FieldType::FLOAT;
+		attrInfo.outputs.push_back({ o.name, ft, 0 });
+	}
+
 	// ── Collect chunks ───────────────────────────────────────────────
 	ChunkContainer cc;
 	uint32_t chunkCount = 0;
@@ -225,6 +427,11 @@ static void WriteMaterialBinary(const std::string& fullOutputDir,
 	                            cc.Set<ChunkVersion>(1u);                  chunkCount++;
 	                            cc.Set<ChunkShading>(std::string(spec.shadingModel)); chunkCount++;
 	                            cc.Set<ChunkDomain>(std::move(domain));        chunkCount++;
+	                            cc.Set<ChunkUib>(std::move(uib));              chunkCount++;
+	                            cc.Set<ChunkSib>(std::move(sib));              chunkCount++;
+	                            cc.Set<ChunkDescriptorSetBindings>(std::move(descBindings)); chunkCount++;
+	                            cc.Set<ChunkDescriptorSetLayout>(std::move(descSetLayouts)); chunkCount++;
+	                            cc.Set<ChunkAttributeInfo>(std::move(attrInfo));       chunkCount++;
 	if (attrMask)               { cc.Set<ChunkRequiredAttrs>(std::move(attrMask)); chunkCount++; }
 	if (!properties.empty())    { cc.Set<ChunkProperties>(std::move(properties)); chunkCount++; }
 	if (!constants.empty())     { cc.Set<ChunkConstants>(std::move(constants));   chunkCount++; }
@@ -250,6 +457,151 @@ static void WriteMaterialBinary(const std::string& fullOutputDir,
 }
 
 // ============================================================
+// Dump .matb contents for debugging
+// ============================================================
+static void DumpMatb(const std::string& path)
+{
+	std::ifstream file(path, std::ios::binary | std::ios::ate);
+	if (!file.is_open())
+	{
+		std::cerr << "matc: cannot open " << path << '\n';
+		return;
+	}
+	const size_t size = static_cast<size_t>(file.tellg());
+	file.seekg(0);
+	std::vector<uint8_t> buffer(size);
+	file.read(reinterpret_cast<char*>(buffer.data()), size);
+
+	FArchiveRead ar(buffer.data(), buffer.size());
+	ChunkContainer cc;
+	cc.Deserialize(ar);
+
+	auto sep = [] { std::cout << "----------------------------------------\n"; };
+
+	std::cout << "=== " << path << " (" << size << " bytes) ===\n\n";
+
+	std::string name;
+	if (cc.Get<ChunkName>(name) && !name.empty())
+		std::cout << "Name:           " << name << '\n';
+
+	uint32_t version = 0;
+	if (cc.Get<ChunkVersion>(version))
+		std::cout << "Version:        " << version << '\n';
+
+	std::string shading;
+	if (cc.Get<ChunkShading>(shading) && !shading.empty())
+		std::cout << "Shading:        " << shading << '\n';
+
+	uint8_t domain = 0;
+	if (cc.Get<ChunkDomain>(domain))
+		std::cout << "Domain:         " << (int)domain << '\n';
+
+	uint32_t attrMask = 0;
+	if (cc.Get<ChunkRequiredAttrs>(attrMask) && attrMask)
+		std::cout << "ReqAttrs mask:  0x" << std::hex << attrMask << std::dec << '\n';
+
+	// SPIR-V
+	ChunkSpirv::Container spv;
+	if (cc.Get<ChunkSpirv>(spv))
+		std::cout << "SPIR-V:        vert=" << spv.vertexSpirv.size()
+		          << "B  frag=" << spv.fragmentSpirv.size() << "B\n";
+
+	// UIB
+	BufferInterfaceBlock uib;
+	if (cc.Get<ChunkUib>(uib))
+	{
+		sep();
+		std::cout << "[ChunkUib]  " << uib.structName << " / " << uib.instanceName
+		          << "  size=" << uib.size << '\n';
+		for (auto& f : uib.fields)
+			std::cout << "  " << f.name << "  off=" << f.offset << "  type=" << (int)f.type
+			          << "  stride=" << (int)f.stride << "  struct=" << f.structName << '\n';
+	}
+
+	// SIB
+	SamplerInterfaceBlock sib;
+	if (cc.Get<ChunkSib>(sib))
+	{
+		sep();
+		std::cout << "[ChunkSib]  " << sib.mName << '\n';
+		for (auto& s : sib.mSamplersInfoList)
+			if (!s.name.empty())
+				std::cout << "  " << s.name << "  binding=" << (int)s.binding
+				          << "  type=" << (int)s.sampler << '\n';
+	}
+
+	// DescriptorSetBindings
+	DescriptorSetInfo dsl;
+	if (cc.Get<ChunkDescriptorSetBindings>(dsl))
+	{
+		sep();
+		std::cout << "[ChunkDescriptorSetBindings]\n";
+		for (size_t set = 0; set < dsl.size(); set++)
+		{
+			if (dsl[set].empty()) continue;
+			std::cout << "  set=" << set << '\n';
+			for (auto& d : dsl[set])
+				std::cout << "    " << d.name << "  binding=" << (int)d.binding
+				          << "  type=" << (int)d.type << '\n';
+		}
+	}
+
+	// DescriptorSetLayout
+	std::array<RHI::DescriptorSetLayout, 2> descLayouts;
+	if (cc.Get<ChunkDescriptorSetLayout>(descLayouts))
+	{
+		sep();
+		std::cout << "[ChunkDescriptorSetLayout]\n";
+		for (size_t li = 0; li < descLayouts.size(); li++)
+		{
+			std::cout << "  layout[" << li << "]\n";
+			for (auto& b : descLayouts[li].bindings)
+			{
+				if (b.count == 0) continue;
+				std::cout << "    binding=" << (int)b.binding
+				          << "  type=" << (int)b.type
+				          << "  stage=" << (int)b.stageFlags
+				          << "  count=" << b.count << '\n';
+			}
+		}
+	}
+
+	// AttributeInfo
+	ChunkAttributeInfo::Container attr;
+	if (cc.Get<ChunkAttributeInfo>(attr))
+	{
+		sep();
+		std::cout << "[ChunkAttributeInfo]\n";
+		std::cout << "  Inputs:\n";
+		for (auto& v : attr.inputs)
+			std::cout << "    " << v.name << "  loc=" << (int)v.location << "  type=" << (int)v.type << '\n';
+		std::cout << "  Outputs:\n";
+		for (auto& v : attr.outputs)
+			std::cout << "    " << v.name << "  loc=" << (int)v.location << "  type=" << (int)v.type << '\n';
+	}
+
+	// Properties / Constants
+	std::vector<FlatProperty> props;
+	if (cc.Get<ChunkProperties>(props))
+	{
+		sep();
+		std::cout << "[ChunkProperties]  " << props.size() << " entries\n";
+		for (auto& p : props)
+			std::cout << "  " << p.name << "  uniformType=" << (int)p.uniformType << '\n';
+	}
+	std::vector<std::string> consts;
+	if (cc.Get<ChunkConstants>(consts))
+	{
+		sep();
+		std::cout << "[ChunkConstants]  " << consts.size() << " entries\n";
+		for (auto& c : consts)
+			std::cout << "  " << c << '\n';
+	}
+
+	sep();
+}
+
+// ============================================================
 
 int main(int Argc, char* Argv[])
 {
@@ -265,6 +617,7 @@ int main(int Argc, char* Argv[])
     bool preprocessOnly = false;
     bool debugInfo = false;
     std::string optLevel;
+    std::string dumpPath;
 
     // --- Parse arguments ---
     for (int i = 1; i < Argc; ++i)
@@ -293,6 +646,8 @@ int main(int Argc, char* Argv[])
             glslcPath = Argv[++i];
         else if (arg == "--include" && i + 1 < Argc)
             includePaths.push_back(Argv[++i]);
+        else if (arg == "--dump" && i + 1 < Argc)
+            dumpPath = Argv[++i];
         else if (arg == "--template-dir" && i + 1 < Argc)
             templateDir = Argv[++i];
         else if (arg == "-h" || arg == "--help")
@@ -308,6 +663,12 @@ int main(int Argc, char* Argv[])
             PrintUsage();
             return 1;
         }
+    }
+
+    if (!dumpPath.empty())
+    {
+        DumpMatb(dumpPath);
+        return 0;
     }
 
     if (inputFile.empty())

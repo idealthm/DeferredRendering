@@ -1,4 +1,5 @@
 #pragma once
+#include "RHI/BufferDescriptor.h"
 #include "RHI/RHIDriver.h"
 
 namespace RHI { class RHIDriver; }
@@ -21,6 +22,21 @@ public:
 
 	const void* data() const noexcept { return mBuffer; }
 
+	BufferDescriptor toBufferDescriptor(RHI::RHIDriver& driver) const noexcept {
+		return toBufferDescriptor(driver, 0, getSize());
+	}
+
+	// copy the UBO data and cleans the dirty bits
+	BufferDescriptor toBufferDescriptor(RHI::RHIDriver& driver, size_t const offset, size_t const size) const noexcept {
+		BufferDescriptor p;
+		p.size = size;
+		p.buffer = malloc(p.size); // TODO: use out-of-line buffer if too large
+		memcpy(p.buffer, reinterpret_cast<const char*>(mBuffer) + offset, p.size); // inlined
+		clean();
+		p.setCallback([](void* buffer, size_t size, void* user){free(buffer);}, nullptr);
+		return p;
+	}
+
 private:
 	T            mBuffer[N];
 	mutable bool mDirty = false;
@@ -37,7 +53,7 @@ public:
 
 	void init(RHI::RHIDriver& driver)
 	{
-		mHandle = driver.CreateBufferObject(sizeof(T) * N, BufferObjectBinding::UNIFORM, BufferUsage::DYNAMIC);
+		mHandle = driver.CreateBufferObject(sizeof(T) * N, RHI::BufferObjectBinding::UNIFORM, RHI::BufferUsage::DYNAMIC);
 	}
 
 	TypedBuffer<T, N>& getTypedBuffer() noexcept { return mTypedBuffer; }
@@ -51,19 +67,13 @@ public:
 
 	// --- upload dirty data to GPU ---
 
-	void commit(RHI::RHIDriver& driver)
-	{
-		if (mTypedBuffer.isDirty())
-		{
-			// driver.SetBufferData(mHandle, mTypedBuffer.data(), getSize(), 0);
-			mTypedBuffer.clean();
-		}
+	BufferDescriptor toBufferDescriptor(RHI::RHIDriver& driver) const noexcept {
+		return mTypedBuffer.toBufferDescriptor(driver);
 	}
 
-	void commit(RHI::RHIDriver& driver, size_t offset, size_t size)
-	{
-		// driver.SetBufferData(mHandle, mTypedBuffer.data(), size, offset);
-		mTypedBuffer.clean();
+	// copy the UBO data and cleans the dirty bits
+	BufferDescriptor toBufferDescriptor(RHI::RHIDriver& driver, size_t offset, size_t size) const noexcept {
+		return mTypedBuffer.toBufferDescriptor(driver, offset, size);
 	}
 
 private:

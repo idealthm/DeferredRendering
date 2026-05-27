@@ -4,6 +4,7 @@
 
 #include "DriverEnums.h"
 #include "Common/HandleAllocator.h"
+#include "RHI/DescriptorSet.h"
 
 class PixelBufferDescriptor;
 class BufferDescriptor;
@@ -71,7 +72,7 @@ struct HwRenderPrimitive : public HwBase
 struct HwProgram : public HwBase
 {
 	std::string name;
-	explicit HwProgram(std::string& name) noexcept : name(std::move(name)) { }
+	explicit HwProgram(const std::string& name) noexcept : name(std::move(name)) { }
 	HwProgram() noexcept = default;
 };
 
@@ -128,9 +129,14 @@ public:
 	virtual void bindPipeline(PipelineState const& state) = 0;
 	virtual void bindRenderPrimitive(Handle<HwRenderPrimitive> rph) = 0;
 
+	virtual void CommitDescriptorSet(const DescriptorSet& ds) {}
+	virtual void beginRenderPass(Handle<HwRenderTarget> h, RenderPassParams& params) = 0;
+	virtual void endRenderPass() = 0;
+
 	// --- Backend-specific factory methods sync---------------------------------
 	virtual Handle<HwProgram> CreateProgram(Program&& program) = 0;
 	virtual Handle<HwTexture> CreateTexture(SamplerType target, uint8_t levels, Format format, uint8_t samples, uint32_t width, uint32_t height, uint32_t depth, TextureUsage usage) = 0;
+	virtual Handle<HwTexture> CreateTextureView(Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t maxLevel) = 0;
 	virtual Handle<HwBufferObject> CreateBufferObject(size_t size, BufferObjectBinding target, BufferUsage usage) = 0;
 	virtual Handle<HwVertexBufferInfo> CreateVertexBufferInfo(size_t bufferCount, size_t attributeCount, AttributeArray) = 0;
 	virtual Handle<HwVertexBuffer> CreateVertexBuffer(size_t vertexCount, Handle<HwVertexBufferInfo> info) = 0;
@@ -143,6 +149,7 @@ public:
 
 	virtual void CreateProgram(Handle<HwProgram>, Program&& program)  = 0;
 	virtual void CreateTexture(Handle<HwTexture>, SamplerType target, uint8_t levels, Format format, uint8_t samples, uint32_t width, uint32_t height, uint32_t depth, TextureUsage usage)  = 0;
+	virtual void CreateTextureView(Handle<HwTexture> h, Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t maxLevel) = 0;
 	virtual void CreateBufferObject(Handle<HwBufferObject>, size_t size, BufferObjectBinding target, BufferUsage usage)  = 0;
 	virtual void CreateVertexBufferInfo(Handle<HwVertexBufferInfo>, size_t bufferCount, size_t attributeCount, AttributeArray attributes) = 0;
 	virtual void CreateVertexBuffer(Handle<HwVertexBuffer>, size_t vertexCount, Handle<HwVertexBufferInfo> info)  = 0;
@@ -166,6 +173,9 @@ public:
 	
 	// --- Buffer data management -------------------------------------------
 
+	virtual void updateDescriptorSetTexture(Handle<HwDescriptorSet> dsh, descriptor_binding_t binding, Handle<HwTexture> h, SamplerParams& params) = 0;
+	virtual void updateDescriptorSetBuffer(Handle<HwDescriptorSet> dsh, descriptor_binding_t binding, Handle<HwBufferObject> h, uint16_t offset, uint16_t size) = 0;
+	virtual void bindDescriptorSet(Handle<HwDescriptorSet> h, uint8_t setIndex) = 0;
 	virtual void updateBufferObject(Handle<HwBufferObject> boh, BufferDescriptor&& data, uint32_t byteOffset = 0) = 0;
 	virtual void setVertexBufferObject(Handle<HwVertexBuffer> vbh, uint8_t bufferSlot, Handle<HwBufferObject> boh) = 0;
 	virtual void setIndexBufferObject(Handle<HwIndexBuffer> ibh, Handle<HwBufferObject> boh) = 0;

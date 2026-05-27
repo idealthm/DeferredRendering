@@ -1,6 +1,5 @@
 ﻿#include "Actor.h"
 
-#include "Renderer.h"
 #include "Component/ActorComponent.h"
 
 Actor::Actor()

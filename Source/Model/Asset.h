@@ -19,9 +19,9 @@ struct Part
 
 struct Mesh
 {
-    size_t           offset; // base vertex offset into Asset arrays
-    size_t           count;  // vertex count
-    std::vector<Part> parts;
+    size_t                  offset; // base vertex offset into Asset arrays
+    size_t                  count;  // vertex count
+    std::vector<Part>       parts;
 };
 
 struct Asset

@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "Engine.h"
+#include "Model/Texture.h"
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
@@ -13,6 +14,7 @@
 #include "Model/StaticMesh.h"
 #include "Model/Asset.h"
 #include "RHI/PixelBufferDescriptor.h"
+#include "RHI/TextureSampler.h"
 #include "stb_images/stb_image.h"
 
 namespace Util
@@ -34,11 +36,12 @@ namespace Util
         std::string directory = path.substr(0, path.find_last_of("/\\"));
         std::string modelFile = data["model_path"];
 
-        Ref<MaterialInstance> mi = CreateRef<MaterialInstance>(gEngine->GetDefaultModelMaterial().get());
+        Ref<MaterialInstance> mi = CreateRef<MaterialInstance>(gEngine->GetDefaultModelMaterial());
         if (data.contains("textures")) {
             for (auto& [typeStr, fileName] : data["textures"].items()) {
                 std::string texPath = directory + "/" + std::string(fileName);
-                mi->SetParameter(typeStr, LoadTexture(texPath, typeStr._Equal("albedo"), typeStr._Equal("albedo"), true));
+				Ref<Texture> texture = LoadTexture(texPath, typeStr == "albedo", true);
+                mi->SetParameter(typeStr, texture, TextureSampler::LinearClamp());
             }
         }
 
@@ -163,55 +166,59 @@ namespace Util
         return StaticMesh::Create(asset);
     }
 
-    Ref<Texture> LoadTexture(const std::string& filepath, bool srgb, bool hasAlpha, bool generateMipmap)
-    {
-        Ref<Texture> texture;
-        if (!filepath.empty())
-        {
-            Path path(filepath);
-            if (path.exists())
-            {
-                int w, h, n;
-                int numChannels = hasAlpha ? 4 : 3;
+	Ref<Texture> LoadTexture(const std::string& filepath, bool srgb, bool generateMipmap)
+	{
+		Ref<Texture> texture;
+		if (!filepath.empty())
+		{
+			Path path(filepath);
+			if (path.exists())
+			{
+				int w, h, n;
+				uint8_t *data = stbi_load(path.getAbsolutePath().c_str(), &w, &h, &n, 0);
+				if (data != nullptr)
+				{
+					RHI::Format internalFormat;
+					RHI::PixelDataFormat outputFormat;
+					switch (n) {
+					case 1: internalFormat = RHI::Format::R8;    outputFormat = RHI::PixelDataFormat::R;    break;
+					case 2: internalFormat = RHI::Format::RG8;   outputFormat = RHI::PixelDataFormat::RG;   break;
+					case 3: internalFormat = srgb ? RHI::Format::SRGB8  : RHI::Format::RGB8;  outputFormat = RHI::PixelDataFormat::RGB;  break;
+					case 4: internalFormat = srgb ? RHI::Format::SRGBA8 : RHI::Format::RGBA8; outputFormat = RHI::PixelDataFormat::RGBA; break;
+					default: stbi_image_free(data); return nullptr;
+					}
 
-                RHI::Format internalFormat;
-                if (srgb)
-                    internalFormat = hasAlpha ? RHI::Format::SRGBA8 : RHI::Format::SRGB8;
-                else
-                    internalFormat = hasAlpha ? RHI::Format::RGBA8 : RHI::Format::RGB8;
+					RHI::TextureDesc desc;
+					desc.Width = w;
+					desc.Height = h;
+					desc.LevelCount = std::max(1, std::ilogbf(float(std::max(w,h))) + 1);
+					desc.Format = internalFormat;
+					texture = CreateRef<Texture>(desc);
 
-                RHI::PixelDataFormat outputFormat = hasAlpha ? RHI::PixelDataFormat::RGBA : RHI::PixelDataFormat::RGB;
+					PixelBufferDescriptor buffer(data,
+					        size_t(w * h * n),
+					        outputFormat,
+					        RHI::PixelDataType::UBYTE,
+					        (PixelBufferDescriptor::Callback) &stbi_image_free);
 
-                uint8_t *data = stbi_load(path.getAbsolutePath().c_str(), &w, &h, &n, numChannels);
-                if (data != nullptr)
-                {
-                    RHI::TextureDesc desc;
-                    desc.Width = w;
-                    desc.Height = h;
-                    desc.MipLevels = 0xff;
-                    desc.Format = internalFormat;
-                    texture = CreateRef<Texture>(desc);
-
-                    PixelBufferDescriptor buffer(data,
-                        size_t(w * h * numChannels),
-                        outputFormat,
-                        RHI::PixelDataType::UBYTE,
-                        (PixelBufferDescriptor::Callback) &stbi_image_free);
-
-                    gEngine->GetDriver().update3DImage(texture->GetHandle(), 0, 0, 0, 0, w, h, 1, std::move(buffer));
-                    if (generateMipmap)
-                        gEngine->GetDriver().generateMipmap(texture->GetHandle());
-                }
-            }
-            else
-            {
-                std::cout << "Texture not found: " << filepath << '\n';
-            }
-        }
-        else
-        {
-            std::cout << "Texture not specified" << '\n';
-        }
-        return texture;
-    }
+					gEngine->GetDriver().update3DImage(texture->GetHandle(), 0, 0, 0, 0, w, h, 1, std::move(buffer));
+					if (generateMipmap)
+						texture->GenerateMipmaps();
+					else
+					{
+						texture->UpdateLodRange(0, 1);
+					}
+				}
+			}
+			else
+			{
+				std::cout << "Texture not found: " << filepath << '\n';
+			}
+		}
+		else
+		{
+			std::cout << "Failed to load: " << filepath << '\n';
+		}
+		return texture;
+	}
 }

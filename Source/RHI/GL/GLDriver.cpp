@@ -3,6 +3,12 @@
 #include <algorithm>
 #include <glm/gtc/type_ptr.inl>
 
+#ifndef GL_SHADER_BINARY_FORMAT_SPIR_V
+#define GL_SHADER_BINARY_FORMAT_SPIR_V 0x9551
+#endif
+
+#include "GLProgram.h"
+
 #include "GLHelper.h"
 #include "GLProgram.h"
 #include "RHI/PipelineState.h"
@@ -23,72 +29,73 @@ namespace RHI
 	{
 		auto& gl = m_Context;
 
-    mRenderPassTarget = h;
-    mRenderPassParams = params;
+	    mRenderPassTarget = h;
+	    mRenderPassParams = params;
 
-    GLRenderTarget* rt = handle_cast<GLRenderTarget*>(h);
+	    GLRenderTarget* rt = handle_cast<GLRenderTarget*>(h);
 
-    // If we're rendering into the default render target (i.e. into the current SwapChain),
-    // get the value of the output colorspace from there, otherwise it's always linear.
+	    // If we're rendering into the default render target (i.e. into the current SwapChain),
+	    // get the value of the output colorspace from there, otherwise it's always linear.
 
-    const TargetBufferFlags clearFlags = params.flags.clear & rt->targets;
-    TargetBufferFlags discardFlags = params.flags.discardStart & rt->targets;
+	    const TargetBufferFlags clearFlags = params.flags.clear & rt->targets;
+	    TargetBufferFlags discardFlags = params.flags.discardStart & rt->targets;
 
-    GLuint const fbo = gl.bindFramebuffer(GL_FRAMEBUFFER, rt->gl.fbo);
+	    GLuint const fbo = gl.bindFramebuffer(GL_FRAMEBUFFER, rt->gl.fbo);
+		CHECK_GL_FRAMEBUFFER_STATUS(std::cout, GL_FRAMEBUFFER);
 
-    // each render-pass starts with a disabled scissor
-    gl.disable(GL_SCISSOR_TEST);
+	    // each render-pass starts with a disabled scissor
+	    gl.disable(GL_SCISSOR_TEST);
 
-    AttachmentArray attachments; // NOLINT
-    GLsizei const attachmentCount = getAttachments(attachments, discardFlags, !fbo);
-    if (attachmentCount) {
-        glInvalidateFramebuffer(GL_FRAMEBUFFER, attachmentCount, attachments.data());
-    }
-	{
-        // It's important to clear the framebuffer before drawing, as it resets
-        // the fb to a known state (resets fb compression and possibly other things).
-        // So we use glClear instead of glInvalidateFramebuffer
-       //  clearWithRasterPipe(discardFlags & ~clearFlags, { 0.0f }, 0.0f, 0);
-    }
+	    AttachmentArray attachments; // NOLINT
+	    GLsizei const attachmentCount = getAttachments(attachments, discardFlags, !fbo);
+	    if (attachmentCount) {
+	        glInvalidateFramebuffer(GL_FRAMEBUFFER, attachmentCount, attachments.data());
+	    }
+		{
+	        // It's important to clear the framebuffer before drawing, as it resets
+	        // the fb to a known state (resets fb compression and possibly other things).
+	        // So we use glClear instead of glInvalidateFramebuffer
+	       //  clearWithRasterPipe(discardFlags & ~clearFlags, { 0.0f }, 0.0f, 0);
+	    }
 
-    if (rt->gl.fbo_read) {
-        // we have a multi-sample RenderTarget with non multi-sample attachments (i.e. this is the
-        // EXT_multisampled_render_to_texture emulation).
-        // We would need to perform a "backward" resolve, i.e. load the resolved texture into the
-        // tile, everything must appear as though the multi-sample buffer was lost.
-        // However, Filament specifies that a non multi-sample attachment to a
-        // multi-sample RenderTarget is always discarded. We do this because implementing
-        // the load on Metal is not trivial, and it's not a feature we rely on at this time.
-        discardFlags |= rt->gl.resolve;
-    }
+	    if (rt->gl.fbo_read) {
+	        // we have a multi-sample RenderTarget with non multi-sample attachments (i.e. this is the
+	        // EXT_multisampled_render_to_texture emulation).
+	        // We would need to perform a "backward" resolve, i.e. load the resolved texture into the
+	        // tile, everything must appear as though the multi-sample buffer was lost.
+	        // However, Filament specifies that a non multi-sample attachment to a
+	        // multi-sample RenderTarget is always discarded. We do this because implementing
+	        // the load on Metal is not trivial, and it's not a feature we rely on at this time.
+	        discardFlags |= rt->gl.resolve;
+	    }
 
-    if (any(clearFlags)) {
-        clearWithRasterPipe(clearFlags,
-                params.clearColor, (GLfloat)params.clearDepth, (GLint)params.clearStencil);
-    }
+	    if (any(clearFlags)) {
+	        clearWithRasterPipe(clearFlags,
+	                params.clearColor, (GLfloat)params.clearDepth, (GLint)params.clearStencil);
+	    }
 
-    // we need to reset those after we call clearWithRasterPipe()
-    mRenderPassColorWrite   = any(clearFlags & TargetBufferFlags::COLOR_ALL);
-    mRenderPassDepthWrite   = any(clearFlags & TargetBufferFlags::DEPTH);
-    mRenderPassStencilWrite = any(clearFlags & TargetBufferFlags::STENCIL);
+	    // we need to reset those after we call clearWithRasterPipe()
+	    mRenderPassColorWrite   = any(clearFlags & TargetBufferFlags::COLOR_ALL);
+	    mRenderPassDepthWrite   = any(clearFlags & TargetBufferFlags::DEPTH);
+	    mRenderPassStencilWrite = any(clearFlags & TargetBufferFlags::STENCIL);
 
-    static_assert(sizeof(GLsizei) >= sizeof(uint32_t));
-    gl.viewport(params.viewport.left, params.viewport.bottom,
-            (GLsizei)std::min(uint32_t(std::numeric_limits<int32_t>::max()), params.viewport.width),
-            (GLsizei)std::min(uint32_t(std::numeric_limits<int32_t>::max()), params.viewport.height));
+	    static_assert(sizeof(GLsizei) >= sizeof(uint32_t));
+	    gl.viewport(params.viewport.left, params.viewport.bottom,
+	            (GLsizei)std::min(uint32_t(std::numeric_limits<int32_t>::max()), params.viewport.width),
+	            (GLsizei)std::min(uint32_t(std::numeric_limits<int32_t>::max()), params.viewport.height));
 
-    gl.depthRange(params.depthRange.near, params.depthRange.far);
+	    gl.depthRange(params.depthRange.near, params.depthRange.far);
 
-#ifndef NDEBUG
-    // clear the discarded (but not the cleared ones) buffers in debug builds
-    clearWithRasterPipe(discardFlags & ~clearFlags,
-            { 1, 0, 0, 1 }, 1.0, 0);
-#endif
+	#ifndef NDEBUG
+	    // clear the discarded (but not the cleared ones) buffers in debug builds
+	    clearWithRasterPipe(discardFlags & ~clearFlags,
+	            { 1, 0, 0, 1 }, 1.0, 0);
+	#endif
 	}
 
 	void GLDriver::endRenderPass()
 	{
-		
+		mRenderPassTarget = {};
 	}
 
 	GLsizei GLDriver::getAttachments(AttachmentArray& attachments, TargetBufferFlags buffers, bool isDefaultFramebuffer) noexcept {
@@ -363,6 +370,14 @@ namespace RHI
 		CreateTexture(h, target, levels, format, samples, width, height, depth, usage);
 		return h;
 	}
+
+	Handle<HwTexture> GLDriver::CreateTextureView(Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t levelCount)
+	{
+		Handle<HwTexture> h = InitHandle<GLTexture>();
+		CreateTextureView(h, srcth, baseLevel, levelCount);
+		return h;
+	}
+
 	Handle<HwBufferObject> GLDriver::CreateBufferObject(size_t size, BufferObjectBinding target, BufferUsage usage)
 	{
 		Handle<HwBufferObject> h = InitHandle<GLBufferObject>();
@@ -444,6 +459,47 @@ namespace RHI
 			renderBufferStorage(t->gl.id, internalFormat, width, height, samples);
 		}
     }
+
+	void GLDriver::CreateTextureView(Handle<HwTexture> h, Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t levelCount)
+	{
+		GLTexture const* const src = handle_cast<GLTexture const*>(srcth);
+
+		ASSERT(any(src->usage & TextureUsage::SAMPLEABLE));
+
+		ASSERT(!src->gl.imported);
+
+		if (!src->ref) {
+			// lazily create the ref handle, because most textures will never get a texture view
+			src->ref = InitHandle<GLTextureRef>();
+		}
+
+		GLTexture* t = construct<GLTexture>(h,
+				src->target,
+				src->levels,
+				src->samples,
+				src->width, src->height, src->depth,
+				src->format,
+				src->usage);
+
+		t->gl = src->gl;
+		t->gl.sidecarRenderBufferMS = 0;
+		t->gl.sidecarSamples = 1;
+
+		auto srcBaseLevel = src->gl.baseLevel;
+		auto srcMaxLevel = src->gl.maxLevel;
+		if (srcBaseLevel > srcMaxLevel) {
+			srcBaseLevel = 0;
+			srcMaxLevel = 127;
+		}
+		t->gl.baseLevel = (int8_t)std::min(127, srcBaseLevel + baseLevel);
+		t->gl.maxLevel  = (int8_t)std::min(127, srcBaseLevel + baseLevel + levelCount - 1);
+
+		// increase reference count to this texture handle
+		t->ref = src->ref;
+		GLTextureRef* ref = handle_cast<GLTextureRef*>(t->ref);
+		ASSERT(ref);
+		ref->count++;
+	}
 
 	void GLDriver::CreateBufferObject(Handle<HwBufferObject> h, size_t count, BufferObjectBinding target, BufferUsage usage)
 	{
@@ -567,6 +623,7 @@ namespace RHI
 				checkDimensions(rt->gl.stencil, stencil.level);
 			}
 		}
+		CHECK_GL_FRAMEBUFFER_STATUS(std::cout, GL_FRAMEBUFFER);
 	}
 	void GLDriver::CreateDescriptorSet(Handle<HwDescriptorSet> h, Handle<HwDescriptorSetLayout> dslh)
 	{
@@ -751,6 +808,51 @@ namespace RHI
 		}
 	}
 
+	void GLDriver::updateDescriptorSetBuffer(Handle<HwDescriptorSet> dsh, descriptor_binding_t binding,
+		Handle<HwBufferObject> h, uint16_t offset, uint16_t size)
+	{
+		GLDescriptorSet* ds = handle_cast<GLDescriptorSet*>(dsh);
+		GLBufferObject* bo = h ? handle_cast<GLBufferObject*>(h) : nullptr;
+		ds->update(m_Context, binding, bo, offset, size);
+	}
+
+	void GLDriver::updateDescriptorSetTexture(Handle<HwDescriptorSet> dsh, descriptor_binding_t binding,
+		Handle<HwTexture> h, SamplerParams& params)
+	{
+		GLDescriptorSet* ds = handle_cast<GLDescriptorSet*>(dsh);
+		GLTexture* t = h ? handle_cast<GLTexture*>(h) : nullptr;
+		ds->update(m_Context, binding, t, params);
+	}
+
+	void GLDriver::bindDescriptorSet(Handle<HwDescriptorSet> h, uint8_t set)
+	{
+		if (!h)
+		{
+			mBoundDescriptorSets[set].dsh = h;
+			mInvalidDescriptorSetBindings.set(set, true);
+			mInvalidDescriptorSetBindingOffsets.set(set, true);
+			return;
+		}
+
+		GLDescriptorSet const* const ds = handle_cast<GLDescriptorSet*>(h);
+		if (ds) {
+			ASSERT(set < MAX_DESCRIPTOR_SET_COUNT);
+			if (mBoundDescriptorSets[set].dsh != h) {
+				// if the descriptor itself changed, we mark this descriptor binding
+				// invalid -- it will be re-bound at the next draw.
+				mInvalidDescriptorSetBindings.set(set, true);
+			} else {
+				// if we reset offsets, we mark the offsets invalid so these descriptors only can
+				// be re-bound at the next draw.
+				mInvalidDescriptorSetBindingOffsets.set(set, true);
+			}
+
+			// `offsets` data's lifetime will end when this function returns. We have to make a copy.
+			// (the data is allocated inside the CommandStream)
+			mBoundDescriptorSets[set].dsh = h;
+		}
+	}
+
 	void GLDriver::updateBufferObject(Handle<HwBufferObject> boh, BufferDescriptor&& data, uint32_t byteOffset)
 	{
 		auto& gl = m_Context;
@@ -801,12 +903,25 @@ namespace RHI
 			if (source.empty()) return 0;
 
 			GLuint shader = glCreateShader(type);
-			
-			const char* sourceStr = reinterpret_cast<const char*>(source.data());
-			GLint length = static_cast<GLint>(source.size());
-			
-			glShaderSource(shader, 1, &sourceStr, &length);
-			glCompileShader(shader);
+
+			// SPIR-V magic: 0x07230203
+			const bool isSpirv = source.size() >= 4
+				&& source[0] == 0x03 && source[1] == 0x02
+				&& source[2] == 0x23 && source[3] == 0x07;
+
+			if (isSpirv)
+			{
+				glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V,
+					source.data(), static_cast<GLsizei>(source.size()));
+				glSpecializeShader(shader, "main", 0, nullptr, nullptr);
+			}
+			else
+			{
+				const char* sourceStr = reinterpret_cast<const char*>(source.data());
+				GLint length = static_cast<GLint>(source.size());
+				glShaderSource(shader, 1, &sourceStr, &length);
+				glCompileShader(shader);
+			}
 
 			GLint success;
 			glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
@@ -994,9 +1109,7 @@ namespace RHI
 			case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
 			case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
 			case GL_TEXTURE_2D:
-#if defined(BACKEND_OPENGL_LEVEL_GLES31)
 			case GL_TEXTURE_2D_MULTISAMPLE:
-#endif
 				if (any(t->usage & TextureUsage::SAMPLEABLE)) {
 					glFramebufferTexture2D(GL_FRAMEBUFFER, attachment,
 							target, t->gl.id, binfo.level);
@@ -1041,6 +1154,8 @@ namespace RHI
 		}
 
 		rt->gl.resolve |= resolveFlags;
+
+		CHECK_GL_FRAMEBUFFER_STATUS(std::cout, GL_FRAMEBUFFER);
 	}
 
 	void GLDriver::update3DImage(Handle<HwTexture> th, uint32_t level, uint32_t xoffset, uint32_t yoffset,
@@ -1087,9 +1202,6 @@ namespace RHI
 			if (bi != Attribute::BUFFER_UNUSED) {
 				// if a buffer is defined it must not be invalid.
 				ASSERT(vb->gl.buffers[bi]);
-
-				// if we're on ES2, the user shouldn't use FLAG_INTEGER_TARGET
-				ASSERT(attribute.flags & Attribute::FLAG_INTEGER_TARGET);
 
 				gl.bindBuffer(GL_ARRAY_BUFFER, vb->gl.buffers[bi]);
 				GLuint const index = i;
@@ -1162,7 +1274,28 @@ namespace RHI
 
 	void GLDriver::updateDescriptors(Util::bitset8 invalidDescriptorSets) noexcept
 	{
-		
+		auto const offsetOnly = mInvalidDescriptorSetBindingOffsets & ~mInvalidDescriptorSetBindings;
+		invalidDescriptorSets.forEachSetBit([this, offsetOnly,
+				&boundDescriptorSets = mBoundDescriptorSets,
+				&context = m_Context,
+				&boundProgram = *mBoundProgram](size_t set) {
+			ASSERT(set < MAX_DESCRIPTOR_SET_COUNT);
+			auto const& entry = boundDescriptorSets[set];
+			if (entry.dsh) {
+				GLDescriptorSet* const ds = handle_cast<GLDescriptorSet*>(entry.dsh);
+	#ifndef NDEBUG
+				if (UTILS_UNLIKELY(!offsetOnly[set])) {
+					// validate that this descriptor-set layout matches the layout set in the pipeline
+					// we don't need to do the check if only the offset is changing
+					// ds->validate(m_HandleAllocator, m_CurrentSetLayout[set]);
+				}
+	#endif
+				ds->bind(context, m_HandleAllocator, boundProgram,
+						set, entry.offsets.data(), offsetOnly[set]);
+			}
+		});
+		mInvalidDescriptorSetBindings.clear();
+		mInvalidDescriptorSetBindingOffsets.clear();
 	}
 
 	void GLDriver::setTextureData(GLTexture* t, uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t zoffset,

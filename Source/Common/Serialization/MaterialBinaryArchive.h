@@ -47,6 +47,7 @@ enum class ChunkType : uint64_t
     MaterialCullingMode             = charTo64bitNum("MAT_CUMO"),
     MaterialMaskThreshold           = charTo64bitNum("MAT_THRS"),
     MaterialShadowMultiplier        = charTo64bitNum("MAT_SHML"),
+    MaterialDescriptorSetLayout     = charTo64bitNum("MAT_DSL "),
 };
 
 // ── FArchive (abstract interface) ───────────────────────────────────────────

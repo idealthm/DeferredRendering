@@ -3,8 +3,11 @@
 #include <unordered_map>
 #include <vector>
 
+#include "DescriptorSetLayout.h"
 #include "Common/Handle.h"
 #include "MaterialParser.h"
+
+class DescriptorSetLayout;
 
 namespace RHI
 {
@@ -26,7 +29,6 @@ public:
 	Handle<RHI::HwProgram> GetProgram() const;
 
 	const BufferInterfaceBlock& GetUniformBlock() const { return m_UniformBlock; }
-	descriptor_binding_t GetUniformBinding() const { return m_UniformBlock.binding; }
 
 	const SamplerInterfaceBlock& GetSamplerBlock() const { return m_SamplerBlock; }
 	const SamplerInfo* FindSampler(const std::string& name) const;
@@ -37,12 +39,18 @@ public:
 	RHI::RasterState GetRasterState() const { return m_RasterState; }
 	RHI::StencilState GetStencilState() const { return m_StencilState; }
 
+	const DescriptorSetLayout& GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
+	const DescriptorSetLayout& GetPerViewDescriptorSetLayout() const { return m_PerViewDescriptorSetLayout; }
+
 private:
 	RHI::RasterState m_RasterState;
 	RHI::StencilState m_StencilState;
 
 	Program::ShaderSource      m_ShaderData;
-	Program::DescriptorSetInfo m_DescriptorSets;
+	DescriptorSetLayout		   m_PerViewDescriptorSetLayout;
+	DescriptorSetLayout		   m_DescriptorSetLayout;
+
+	DescriptorSetInfo		   m_DescriptorSetLayouts;
 	mutable Handle<RHI::HwProgram> m_CachedProgram;
 
 	BufferInterfaceBlock m_UniformBlock;

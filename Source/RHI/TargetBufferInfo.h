@@ -5,7 +5,7 @@ namespace RHI
 {
 	struct HwTexture;
 
-	struct TargetBufferInfo {
+struct TargetBufferInfo {
     // note: the parameters of this constructor are not in the order of this structure's fields
     TargetBufferInfo(Handle<HwTexture> handle, uint8_t level, uint16_t layer) noexcept
             : handle(handle), level(level), layer(layer) {

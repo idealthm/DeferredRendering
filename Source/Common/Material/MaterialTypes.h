@@ -44,7 +44,6 @@ struct BufferInterfaceBlock
 	std::string            structName;
 	size_t                 size = 0;
 	MemoryLayout           layout = MemoryLayout::std_140;
-	descriptor_binding_t   binding = 0;
 	std::vector<FieldInfo> fields;
 };
 
@@ -69,3 +68,12 @@ struct VariableParam
 	FieldType   type = FieldType::FLOAT;
 	uint8_t     location = 0;
 };
+
+struct Descriptor
+{
+	std::string           name;
+	RHI::DescriptorType   type;
+	descriptor_binding_t  binding;
+};
+
+using DescriptorSetInfo = std::array<std::vector<Descriptor>, MAX_DESCRIPTOR_SET_COUNT>;

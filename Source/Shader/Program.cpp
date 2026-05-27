@@ -9,7 +9,7 @@ Program::~Program()
 {
 }
 
-std::string Program::getName() const
+const std::string& Program::getName() const
 {
 	return m_Name;
 }

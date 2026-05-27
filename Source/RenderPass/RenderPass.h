@@ -2,12 +2,12 @@
 #include <vector>
 
 #include "Common/Core.h"
+#include "RenderContext.h"
 
 
 struct FBAttachmentInfo;
 struct FBTextureDesc;
 class FrameBuffer;
-struct RenderContext;
 class Scene;
 class Program;
 
@@ -27,7 +27,7 @@ public:
 
 	virtual uint32_t GetRenderTimes() {return 1;}
 
-	virtual void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx);
+	virtual void Setup(RenderContext& ctx);
 
-	virtual void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx);
+	virtual void Execute(Ref<Scene> scene, RenderContext& ctx);
 };

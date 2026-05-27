@@ -2,7 +2,6 @@
 
 #include "Engine.h"
 #include "Scene.h"
-#include "FrameBuffer/FrameBuffer.h"
 #include "Lights/Light.h"
 #include "Material/MaterialInstance.h"
 #include "Model/Texture.h"
@@ -15,25 +14,12 @@ LightingPass::LightingPass()
 {
 }
 
-void LightingPass::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
+void LightingPass::Setup(RenderContext& ctx)
 {
-	// Lighting Pass 是全屏绘制（Full-screen Quad），通常不需要深度测试
-	info.Depth = {};
-
-	info.DSS.depthWrite = false;
-	info.DSS.depthTest = false;
-	info.DSS.compareFunc = ECompareFunc::Less;
-
-	CreateResource(ctx.LightMap_SceneColor, CreateHDRBuffer(info.Width, info.Height));
-
-	// 输入：此时 ctx.GBuffer_Normal 等纹理已由前面 Pass 生成
-	// 输出：如果前面 Skybox 已经画了，这里 LoadAction 应该是 Load，否则会覆盖天空
-	info.Attachments = {
-		// { ctx.LightMap_SceneColor->GetRendererID(), FBTextureLoadAction::Load, FBTextureStoreAction::Store }
-	};
+	
 }
 
-void LightingPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
+void LightingPass::Execute(Ref<Scene> scene, RenderContext& ctx)
 {
 	int32_t index = 0;
 	for (auto lightActor : scene->GetActors())
@@ -52,17 +38,17 @@ void LightingPass::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
 		}
 	}
 	ctx.LightDataUB.edit().NumLights = index;
-	ctx.LightDataUB.commit(gEngine->GetDriver());
+	// ctx.LightDataUB.commit(gEngine->GetDriver());
 
-	m_MaterialInstance->SetParameter("gPosition", ctx.GBuffer_Position->GetHandle(), TextureSampler::LinearClamp());
-	m_MaterialInstance->SetParameter("gNormal", ctx.GBuffer_Normal->GetHandle()  , TextureSampler::LinearClamp());
-	m_MaterialInstance->SetParameter("gAlbedo", ctx.GBuffer_Albedo->GetHandle(), TextureSampler::LinearClamp());
-	m_MaterialInstance->SetParameter("gMaterial", ctx.GBuffer_Material->GetHandle(), TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("gPosition", ctx.GBuffer_Position, TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("gNormal", ctx.GBuffer_Normal  , TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("gAlbedo", ctx.GBuffer_Albedo, TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("gMaterial", ctx.GBuffer_Material, TextureSampler::LinearClamp());
 
-	m_MaterialInstance->SetParameter("uIBL_PreFilterMap", ctx.IBL_PreFilterMap->GetHandle(), TextureSampler::LinearClamp());
-	m_MaterialInstance->SetParameter("gShadowMap", ctx.ShadowMap_Depth->GetHandle(), TextureSampler::Shadow());
-	m_MaterialInstance->SetParameter("uIrradianceMap", ctx.IBL_IrradianceMap->GetHandle(), TextureSampler::LinearClamp());
-	m_MaterialInstance->SetParameter("uBRDF_LUT", ctx.BRDF_LUT->GetHandle(), TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("uIBL_PreFilterMap", ctx.IBL_PreFilterMap, TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("gShadowMap", ctx.ShadowMap_Depth, TextureSampler::Shadow());
+	m_MaterialInstance->SetParameter("uIrradianceMap", ctx.IBL_IrradianceMap, TextureSampler::LinearClamp());
+	m_MaterialInstance->SetParameter("uBRDF_LUT", ctx.BRDF_LUT, TextureSampler::LinearClamp());
 
 	// TODO: set up pipeline state and call driver.draw() with m_ScreenQuad
 }

@@ -1,26 +1,23 @@
 #include "MaterialInstance.h"
 #include "Engine.h"
+#include "EngineEnum.h"
+#include "Model/Texture.h"
 #include "RHI/RHIDriver.h"
 #include "RHI/TextureSampler.h"
 
-MaterialInstance::MaterialInstance(Material const* material)
-	: m_Material(material)
+MaterialInstance::MaterialInstance(const Ref<Material>& material)
+	: m_Material(material), m_DescriptorSet(material->GetDescriptorSetLayout())
 {
-}
+	RHI::RHIDriver& driver = gEngine->GetDriver();
 
-void MaterialInstance::BindMaterial(Material const* material)
-{
-	m_Material = material;
-	m_UniformBuffer = {};
-	m_DescriptorSet.Reset();
-	m_Dirty = false;
+	if (material->GetUniformBlock().fields.size() > 0) {
+		m_UniformBuffer = UniformBuffer(material->GetUniformBlock().size);
+		m_UniformBufferHandle = driver.CreateBufferObject(m_UniformBuffer.GetSize(),
+				RHI::BufferObjectBinding::UNIFORM, RHI::BufferUsage::STATIC);
+	}
 
-	// Uniform Buffer clean
-}
-
-void MaterialInstance::SetDefaults()
-{
-	m_Dirty = true;
+	// set the UBO, always descriptor 0
+	m_DescriptorSet.SetBuffer(0, m_UniformBufferHandle, 0, m_UniformBuffer.GetSize());
 }
 
 Handle<RHI::HwProgram> MaterialInstance::GetShader() const
@@ -28,64 +25,52 @@ Handle<RHI::HwProgram> MaterialInstance::GetShader() const
 	return m_Material->GetProgram();
 }
 
-void MaterialInstance::Init()
-{
-	if (!m_Material) return;
-
-	m_DescriptorSet.Reset();
-	m_DescriptorSet.set = 0;
-
-	const descriptor_binding_t ubBinding = m_Material->GetUniformBinding();
-	const auto& block = m_Material->GetUniformBlock();
-
-	// MaterialParams UBO — allocate CPU data; GPU handle set by CommitUniforms
-	if (block.size > 0)
-	{
-		m_UniformBuffer.Clear(block.size);
-		m_DescriptorSet.activeBindings.set(ubBinding);
-	}
-
-	// Samplers — engine sets texture handle + params via SetTexture()
-	for (const auto& sampler : m_Material->GetSamplerBlock().mSamplersInfoList)
-		m_DescriptorSet.activeBindings.set(sampler.binding);
-
-	SetDefaults();
-}
-
-const uint8_t* MaterialInstance::GetUniformData() const
-{
-	return m_UniformBuffer.GetData();
-}
-
-uint32_t MaterialInstance::GetUniformDataSize() const
-{
-	return m_UniformBuffer.GetSize();
-}
-
-bool MaterialInstance::SetParameter(const std::string& name, Handle<RHI::HwTexture> texture,
+bool MaterialInstance::SetParameter(const std::string& name, const Ref<Texture>& texture,
 	const TextureSampler& sampler)
 {
+	std::cout << "SetParameter" << " " << name << std::endl;
+
 	const SamplerInfo* samplerInfo = m_Material->FindSampler(name);
-	if (!samplerInfo) return false;
-	m_DescriptorSet.SetTexture(samplerInfo->binding, texture, sampler.GetParams());
-	return m_Dirty = true;
+
+	if (texture && texture->TextureHandleCanMutate())
+	{
+		m_TextureParam.emplace(samplerInfo->binding, TextureParameter{texture, sampler.GetParams()});
+	}
+	else
+	{
+		Handle<RHI::HwTexture> handle{};
+		if (texture) {
+			handle = texture->GetHandleForSampling();
+			ASSERT(handle == texture->GetHandle());
+		} else {
+			m_TextureParam.erase(samplerInfo->binding);
+		}
+		m_DescriptorSet.SetTexture(samplerInfo->binding, handle, sampler.GetParams());
+	}
+	return true;
 }
 
-void MaterialInstance::CommitUniforms(RHI::RHIDriver& driver)
+void MaterialInstance::Commit(RHI::RHIDriver& driver)
 {
-	if (!m_UniformBuffer.IsDirty()) return;
-
-	// Lazy GPU buffer creation
-	if (!m_UniformBufferHandle)
-	{
-		m_UniformBufferHandle = driver.CreateBufferObject(m_UniformBuffer.GetSize(), RHI::BufferObjectBinding::UNIFORM, RHI::BufferUsage::DYNAMIC);
-
-		// Register buffer handle in descriptor set
-		descriptor_binding_t ubBinding = m_Material->GetUniformBinding();
-		m_DescriptorSet.SetBuffer(ubBinding, m_UniformBufferHandle, 0, m_UniformBuffer.GetSize());
+	if (m_UniformBuffer.IsDirty()) {
+		driver.updateBufferObject(m_UniformBufferHandle, m_UniformBuffer.toBufferDescriptor(driver), 0);
 	}
 
-	// driver.SetBufferData(m_UniformBufferHandle, m_UniformBuffer.GetData(), m_UniformBuffer.GetSize());
-	m_UniformBuffer.ClearDirty();
-	m_Dirty = false;
+	if (!m_TextureParam.empty()) {
+		for (auto const& [binding, p]: m_TextureParam) {
+			ASSERT(p.texture);
+			// TODO: Create TextureView
+			Handle<RHI::HwTexture> handle = p.texture->GetHandleForSampling();
+			ASSERT(handle);
+			m_DescriptorSet.SetTexture(binding, handle, p.params);
+		}
+	}
+
+	// Commit descriptors if needed (e.g. when textures are updated,or the first time)
+	m_DescriptorSet.commit(driver, m_Material->GetDescriptorSetLayout());
+}
+
+void MaterialInstance::Use(RHI::RHIDriver& driver)
+{
+	m_DescriptorSet.bind(driver, DescriptorSetBindingPoints::PER_MATERIAL);
 }

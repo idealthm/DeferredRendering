@@ -10,6 +10,7 @@
 #include "OpenGLContext.h"
 #include "RHI/DriverEnums.h"
 #include "RHI/TargetBufferInfo.h"
+#include "RHI/DescriptorSet.h"
 #include "Shader/Program.h"
 
 class PixelBufferDescriptor;
@@ -27,6 +28,7 @@ namespace
 		const char* message,
 		const void* userParam)
 	{
+		ASSERT(0);
 		std::cout << message << std::endl;
 	}
 }
@@ -134,6 +136,7 @@ namespace RHI
 
 		virtual Handle<HwProgram> CreateProgram(Program&& program) override;
 		virtual Handle<HwTexture> CreateTexture(SamplerType target, uint8_t levels, Format format, uint8_t samples, uint32_t width, uint32_t height, uint32_t depth, TextureUsage usage) override;
+		virtual Handle<HwTexture> CreateTextureView(Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t levelCount) override;
 		virtual Handle<HwBufferObject> CreateBufferObject(size_t size, BufferObjectBinding target, BufferUsage usage) override;
 		virtual Handle<HwVertexBufferInfo> CreateVertexBufferInfo(size_t bufferCount, size_t attributeCount, AttributeArray attributes) override;
 		virtual Handle<HwVertexBuffer> CreateVertexBuffer(size_t vertexCount, Handle<HwVertexBufferInfo> info) override;
@@ -145,6 +148,7 @@ namespace RHI
 
 		virtual void CreateProgram(Handle<HwProgram> h, Program&& program) override;
 		virtual void CreateTexture(Handle<HwTexture> h, SamplerType target, uint8_t levels, Format format, uint8_t samples, uint32_t width, uint32_t height, uint32_t depth, TextureUsage usage) override;
+		virtual void CreateTextureView(Handle<HwTexture> h, Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t levelCount) override;
 		virtual void CreateBufferObject(Handle<HwBufferObject> h, size_t count, BufferObjectBinding target, BufferUsage usage) override;
 		virtual void CreateVertexBufferInfo(Handle<HwVertexBufferInfo> h, size_t bufferCount, size_t attributeCount, AttributeArray attributes) override;
 		virtual void CreateVertexBuffer(Handle<HwVertexBuffer> h, size_t vertexCount, Handle<HwVertexBufferInfo> info) override;
@@ -166,6 +170,9 @@ namespace RHI
 		virtual void DestroyDescriptorSetLayout(Handle<HwDescriptorSetLayout> h) override;
 
 		// Buffer data management
+		virtual void updateDescriptorSetBuffer(Handle<HwDescriptorSet> dsh, descriptor_binding_t binding, Handle<HwBufferObject> h, uint16_t offset, uint16_t size) override;
+		virtual void updateDescriptorSetTexture(Handle<HwDescriptorSet> dsh, descriptor_binding_t binding, Handle<HwTexture> h, SamplerParams& params) override;
+		virtual void bindDescriptorSet(Handle<HwDescriptorSet> h, uint8_t set) override;
 		virtual void updateBufferObject(Handle<HwBufferObject> boh, BufferDescriptor&& data, uint32_t byteOffset = 0) override;
 		virtual void setVertexBufferObject(Handle<HwVertexBuffer> vbh, uint8_t bufferSlot, Handle<HwBufferObject> boh) override;
 		virtual void setIndexBufferObject(Handle<HwIndexBuffer> ibh, Handle<HwBufferObject> boh) override;
@@ -178,8 +185,8 @@ namespace RHI
 		void generateMipmap(Handle<HwTexture> handle) override;
 
 		//
-		void beginRenderPass(Handle<HwRenderTarget> h, RenderPassParams& params);
-		void endRenderPass();
+		void beginRenderPass(Handle<HwRenderTarget> h, RenderPassParams& params) override;
+		void endRenderPass() override;
 
 		GLsizei getAttachments(AttachmentArray& attachments, TargetBufferFlags buffers, bool isDefaultFramebuffer) noexcept;
 

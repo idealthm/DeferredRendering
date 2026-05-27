@@ -5,6 +5,6 @@
         "normal": "TreeStump_Normal.png",
         "roughness": "TreeStump_Roughness.png",
         "metallic" : "TreeStump_Metallic.png",
-        "aO": "TreeStump_AO.png"
+        "ao": "TreeStump_AO.png"
     }
 }

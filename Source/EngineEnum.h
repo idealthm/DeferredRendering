@@ -30,7 +30,6 @@ enum class GBufferBindingPoint : uint8_t {
 	G_BUFFER_NORMAL = 1,
 	G_BUFFER_POSITION = 2,
 	G_BUFFER_MATERIAL = 3,
-	G_BUFFER_DEPTH = 4,
 };
 
 template <> struct EnableBitMaskOperators<DescriptorSetBindingPoints> : public std::true_type {};

@@ -5,9 +5,9 @@
 #include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
-#include "Renderer.h"
 #include "Common/Core.h"
 #include "Common/Math.h"
+#include "RenderContext.h"
 
 class Camera;
 class Actor;

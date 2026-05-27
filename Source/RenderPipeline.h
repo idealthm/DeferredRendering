@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 
 #include "Common/Core.h"
-#include "Renderer.h"
+#include "RenderContext.h"
 
 class LightingPass;
 class Scene;
@@ -18,16 +18,21 @@ struct FBAttachmentInfo;
 class RenderPipeline
 {
 public:
-	RenderPipeline();
-	~RenderPipeline() = default;
+	static RenderPipeline& Get();
+
+	void Init(uint32_t width, uint32_t height);
+	void Shutdown();
+	void OnWindowResize(int32_t width, int32_t height);
 
 	void Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize);
+
+	// Standalone pass — Setup → Attach → Execute
+	void StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass,
+	               const glm::u32vec2& viewportSize);
 
 	RenderContext& GetContext() { return m_Context; }
 
 private:
-	void StartPass(const Ref<Scene>& scene, const Ref<RenderPass>& renderPass, const glm::u32vec2& viewportSize);
-
 	RenderContext m_Context;
 
 	Ref<GBufferPass>    m_GBufferPass;

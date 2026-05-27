@@ -90,7 +90,7 @@ Ref<StaticMesh> StaticMesh::Create(const Asset& asset)
 		{
 			sections.push_back(CreateRef<MeshSection>(primitive,
 				static_cast<uint32_t>(part.offset),
-				static_cast<uint32_t>(part.count)));
+				static_cast<uint32_t>(part.count), part.mi));
 		}
 	}
 

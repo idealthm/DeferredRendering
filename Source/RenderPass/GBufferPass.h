@@ -2,8 +2,8 @@
 #include <memory>
 
 #include "RenderPass.h"
-#include "FrameBuffer/FrameBuffer.h"
 
+class RenderTarget;
 struct RenderContext;
 class FrameBuffer;
 
@@ -12,6 +12,9 @@ class GBufferPass : public RenderPass
 public:
 	GBufferPass();
 
-	void Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx) override;
-	virtual void Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx);
+	void Setup(RenderContext& ctx) override;
+	virtual void Execute(Ref<Scene> scene, RenderContext& ctx);
+
+private:
+	Ref<RenderTarget> m_RenderTarget;
 };

@@ -4,9 +4,9 @@
 #include "Material/Material.h"
 #include "RHI/VertexBuffer.h"
 
-UnitCube::UnitCube(const Ref<Material>& material)
+UnitCube::UnitCube()
 {
-	auto mesh = MeshBuilder::BuildCube(material);
+	auto mesh = MeshBuilder::BuildCube();
 	auto& section = mesh->GetMeshSections()[0];
 	m_RenderPrimitive = mesh->GetRenderPrimitive();
 	m_IndexOffset = section->GetIndexOffset();

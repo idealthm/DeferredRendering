@@ -101,8 +101,7 @@ static void TestBuildMaterialFromShader()
 	// Only MaterialParams is loaded
 	const auto& block = mat.GetUniformBlock();
 	CHECK(block.structName == "MaterialParams");
-	CHECK(block.binding == 0);
-	CHECK(block.fields.size() == 3);
+		CHECK(block.fields.size() == 3);
 
 	// Field lookup (flat, single block)
 	const auto* roughness = mat.FindField("roughness");

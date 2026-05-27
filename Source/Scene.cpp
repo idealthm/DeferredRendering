@@ -1,8 +1,5 @@
 ﻿#include "Scene.h"
 
-#include "Camera/Camera.h"
-#include "Renderer.h"
-#include "FrameBuffer/FrameBuffer.h"
 #include "Lights/Light.h"
 
 

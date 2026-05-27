@@ -88,7 +88,7 @@ static void EmitDefine(std::ostringstream& os, const std::string& name, const st
 // ============================================================
 // VertexAttribute -> GLSL mapping
 // ============================================================
-static const char* VertexAttributeToGLSLType(VertexAttribute attr)
+const char* VertexAttributeToGLSLType(VertexAttribute attr)
 {
     switch (attr)
     {
@@ -103,7 +103,7 @@ static const char* VertexAttributeToGLSLType(VertexAttribute attr)
     }
 }
 
-static const char* VertexAttributeToName(VertexAttribute attr)
+const char* VertexAttributeToName(VertexAttribute attr)
 {
     switch (attr)
     {
@@ -149,7 +149,7 @@ static const char* VertexAttributeToMacroName(VertexAttribute attr)
     }
 }
 
-static int VertexAttributeToLocation(VertexAttribute attr)
+int VertexAttributeToLocation(VertexAttribute attr)
 {
     return static_cast<int>(attr);
 }
@@ -206,7 +206,7 @@ void GenerateHeader(std::ostringstream& os, const MaterialSpec& spec)
     // --- Sampler uniforms (materialParams_<name>) ---
     // Start at 4 to avoid conflict with uniform blocks: MaterialParams(0),
     // FrameUniforms(1), ShadowUniforms(2), ObjectUniforms(3)
-    int samplerBinding = 4;
+    int samplerBinding = 0;
     bool hasSamplers = false;
     for (const auto& p : spec.properties)
     {

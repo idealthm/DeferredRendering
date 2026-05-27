@@ -6,7 +6,6 @@
 #include "Engine.h"
 #include "Layers/Layer.h"
 #include "RenderPipeline.h"
-#include "Renderer.h"
 #include "Events/ApplicationEvent.h"
 #include "Events/KeyEvent.h"
 #include "Model/StaticMesh.h"
@@ -41,7 +40,7 @@ Application::Application(const ApplicationSpecification& specification)
 
 	gEngine = new Engine();
 	gEngine->Init();
-	Renderer::Get().Init(SCR_WIDTH, SCR_HEIGHT);
+	RenderPipeline::Get().Init(SCR_WIDTH, SCR_HEIGHT);
 
 	m_ImGuiLayer = new ImGuiLayer();
 	PushLayer(new ImGuiLayer());
@@ -51,7 +50,7 @@ Application::Application(const ApplicationSpecification& specification)
 
 Application::~Application()
 {
-	Renderer::Get().Shutdown();  
+	RenderPipeline::Get().Shutdown();  
 }
 
 void Application::PushLayer(Layer* layer)
@@ -85,7 +84,7 @@ void Application::OnEvent(Event& e)
 	EventDispatcher dispatcher(e);
 	dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e )
 	{
-		auto& ctx = Renderer::Get().GetPipeline().GetContext();
+		auto& ctx = RenderPipeline::Get().GetContext();
 		switch (e.GetKeyCode())
 		{
 			case Key::Escape: m_Running = false; return true;
@@ -154,7 +153,7 @@ bool Application::OnWindowResize(WindowResizeEvent& e)
 	}
 
 	m_Minimized = false;
-	Renderer::Get().OnWindowResize(e.GetWidth(), e.GetHeight());
+	RenderPipeline::Get().OnWindowResize(e.GetWidth(), e.GetHeight());
 
 	for (auto& layer : m_LayerStack)
 	{

@@ -5,7 +5,7 @@
 
 ScreenQuad::ScreenQuad()
 {
-	auto mesh = MeshBuilder::BuildQuad(nullptr);
+	auto mesh = MeshBuilder::BuildQuad();
 	auto& section = mesh->GetMeshSections()[0];
 	m_RenderPrimitive = mesh->GetRenderPrimitive();
 	m_IndexOffset = section->GetIndexOffset();

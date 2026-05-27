@@ -3,8 +3,6 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
-#include "Renderer.h"
-#include "FrameBuffer/FrameBuffer.h"
 #include "Shader/Program.h"
 
 #define MAX_MIPMAP_LEVEL 5
@@ -14,7 +12,7 @@ EnvPreFilter::EnvPreFilter()
 {
 	m_Desc.Width = ENV_CUBE_SIZE;
 	m_Desc.Height = ENV_CUBE_SIZE;
-	m_Desc.MipLevels = MAX_MIPMAP_LEVEL;
+	m_Desc.LevelCount = MAX_MIPMAP_LEVEL;
 	m_Desc.Format = RHI::Format::RGBA16F;
 	m_Desc.Target = RHI::SamplerType::SAMPLER_CUBEMAP;
 }
@@ -24,23 +22,12 @@ uint32_t EnvPreFilter::GetRenderTimes()
 	return 6 * MAX_MIPMAP_LEVEL;
 }
 
-void EnvPreFilter::Setup(FBAttachmentInfo& info, uint32_t step, RenderContext& ctx)
+void EnvPreFilter::Setup(RenderContext& ctx)
 {
-	uint32_t mip = step % MAX_MIPMAP_LEVEL;
-	step /= MAX_MIPMAP_LEVEL;
-
-	info.Width = ENV_CUBE_SIZE >> mip;
-	info.Height = ENV_CUBE_SIZE >> mip;
-
 	CreateResource<Texture>(ctx.IBL_PreFilterMap, m_Desc);
-	ETextureTarget target = (ETextureTarget)((uint32_t)ETextureTarget::Positive_X + step);
-
-	info.Attachments = {
-		// {ctx.IBL_PreFilterMap->GetRendererID(), target, FBTextureLoadAction::Load, FBTextureStoreAction::Store, mip}
-	};
 }
 
-void EnvPreFilter::Execute(Ref<Scene> scene, uint32_t step, RenderContext& ctx)
+void EnvPreFilter::Execute(Ref<Scene> scene, RenderContext& ctx)
 {
 	// 投影矩阵：90度 FOV，1:1 宽高比
 	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);

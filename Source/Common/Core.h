@@ -29,8 +29,7 @@ constexpr auto CreateScope(Args&& ... args)
 #define UTILS_UNLIKELY(x) (x)
 #endif
 
-void GLClearError();
-bool GLLogCall(const char* function, const char* file, int line);
+#include <iostream>
 
 #ifdef DR_DEBUG
 #define GL_CALL_DEBUG_HEAD		GLClearError();
