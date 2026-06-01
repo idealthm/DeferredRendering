@@ -138,7 +138,7 @@ public:
 	virtual Handle<HwTexture> CreateTexture(SamplerType target, uint8_t levels, Format format, uint8_t samples, uint32_t width, uint32_t height, uint32_t depth, TextureUsage usage) = 0;
 	virtual Handle<HwTexture> CreateTextureView(Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t maxLevel) = 0;
 	virtual Handle<HwBufferObject> CreateBufferObject(size_t size, BufferObjectBinding target, BufferUsage usage) = 0;
-	virtual Handle<HwVertexBufferInfo> CreateVertexBufferInfo(size_t bufferCount, size_t attributeCount, AttributeArray) = 0;
+	virtual Handle<HwVertexBufferInfo> CreateVertexBufferInfo(size_t bufferCount, size_t attributeCount, const AttributeArray&) = 0;
 	virtual Handle<HwVertexBuffer> CreateVertexBuffer(size_t vertexCount, Handle<HwVertexBufferInfo> info) = 0;
 	virtual Handle<HwIndexBuffer> CreateIndexBuffer(ElementType type, size_t indexCount, BufferUsage usage) = 0;
 	virtual Handle<HwRenderPrimitive> CreateRenderPrimitive(Handle<HwVertexBuffer> vbh, Handle<HwIndexBuffer> ibh, PrimitiveType type) = 0;
@@ -151,7 +151,7 @@ public:
 	virtual void CreateTexture(Handle<HwTexture>, SamplerType target, uint8_t levels, Format format, uint8_t samples, uint32_t width, uint32_t height, uint32_t depth, TextureUsage usage)  = 0;
 	virtual void CreateTextureView(Handle<HwTexture> h, Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t maxLevel) = 0;
 	virtual void CreateBufferObject(Handle<HwBufferObject>, size_t size, BufferObjectBinding target, BufferUsage usage)  = 0;
-	virtual void CreateVertexBufferInfo(Handle<HwVertexBufferInfo>, size_t bufferCount, size_t attributeCount, AttributeArray attributes) = 0;
+	virtual void CreateVertexBufferInfo(Handle<HwVertexBufferInfo>, size_t bufferCount, size_t attributeCount, const AttributeArray& attributes) = 0;
 	virtual void CreateVertexBuffer(Handle<HwVertexBuffer>, size_t vertexCount, Handle<HwVertexBufferInfo> info)  = 0;
 	virtual void CreateIndexBuffer(Handle<HwIndexBuffer>, ElementType type, size_t indexCount, BufferUsage usage)  = 0;
 	virtual void CreateRenderPrimitive(Handle<HwRenderPrimitive>, Handle<HwVertexBuffer> vbh, Handle<HwIndexBuffer> ibh, PrimitiveType type)  = 0;
@@ -189,6 +189,7 @@ public:
 	virtual void Init() = 0;
 
 	virtual void generateMipmap(Handle<HwTexture> handle) = 0;
+	virtual uint32_t GetNativeTextureId(Handle<HwTexture> h) const = 0;
 };
 
 } // namespace RHI

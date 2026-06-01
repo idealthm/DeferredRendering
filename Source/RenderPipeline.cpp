@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 
 #include "Engine.h"
+#include "EngineEnum.h"
 #include "Scene.h"
 #include "Lights/Light.h"
 #include "Model/Texture.h"
@@ -36,6 +37,8 @@ void RenderPipeline::Init(uint32_t width, uint32_t height)
 	GDefaultTextures.Gray   = defaultTexBuilder.Build();
 	GDefaultTextures.Normal = defaultTexBuilder.Build();
 
+	m_PerViewDescriptorSet = DescriptorSet(gEngine->GetPerViewSetLayout());
+
 	m_GBufferPass    = CreateRef<GBufferPass>();
 	m_ShadowPass     = CreateRef<ShadowPass>();
 	m_LightPass      = CreateRef<LightingPass>();
@@ -64,6 +67,25 @@ void RenderPipeline::OnWindowResize(int32_t width, int32_t height)
 
 void RenderPipeline::Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize)
 {
+	auto& driver = gEngine->GetDriver();
+
+	// PerView UBO — once per frame
+	if (m_Context.FrameDataUB.isDirty())
+	{
+		if (!m_Context.FrameDataHandle)
+		{
+			m_Context.FrameDataHandle = driver.CreateBufferObject(m_Context.FrameDataUB.getSize(),
+				RHI::BufferObjectBinding::UNIFORM, RHI::BufferUsage::DYNAMIC);
+		}
+		driver.updateBufferObject(m_Context.FrameDataHandle, m_Context.FrameDataUB.toBufferDescriptor(driver));
+
+		m_PerViewDescriptorSet.SetBuffer(+PerViewBindingPoints::FRAME_UNIFORM, m_Context.FrameDataHandle,
+			0, m_Context.FrameDataUB.getSize());
+		m_Context.FrameDataUB.clean();
+	}
+	m_PerViewDescriptorSet.commit(driver, gEngine->GetPerViewSetLayout());
+	m_PerViewDescriptorSet.bind(driver, DescriptorSetBindingPoints::PER_VIEW);
+
 	StartPass(scene, m_GBufferPass, viewportSize);
 	// StartPass(scene, m_ShadowPass, viewportSize);
 	// StartPass(scene, m_LightPass, viewportSize);

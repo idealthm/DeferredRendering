@@ -14,14 +14,20 @@ class UniformBuffer
 {
 public:
 	UniformBuffer() = default;
+	~UniformBuffer();
 	explicit UniformBuffer(size_t size);
+
+	UniformBuffer(UniformBuffer&& rhs) noexcept;
+	UniformBuffer& operator=(UniformBuffer&& rhs) noexcept;
+
+	bool isLocalStorage() const;
 
 	// Typed access by field name
 	template<typename T>
 	bool SetValue(uint16_t offset, const T& value);
 
 	template<typename T>
-	bool GetValue(uint16_t offset, T& outValue) const;
+	T GetValue(uint16_t offset) const;
 
 	uint32_t GetSize() const { return m_BlockSize; }
 
@@ -41,13 +47,13 @@ public:
 		p.buffer = malloc(p.size); // TODO: use out-of-line buffer if too large
 		memcpy(p.buffer, reinterpret_cast<const char*>(m_Buffer) + offset, p.size); // inlined
 		m_Dirty = true;
-		p.setCallback([](void* buffer, size_t size, void* user){free(buffer);}, nullptr);
+		p.setCallback((BufferDescriptor::Callback)::free, nullptr);
 		return p;
 	}
 
 private:
 	char m_Storage[96];
-	void* m_Buffer;
+	void* m_Buffer = m_Storage;
 	uint32_t m_BlockSize = 0;
 	mutable bool m_Dirty = false;
 };
@@ -55,13 +61,12 @@ private:
 template<typename T>
 bool UniformBuffer::SetValue(uint16_t offset, const T& value)
 {
-	std::memcpy(m_Buffer + offset, &value, sizeof(T));
+	std::memcpy(static_cast<char*>(m_Buffer) + offset, &value, sizeof(T));
 	return m_Dirty = true;
 }
 
 template<typename T>
-bool UniformBuffer::GetValue(uint16_t offset, T& outValue) const
+T UniformBuffer::GetValue(uint16_t offset) const
 {
-	std::memcpy(&outValue, m_Buffer + offset, sizeof(T));
-	return true;
+	return *reinterpret_cast<T const*>(static_cast<char const*>(m_Buffer) + offset);
 }

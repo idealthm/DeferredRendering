@@ -356,7 +356,7 @@ void OpenGLContext::disableVertexAttribArray(RenderPrimitive const* rp, GLuint i
 
 void OpenGLContext::enable(GLenum cap) noexcept {
     size_t const index = getIndexForCap(cap);
-    if (!state.enables.caps & (1 << index)) {
+    if (!(state.enables.caps & (1 << index))) {
         state.enables.caps |= (1 << index);
         glEnable(cap);
     }

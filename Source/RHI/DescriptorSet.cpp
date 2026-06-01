@@ -1,8 +1,17 @@
 #include "DescriptorSet.h"
 
 #include "DescriptorSetLayout.h"
+#include "Engine.h"
 #include "RHIDriver.h"
 #include "EngineEnum.h"
+
+DescriptorSet::~DescriptorSet()
+{
+	if (handle)
+	{
+		gEngine->GetDriver().DestroyDescriptorSet(handle);
+	}
+}
 
 void DescriptorSet::commit(RHI::RHIDriver& driver, const DescriptorSetLayout& layout)
 {
@@ -10,7 +19,7 @@ void DescriptorSet::commit(RHI::RHIDriver& driver, const DescriptorSetLayout& la
 	{
 		return;
 	}
-	
+
 	dirty.clear();
 
 	if (handle)
@@ -36,8 +45,7 @@ void DescriptorSet::commit(RHI::RHIDriver& driver, const DescriptorSetLayout& la
 
 void DescriptorSet::SetBuffer(descriptor_binding_t binding, Handle<RHI::HwBufferObject> h, uint32_t offset, uint32_t size)
 {
-	if (descriptors[binding].buffer.handle != h || descriptors[binding].buffer.size != size) {
-		// we don't set the dirty bit if only offset changes
+	if (descriptors[binding].buffer.handle != h || descriptors[binding].buffer.size != size || descriptors[binding].buffer.offset != offset) {
 		dirty.set(binding);
 	}
 

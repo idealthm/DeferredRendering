@@ -2,48 +2,87 @@
 #include "Common/Core.h"
 #include "Common/Handle.h"
 #include "DriverEnums.h"
+#include "BufferDescriptor.h"
 #include "BufferLayout.h"
+#include "Common/Utils.h"
+#include "Common/Material/MaterialCommon.h"
+#include "Common/Utils/Bitset.h"
+
+namespace RHI
+{
+	class RHIDriver;
+}
 
 namespace RHI
 {
 
-struct VertexBufferDesc
-{
-	size_t vertexCount = 0;
-	std::vector<BufferLayout> bufferLayouts;
-	BufferUsage usage = BufferUsage::STATIC;
+using AttributeBitset = Util::bitset32;
+	
+struct VertexBufferDesc {
+	struct AttributeData : Attribute {
+		AttributeData() { type = ElementType::FLOAT4; 
+			static_assert(sizeof(Attribute) == sizeof(AttributeData),
+					"Attribute and Builder::Attribute must match");
+		}
+	};
+	std::string mName;
+	AttributeArray mAttributes{};
+	AttributeBitset mDeclaredAttributes;
+	uint32_t mVertexCount = 0;
+	uint8_t mBufferCount = 0;
+	bool mBufferObjectsEnabled = false;
 };
 
 class VertexBuffer
 {
 public:
-	class Builder
-	{
-	public:
-		Builder& SetVertexCount(size_t c)           { m_Desc.vertexCount = c; return *this; }
-		Builder& AddBufferLayout(const BufferLayout& l) { m_Desc.bufferLayouts.push_back(l); return *this; }
-		Builder& SetUsage(BufferUsage u)            { m_Desc.usage = u; return *this; }
-		Ref<VertexBuffer> Build() { return CreateRef<VertexBuffer>(m_Desc); }
 
-	private:
-		VertexBufferDesc m_Desc{};
-	};
+	class Builder {
+        friend struct VertexBufferDesc;
+    public:
+        Builder() noexcept = default;
+        Builder(Builder const& rhs) noexcept = default;
+        Builder(Builder&& rhs) noexcept = default;
+        ~Builder() noexcept = default;
+        Builder& operator=(Builder const& rhs) noexcept = default;
+        Builder& operator=(Builder&& rhs) noexcept = default;
 
-	VertexBuffer(const VertexBufferDesc& desc);
+        Builder& bufferCount(uint8_t bufferCount) noexcept;
+
+        Builder& vertexCount(uint32_t vertexCount) noexcept;
+
+        Builder& enableBufferObjects(bool enabled = true) noexcept;
+
+        Builder& attribute(VertexAttribute attribute, uint8_t bufferIndex,
+                ElementType attributeType,
+                uint32_t byteOffset = 0, uint8_t byteStride = 0) noexcept;
+
+        Builder& normalized(VertexAttribute attribute, bool normalize = true) noexcept;
+
+        Builder& name(const std::string& name) noexcept;
+
+        Ref<VertexBuffer> build(RHIDriver& driver);
+
+    private:
+		VertexBufferDesc m_Desc;
+        friend class VertexBuffer;
+    };
+
+	VertexBuffer(RHIDriver& driver, Builder&& builder);
 	virtual ~VertexBuffer();
 
 	bool IsValid() const { return !!m_Handle; }
 	Handle<HwVertexBuffer> GetHandle() const { return m_Handle; }
 	Handle<HwVertexBufferInfo> GetVertexBufferInfoHandle() const { return m_VBIHandle; }
+	void setBufferAt(RHIDriver& driver, uint8_t bufferIndex, BufferDescriptor&& buffer, uint32_t byteOffset = 0);
+	void setBufferObjectAt(RHIDriver& driver, uint8_t bufferIndex, Handle<RHI::HwBufferObject> bufferObject);
 	const VertexBufferDesc& GetDesc() const { return m_Desc; }
 
-	void SetData(uint8_t bufferSlot, const void* data, size_t size);
-
 private:
+	VertexBufferDesc m_Desc;
 	Handle<HwVertexBuffer> m_Handle;
 	Handle<HwVertexBufferInfo> m_VBIHandle;
-	VertexBufferDesc m_Desc;
-	std::vector<Handle<HwBufferObject>> m_BufferObjects;
+	std::array<Handle<RHI::HwBufferObject>, MAX_VERTEX_BUFFER_COUNT> m_BufferObjects;
 };
 
 } // namespace RHI

@@ -63,7 +63,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>DR_DEBUG;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>Default</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)vendor\includes\glad;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Include;$(ProjectDir)vendor\includes\glad;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:static_assert- /FS %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessToFile>false</PreprocessToFile>
@@ -99,7 +99,7 @@ endlocal</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)vendor\includes\glad;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Include;$(ProjectDir)vendor\includes\glad;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:static_assert- /FS</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <SupportJustMyCode>false</SupportJustMyCode>
@@ -131,6 +131,8 @@ endlocal</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Include\BufferInterfaceBlock.h" />
+    <ClInclude Include="Include\SamplerInterfaceBlock.h" />
     <ClInclude Include="Shaders\Passes\ERPToCubeMap.frag.glsl" />
     <ClInclude Include="Source\Actor.h" />
     <ClInclude Include="Source\Assimp\Util.h" />
@@ -158,6 +160,7 @@ endlocal</Command>
     <ClInclude Include="Source\Component\SkyComponent.h" />
     <ClInclude Include="Source\Delegates\DelegateBase.h" />
     <ClInclude Include="Source\DescriptorSetLayout.h" />
+    <ClInclude Include="Source\DescriptorSets.h" />
     <ClInclude Include="Source\EngineEnum.h" />
     <ClInclude Include="Source\Events\ApplicationEvent.h" />
     <ClInclude Include="Source\Events\Event.h" />
@@ -226,6 +229,7 @@ endlocal</Command>
     <ClInclude Include="Source\UibStruct.h" />
     <ClInclude Include="Source\UnifromBuffer\ParamBuffer.h" />
     <ClInclude Include="Source\UnifromBuffer\UniformBuffer.h" />
+    <ClInclude Include="Source\View.h" />
     <ClInclude Include="Source\Windows\Window.h" />
     <ClInclude Include="vendor\includes\assimp\aabb.h" />
     <ClInclude Include="vendor\includes\assimp\ai_assert.h" />
@@ -397,6 +401,8 @@ endlocal</Command>
     <ClInclude Include="vendor\includes\nlohmann\thirdparty\hedley\hedley_undef.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Include\BufferInterfaceBlock.cpp" />
+    <ClCompile Include="Include\SamplerInterfaceBlock.cpp" />
     <ClCompile Include="Source\Actor.cpp" />
     <ClCompile Include="Source\Assimp\Util.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -489,6 +495,7 @@ endlocal</Command>
     <ClCompile Include="Source\Component\SkyComponent.cpp" />
     <ClCompile Include="Source\Delegates\DelegateBase.cpp" />
     <ClCompile Include="Source\DescriptorSetLayout.cpp" />
+    <ClCompile Include="Source\DescriptorSets.cpp" />
     <ClCompile Include="Source\Events\Input.cpp" />
     <ClCompile Include="Source\glad.c" />
     <ClCompile Include="Source\GraphicContext.cpp" />
@@ -548,6 +555,7 @@ endlocal</Command>
     <ClCompile Include="Source\UibStruct.cpp" />
     <ClCompile Include="Source\UnifromBuffer\ParamBuffer.cpp" />
     <ClCompile Include="Source\UnifromBuffer\UniformBuffer.cpp" />
+    <ClCompile Include="Source\View.cpp" />
     <ClCompile Include="Source\Windows\Window.cpp" />
     <ClCompile Include="vendor\includes\ImGui\GraphEditor.cpp" />
     <ClCompile Include="vendor\includes\ImGui\ImCurveEdit.cpp" />
@@ -706,7 +714,6 @@ endlocal</Command>
     <Content Include="Assets\textures\toy_box_normal.png" />
     <Content Include="Assets\textures\window.png" />
     <Content Include="Assets\textures\wood.png" />
-    <Content Include="Material\Lit.mat" />
     <Content Include="Material\Model.mat" />
     <Content Include="Material\Shape.mat" />
     <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_AmbientOcclusion.jpg" />
@@ -740,19 +747,25 @@ endlocal</Command>
     <Content Include="Shaders\PBR\Lights.glsl" />
     <Content Include="Shaders\ShadowPass.frag.glsl" />
     <Content Include="Shaders\ShadowPass.vert.glsl" />
+    <Content Include="Source\Common\glmHelper.h" />
     <Content Include="Source\RHI\DriverEnums.h" />
     <Content Include="Source\RHI\GL\GLDescriptorSet.h" />
     <Content Include="Source\RHI\GL\GLDescriptorSetLayout.h" />
     <Content Include="Template\common_defines.glsl" />
+    <Content Include="Template\common_getter.glsl" />
+    <Content Include="Template\common_math.glsl" />
+    <Content Include="Template\common_shading.glsl" />
     <Content Include="Template\surface_builtins.glsl" />
     <Content Include="Template\surface_deferred_main.fs" />
     <Content Include="Template\surface_deferred_main.vs" />
     <Content Include="Template\surface_getters.fs" />
     <Content Include="Template\surface_getters.vs" />
     <Content Include="Template\surface_forward_main.fs" />
+    <Content Include="Template\surface_instancing.glsl" />
     <Content Include="Template\surface_material_input.fs" />
     <Content Include="Template\surface_material_input.vs" />
     <Content Include="Template\surface_forward_main.vs" />
+    <Content Include="Template\surface_types.glsl" />
     <Content Include="Template\surface_varying.glsl" />
     <Content Include="vendor\includes\assimp\.editorconfig" />
     <Content Include="vendor\includes\assimp\config.h.in" />
@@ -761,6 +774,7 @@ endlocal</Command>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Template\surface_shading_lit.fs" />
+    <Compile Include="Template\surface_shading_parameters.fs" />
     <Compile Include="Template\surface_shading_unlit.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -2,12 +2,15 @@
 
 #include "RHI/RenderPrimitive.h"
 
+class StaticMesh;
 class MaterialInstance;
 
 class MeshSection {
 public:
 	MeshSection(const Ref<RHI::RenderPrimitive>& primitive, uint32_t indexOffset, uint32_t indexCount,
 	            Ref<MaterialInstance> material = nullptr);
+
+	void SetOwnerMesh(StaticMesh* mesh);
 
 	void SetMaterial(const Ref<MaterialInstance>& material);
 	Ref<MaterialInstance> GetMaterial();
@@ -20,8 +23,10 @@ public:
 	RHI::PrimitiveType GetPrimitiveType() const;
 
 private:
+	StaticMesh*			m_OwnerMesh;
+
 	Ref<RHI::RenderPrimitive> m_RenderPrimitive;
 	uint32_t                  m_IndexOffset;
 	uint32_t                  m_IndexCount;
-	Ref<MaterialInstance>     m_Material;
+	Ref<MaterialInstance>     m_MaterialOverride;
 };

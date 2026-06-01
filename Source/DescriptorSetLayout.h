@@ -19,7 +19,7 @@ public:
 	DescriptorSetLayout() noexcept = default;
 	DescriptorSetLayout(
 			RHI::RHIDriver& driver,
-			RHI::DescriptorSetLayout&& descriptorSetLayout) noexcept;
+			RHI::DescriptorSetLayout descriptorSetLayout) noexcept;
 	~DescriptorSetLayout() noexcept;
 
 	DescriptorSetLayout(DescriptorSetLayout const&) = delete;

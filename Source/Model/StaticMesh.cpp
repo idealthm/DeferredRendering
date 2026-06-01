@@ -1,88 +1,94 @@
 #include "StaticMesh.h"
 
+#include <utility>
+
+#include "Engine.h"
 #include "Texture.h"
+#include "RHI/BufferDescriptor.h"
 #include "RHI/VertexBuffer.h"
 #include "RHI/IndexBuffer.h"
 #include "RHI/RenderPrimitive.h"
 #include "RHI/BufferLayout.h"
 
-StaticMesh::StaticMesh(const StaticMeshDesc& desc, std::vector<Ref<MeshSection>> sections,
-                       Ref<RHI::RenderPrimitive> primitive, Ref<RHI::VertexBuffer> vb, Ref<RHI::IndexBuffer> ibo)
-	: m_Desc(desc), m_LoadedMeshes(std::move(sections)),
-	  m_RenderPrimitive(std::move(primitive)), m_VertexBuffer(std::move(vb)), m_IndexBuffer(std::move(ibo))
+StaticMesh::StaticMesh(const StaticMeshDesc& desc, std::vector<Ref<MeshSection>> sections, const Ref<MaterialInstance>& mi)
+	: m_Desc(desc), m_LoadedMeshes(std::move(sections)), m_Material(mi)
 {
+	for (auto& section : m_LoadedMeshes)
+	{
+		section->SetOwnerMesh(this);
+	}
 }
 
-Ref<StaticMesh> StaticMesh::Create(const Asset& asset)
+Ref<StaticMesh> StaticMesh::Create(const Asset& asset, const Ref<MaterialInstance>& mi)
 {
 	using namespace RHI;
 
-	// 1. Build BufferLayout descriptions for each attribute stream
-	std::vector<BufferLayout> layouts;
+	auto& driver = gEngine->GetDriver();
+	uint32_t const vertexCount = static_cast<uint32_t>(asset.positions.size());
+	uint8_t bufferIdx = 0;
 
-	// Slot 0: Positions (Float4)
-	layouts.push_back(BufferLayout{{ ShaderDataType::Float4, "aPosition" }});
+	// 1. Build VertexBuffer
+	VertexBuffer::Builder vbBuilder;
+	vbBuilder.vertexCount(vertexCount);
 
-	// Slot 1: Normals (Float4)
-	layouts.push_back(BufferLayout{{ ShaderDataType::Float4, "aNormal" }});
+	// Buffer 0: Positions
+	vbBuilder.attribute(VertexAttribute::POSITION, bufferIdx, ElementType::FLOAT4);
+	vbBuilder.bufferCount(++bufferIdx);
 
-	// Slot 2: Tangents (Float4)
-	layouts.push_back(BufferLayout{{ ShaderDataType::Float4, "aTangent" }});
+	// Buffer 1: Tangents (quaternion-encoded TBN frame)
+	vbBuilder.attribute(VertexAttribute::TANGENTS, bufferIdx, ElementType::FLOAT4);
+	vbBuilder.bufferCount(++bufferIdx);
 
-	// Slot 3: TexCoords0 (UShort2, potentially normalized)
+	// Buffer 2: TexCoords0
 	if (!asset.texCoords0.empty())
 	{
-		layouts.push_back(BufferLayout{{ ShaderDataType::UShort2, "aTexCoord0", asset.snormUV0 }});
+		vbBuilder.attribute(VertexAttribute::UV0, bufferIdx, ElementType::USHORT2);
+		vbBuilder.normalized(VertexAttribute::UV0, asset.snormUV0);
+		vbBuilder.bufferCount(++bufferIdx);
 	}
 
-	// Slot 4: TexCoords1 (UShort2, potentially normalized)
+	// Buffer 3: TexCoords1
 	if (!asset.texCoords1.empty())
 	{
-		layouts.push_back(BufferLayout{{ ShaderDataType::UShort2, "aTexCoord1", asset.snormUV1 }});
+		vbBuilder.attribute(VertexAttribute::UV1, bufferIdx, ElementType::USHORT2);
+		vbBuilder.normalized(VertexAttribute::UV1, asset.snormUV1);
+		vbBuilder.bufferCount(++bufferIdx);
 	}
 
-	// 2. Create VertexBuffer with all buffer layouts
-	VertexBufferDesc vbDesc;
-	vbDesc.vertexCount = asset.positions.size();
-	vbDesc.bufferLayouts = std::move(layouts);
-	auto vb = CreateRef<VertexBuffer>(vbDesc);
+	auto vb = vbBuilder.build(driver);
 
-	// 3. Upload vertex data per buffer slot
-	vb->SetData(0, asset.positions.data(),
-	            asset.positions.size() * sizeof(glm::vec4));
-	vb->SetData(1, asset.normals.data(),
-	            asset.normals.size() * sizeof(glm::vec4));
-	vb->SetData(2, asset.tangents.data(),
-	            asset.tangents.size() * sizeof(glm::vec4));
-
-	uint8_t nextSlot = 3;
+	// 2. Upload vertex data
+	bufferIdx = 0;
+	vb->setBufferAt(driver, bufferIdx++,
+		BufferDescriptor(asset.positions.data(), vertexCount * sizeof(glm::vec4)));
+	vb->setBufferAt(driver, bufferIdx++,
+		BufferDescriptor(asset.tangents.data(), vertexCount * sizeof(glm::vec4)));
 	if (!asset.texCoords0.empty())
 	{
-		vb->SetData(nextSlot++, asset.texCoords0.data(),
-		            asset.texCoords0.size() * sizeof(glm::u16vec2));
+		vb->setBufferAt(driver, bufferIdx++,
+			BufferDescriptor(asset.texCoords0.data(), vertexCount * sizeof(glm::u16vec2)));
 	}
 	if (!asset.texCoords1.empty())
 	{
-		vb->SetData(nextSlot++, asset.texCoords1.data(),
-		            asset.texCoords1.size() * sizeof(glm::u16vec2));
+		vb->setBufferAt(driver, bufferIdx++,
+			BufferDescriptor(asset.texCoords1.data(), vertexCount * sizeof(glm::u16vec2)));
 	}
 
-	// 4. Create IndexBuffer
+	// 3. Create IndexBuffer
 	IndexBufferDesc ibDesc;
 	ibDesc.elementType = ElementType::UINT;
 	ibDesc.indexCount = asset.indices.size();
 	auto ibo = CreateRef<IndexBuffer>(ibDesc);
-	ibo->SetData(asset.indices.data(),
-	             asset.indices.size() * sizeof(uint32_t));
+	ibo->SetData(asset.indices.data(), asset.indices.size() * sizeof(uint32_t));
 
-	// 5. Create RenderPrimitive
+	// 4. Create RenderPrimitive
 	RenderPrimitiveDesc rpDesc;
 	rpDesc.vertexBuffer = vb;
 	rpDesc.indexBuffer = ibo;
 	rpDesc.primitiveType = PrimitiveType::TRIANGLES;
 	auto primitive = CreateRef<RenderPrimitive>(rpDesc);
 
-	// 6. Build MeshSections from Asset parts
+	// 5. Build MeshSections from Asset parts
 	std::vector<Ref<MeshSection>> sections;
 	for (const auto& mesh : asset.meshes)
 	{
@@ -94,6 +100,20 @@ Ref<StaticMesh> StaticMesh::Create(const Asset& asset)
 		}
 	}
 
-	return CreateRef<StaticMesh>(StaticMeshDesc{asset.file}, std::move(sections),
-	                             std::move(primitive), std::move(vb), std::move(ibo));
+	StaticMeshDesc desc;
+	desc.ibo = ibo;
+	desc.primitive = primitive;
+	desc.vb = vb;
+
+	return CreateRef<StaticMesh>(desc, std::move(sections), mi);
+}
+
+void StaticMesh::SetMaterialInstance(Ref<MaterialInstance> instance)
+{
+	m_Material = std::move(instance);
+}
+
+Ref<MaterialInstance> StaticMesh::GetMaterial()
+{
+	return m_Material;
 }

@@ -18,6 +18,5 @@ public:
 
 private:
 	Ref<Program>			m_Shader;
-	UnitCube			m_UnitCube;
 	Ref<Texture>		m_HDRMap;
 };

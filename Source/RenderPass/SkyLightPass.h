@@ -11,5 +11,4 @@ public:
 	void Execute(Ref<Scene> scene, RenderContext& ctx) override;
 
 private:
-	UnitCube	m_UnitCube;
 };

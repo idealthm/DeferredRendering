@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 
 #include "Common/Core.h"
+#include "RHI/DescriptorSet.h"
 #include "RenderContext.h"
 
 class LightingPass;
@@ -34,6 +35,7 @@ public:
 
 private:
 	RenderContext m_Context;
+	DescriptorSet m_PerViewDescriptorSet;
 
 	Ref<GBufferPass>    m_GBufferPass;
 	Ref<ShadowPass>     m_ShadowPass;

@@ -41,7 +41,7 @@ namespace Util
             for (auto& [typeStr, fileName] : data["textures"].items()) {
                 std::string texPath = directory + "/" + std::string(fileName);
 				Ref<Texture> texture = LoadTexture(texPath, typeStr == "albedo", true);
-                mi->SetParameter(typeStr, texture, TextureSampler::LinearClamp());
+                mi->SetParameter(typeStr, texture, TextureSampler::LinearMipmapRepeat());
             }
         }
 
@@ -153,7 +153,6 @@ namespace Util
             Part part;
             part.offset = baseIndex;
             part.count = 0;
-            part.mi = material;
             for (unsigned int i = 0; i < aiMesh->mNumFaces; i++)
                 part.count += aiMesh->mFaces[i].mNumIndices;
             meshEntry.parts.push_back(part);
@@ -163,7 +162,7 @@ namespace Util
         asset.snormUV0 = !asset.texCoords0.empty();
         asset.snormUV1 = !asset.texCoords1.empty();
 
-        return StaticMesh::Create(asset);
+        return StaticMesh::Create(asset, material);
     }
 
 	Ref<Texture> LoadTexture(const std::string& filepath, bool srgb, bool generateMipmap)

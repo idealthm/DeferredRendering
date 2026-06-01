@@ -115,13 +115,13 @@ namespace RHI
 
 		template<typename Dp, typename B>
 		std::enable_if_t< std::is_pointer_v<Dp> && std::is_base_of_v<B, std::remove_pointer_t<Dp>>, Dp>
-		handle_cast(Handle<B>& handle) {
+		handle_cast(Handle<B>& handle) const {
 			return m_HandleAllocator.handle_cast<Dp, B>(handle);
 		}
 
 		template<typename Dp, typename B>
 		std::enable_if_t< std::is_pointer_v<Dp> && std::is_base_of_v<B, std::remove_pointer_t<Dp>>, Dp>
-		handle_cast(Handle<B> const& handle) {
+		handle_cast(Handle<B> const& handle) const {
 			return m_HandleAllocator.handle_cast<Dp, B>(handle);
 		}
 
@@ -138,7 +138,7 @@ namespace RHI
 		virtual Handle<HwTexture> CreateTexture(SamplerType target, uint8_t levels, Format format, uint8_t samples, uint32_t width, uint32_t height, uint32_t depth, TextureUsage usage) override;
 		virtual Handle<HwTexture> CreateTextureView(Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t levelCount) override;
 		virtual Handle<HwBufferObject> CreateBufferObject(size_t size, BufferObjectBinding target, BufferUsage usage) override;
-		virtual Handle<HwVertexBufferInfo> CreateVertexBufferInfo(size_t bufferCount, size_t attributeCount, AttributeArray attributes) override;
+		virtual Handle<HwVertexBufferInfo> CreateVertexBufferInfo(size_t bufferCount, size_t attributeCount, const AttributeArray& attributes) override;
 		virtual Handle<HwVertexBuffer> CreateVertexBuffer(size_t vertexCount, Handle<HwVertexBufferInfo> info) override;
 		virtual Handle<HwIndexBuffer> CreateIndexBuffer(ElementType type, size_t indexCount, BufferUsage usage) override;
 		virtual Handle<HwRenderPrimitive> CreateRenderPrimitive(Handle<HwVertexBuffer> vbh, Handle<HwIndexBuffer> ibh, PrimitiveType type) override;
@@ -150,7 +150,7 @@ namespace RHI
 		virtual void CreateTexture(Handle<HwTexture> h, SamplerType target, uint8_t levels, Format format, uint8_t samples, uint32_t width, uint32_t height, uint32_t depth, TextureUsage usage) override;
 		virtual void CreateTextureView(Handle<HwTexture> h, Handle<HwTexture> srcth, uint8_t baseLevel, uint8_t levelCount) override;
 		virtual void CreateBufferObject(Handle<HwBufferObject> h, size_t count, BufferObjectBinding target, BufferUsage usage) override;
-		virtual void CreateVertexBufferInfo(Handle<HwVertexBufferInfo> h, size_t bufferCount, size_t attributeCount, AttributeArray attributes) override;
+		virtual void CreateVertexBufferInfo(Handle<HwVertexBufferInfo> h, size_t bufferCount, size_t attributeCount, const AttributeArray& attributes) override;
 		virtual void CreateVertexBuffer(Handle<HwVertexBuffer> h, size_t vertexCount, Handle<HwVertexBufferInfo> info) override;
 		virtual void CreateIndexBuffer(Handle<HwIndexBuffer> h, ElementType type, size_t indexCount, BufferUsage usage) override;
 		virtual void CreateRenderPrimitive(Handle<HwRenderPrimitive> h, Handle<HwVertexBuffer> vbh, Handle<HwIndexBuffer> ibh, PrimitiveType type) override;
@@ -183,6 +183,7 @@ namespace RHI
 		bool CompileShader(const Program::ShaderSource& src, uint32_t& program) const;
 
 		void generateMipmap(Handle<HwTexture> handle) override;
+		uint32_t GetNativeTextureId(Handle<HwTexture> h) const override;
 
 		//
 		void beginRenderPass(Handle<HwRenderTarget> h, RenderPassParams& params) override;

@@ -85,7 +85,7 @@ namespace TextureFactory
 		result.LevelCount = 1;
 		result.Format = RHI::Format::Depth24Stencil8;
 		result.Target = RHI::SamplerType::SAMPLER_2D;
-		result.Usage = RHI::TextureUsage::DEPTH_ATTACHMENT;
+		result.Usage = RHI::TextureUsage::DEPTH_ATTACHMENT | RHI::TextureUsage::SAMPLEABLE;
 		return result;
 	}
 }

@@ -2,7 +2,7 @@
     "name": "Model",
     "pipeline": "deferred",
     "shadingModel": "lit",
-    "variables": ["uv"],
+    "require": ["POSITION", "TANGENTS", "UV0"],
     "properties": [
       { "type": "sampler2d", "name": "albedo" },
       { "type": "sampler2d", "name": "normal" },
@@ -11,6 +11,6 @@
       { "type": "sampler2d", "name": "ao" }
     ],
     "domain": "surface",
-    "vertexCode": "void materialVertex(inout MaterialVertexInputs material) {\n        material.uv = 0.5 * (getPosition() + vec4(1));\n    }",
-    "fragmentCode": "void material(inout MaterialInputs material) {\n        prepareMaterial(material);\n        material.roughness         = texture(materialParams_roughness, variable_uv.xy).r;\n        material.metallic          = texture(materialParams_metallic, variable_uv.xy).r;\n        material.ambientOcclusion  = texture(materialParams_ao, variable_uv.xy).r;\n        material.baseColor.rgb     = texture(materialParams_albedo, variable_uv.xy).rgb;\n        material.normal            = normalize(texture(materialParams_normal, variable_uv.xy).rgb * 2.0 - 1.0);\n    }"
+    "vertexCode": "void materialVertex(inout MaterialVertexInputs material) {\n        \n    }",
+    "fragmentCode": "void material(inout MaterialInputs material) {\n        prepareMaterial(material);\n        material.roughness         = texture(materialParams_roughness, getUV0().xy).r;\n        material.metallic          = texture(materialParams_metallic, getUV0().xy).r;\n        material.ambientOcclusion  = texture(materialParams_ao, getUV0().xy).r;\n        material.baseColor.rgb     = texture(materialParams_albedo, getUV0().xy).rgb;\n        material.normal            = normalize(texture(materialParams_normal, getUV0().xy).rgb * 2.0 - 1.0);\n    }"
 }

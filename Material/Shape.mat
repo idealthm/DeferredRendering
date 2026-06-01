@@ -2,7 +2,7 @@
     "name": "Shape",
     "pipeline": "deferred",
     "shadingModel": "lit",
-    "variables": ["uv"],
+    "require": ["POSITION", "TANGENTS", "UV0"],
     "properties": [
       { "type": "float3", "name": "albedo" },
       { "type": "float", "name": "roughness" },
@@ -10,6 +10,6 @@
       { "type": "float", "name": "ao" }
     ],
     "domain": "surface",
-    "vertexCode": "void materialVertex(inout MaterialVertexInputs material) {\n        material.uv = 0.5 * (getPosition() + vec4(1));\n    }",
+    "vertexCode": "void materialVertex(inout MaterialVertexInputs material) {\n        \n    }",
     "fragmentCode": "void material(inout MaterialInputs material) {\n        prepareMaterial(material);\n        material.roughness         = materialParams.roughness;\n        material.metallic          = materialParams.metallic;\n        material.ambientOcclusion  = materialParams.ao;\n        material.baseColor.rgb     = materialParams.albedo;\n    }"
 }

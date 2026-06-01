@@ -12,5 +12,4 @@ public:
 
 private:
 	Ref<Program>	m_Shader;
-	UnitCube	m_UnitCube;
 };

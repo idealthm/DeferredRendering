@@ -16,27 +16,30 @@ namespace RHI
 struct StaticMeshDesc
 {
 	std::string importPath;
+	Ref<RHI::RenderPrimitive> primitive;
+	Ref<RHI::VertexBuffer> vb;
+	Ref<RHI::IndexBuffer> ibo;
 };
 
 class StaticMesh
 {
 public:
-	StaticMesh(const StaticMeshDesc& desc, std::vector<Ref<MeshSection>> sections,
-	           Ref<RHI::RenderPrimitive> primitive, Ref<RHI::VertexBuffer> vb, Ref<RHI::IndexBuffer> ibo);
+	StaticMesh(const StaticMeshDesc& desc, std::vector<Ref<MeshSection>> sections, const Ref<MaterialInstance>& mi);
 
 	std::vector<Ref<MeshSection>>& GetMeshSections() {return m_LoadedMeshes;}
 	const std::vector<Ref<MeshSection>>& GetMeshSections() const {return m_LoadedMeshes;}
 
-	const Ref<RHI::RenderPrimitive>& GetRenderPrimitive() const { return m_RenderPrimitive; }
-	const Ref<RHI::VertexBuffer>& GetVertexBuffer() const      { return m_VertexBuffer; }
-	const Ref<RHI::IndexBuffer>& GetIndexBuffer() const        { return m_IndexBuffer; }
+	const Ref<RHI::RenderPrimitive>& GetRenderPrimitive() const { return m_Desc.primitive; }
+	const Ref<RHI::VertexBuffer>& GetVertexBuffer() const      { return m_Desc.vb; }
+	const Ref<RHI::IndexBuffer>& GetIndexBuffer() const        { return m_Desc.ibo; }
 
-	static Ref<StaticMesh> Create(const Asset& asset);
+	static Ref<StaticMesh> Create(const Asset& asset, const Ref<MaterialInstance>& mi);
+
+	void SetMaterialInstance(Ref<MaterialInstance> instance);
+	Ref<MaterialInstance> GetMaterial();
 
 private:
 	StaticMeshDesc                        m_Desc;
-	Ref<RHI::RenderPrimitive>             m_RenderPrimitive;
-	Ref<RHI::VertexBuffer>                m_VertexBuffer;
-	Ref<RHI::IndexBuffer>                 m_IndexBuffer;
 	std::vector<Ref<MeshSection>>         m_LoadedMeshes;
+	Ref<MaterialInstance>                 m_Material;
 };

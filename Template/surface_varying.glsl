@@ -23,3 +23,6 @@ LAYOUT_LOCATION(5) VARYING highp vec4 vertex_uv01;
 #if defined(VARIANT_HAS_SHADOWING) && defined(VARIANT_HAS_DIRECTIONAL_LIGHTING)
 LAYOUT_LOCATION(6) VARYING highp vec4 vertex_lightSpacePosition;
 #endif
+
+LAYOUT_LOCATION(7) flat VARYING highp int instance_index;
+highp int logical_instance_index;

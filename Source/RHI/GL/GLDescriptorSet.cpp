@@ -63,7 +63,6 @@ GLDescriptorSet::GLDescriptorSet(OpenGLContext& gl, Handle<HwDescriptorSetLayout
 
 void GLDescriptorSet::update(OpenGLContext& gl, uint8_t binding, GLBufferObject* bo, size_t offset, size_t size) noexcept {
     ASSERT(binding < descriptors.size());
-    std::cout << "update buffer " << (uint32_t)binding << " " << " " << offset << " " << size << std::endl;
     std::visit([=](auto&& arg) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<T, Buffer> || std::is_same_v<T, DynamicBuffer>) {

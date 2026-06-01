@@ -57,7 +57,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>Default</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Include;$(ProjectDir)Source;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -75,7 +75,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Include;$(ProjectDir)Source;$(ProjectDir)vendor\includes;$(ProjectDir)SubModule\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -86,20 +86,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Common\Material\MaterialBuilder.h" />
+    <ClInclude Include="Source\ShaderCompiler\CodeGenerator.h" />
+    <ClInclude Include="Source\ShaderCompiler\ShaderGenerator.h" />
     <ClInclude Include="Source\ShaderCompiler\MaterialEnums.h" />
     <ClInclude Include="Source\ShaderCompiler\MaterialSpec.h" />
+    <ClInclude Include="Source\ShaderCompiler\ShaderInputBuilder.h" />
     <ClInclude Include="Source\ShaderCompiler\IncludeExpander.h" />
-    <ClInclude Include="Source\ShaderCompiler\GLSLGenerator.h" />
     <ClInclude Include="Source\Common\Serialization\ChunkContainer.h" />
     <ClInclude Include="Source\Common\Serialization\MaterialBinaryArchive.h" />
     <ClInclude Include="Source\Common\Serialization\MaterialChunks.h" />
     <ClInclude Include="Source\Common\Material\MaterialTypes.h" />
+    <ClInclude Include="Source\ShaderCompiler\UibGenerator.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Common\Material\MaterialBuilder.cpp" />
+    <ClCompile Include="Source\ShaderCompiler\CodeGenerator.cpp" />
+    <ClCompile Include="Include\BufferInterfaceBlock.cpp" />
+    <ClCompile Include="Include\SamplerInterfaceBlock.cpp" />
+    <ClCompile Include="Source\ShaderCompiler\ShaderGenerator.cpp" />
     <ClCompile Include="Source\ShaderCompiler\MatcMain.cpp" />
     <ClCompile Include="Source\ShaderCompiler\MaterialSpec.cpp" />
+    <ClCompile Include="Source\ShaderCompiler\ShaderInputBuilder.cpp" />
     <ClCompile Include="Source\ShaderCompiler\IncludeExpander.cpp" />
-    <ClCompile Include="Source\ShaderCompiler\GLSLGenerator.cpp" />
+    <ClCompile Include="Source\ShaderCompiler\UibGenerator.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

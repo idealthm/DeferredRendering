@@ -26,17 +26,20 @@
     vec4 worldPosition;
 };
 
+vec4 getWorldPosition(const MaterialVertexInputs material) {
+    return material.worldPosition;
+}
 
 void initMaterialVertex(out MaterialVertexInputs inputs) {
-    inputs.worldPosition = ComputeWorldPosition();
+    inputs.worldPosition = computeWorldPosition();
 #ifdef HAS_ATTRIBUTE_COLOR
     inputs.color = vec4(1.0);
 #endif
 #ifdef HAS_ATTRIBUTE_UV0
-    inputs.uv0 = mesh_uv0;
+    inputs.uv0 = mesh_uv0.xy;
 #endif
 #ifdef HAS_ATTRIBUTE_UV1
-    inputs.uv1 = mesh_uv1;
+    inputs.uv1 = mesh_uv1.xy;
 #endif
 #ifdef VARIABLE_CUSTOM0
     inputs.VARIABLE_CUSTOM0 = vec4(0.0);

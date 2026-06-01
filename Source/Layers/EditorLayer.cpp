@@ -21,11 +21,13 @@
 #include "Events/Input.h"
 #include "Events/KeyEvent.h"
 #include "ImGui/ImGuizmo.h"
+#include "Material/MaterialInstance.h"
 #include "Panel/OutlinePanel.h"
 #include "Panel/PropertyPanel.h"
 #include "Panel/ScenePanel.h"
 #include "RenderPass/EnvPreFilter.h"
 #include "RenderPass/ERPPass.h"
+#include "common/glmHelper.h"
 
 class DirectionLightActor;
 
@@ -61,6 +63,11 @@ void EditorLayer::LoadScene(std::string path)
 
 	Ref<StaticMesh> PlaneMesh = MeshBuilder::BuildCube();
 	PlaneActor->SetStaticMesh(PlaneMesh);
+	auto mi = PlaneMesh->GetMaterial();
+	mi->SetParameter("albedo", glm::vec3(0.3f, 0.4f, 0.5f));
+	mi->SetParameter("roughness", 0.5f);
+	mi->SetParameter("metallic", 0.3f);
+	mi->SetParameter("ao", 0.f);
 
 	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.json"));
 
@@ -87,13 +94,19 @@ void EditorLayer::OnUpdate(Timestep ts)
 
 	m_CameraController->OnUpdate(ts);
 
-	// auto& FrameData = RenderPipeline::Get().GetContext().FrameDataUB->Data;
-	// FrameData.m_Projection = m_EditorCamera->GetProjectionMatrix(1.0 * RenderPipeline::Get().GetContext().viewportSize.x / RenderPipeline::Get().GetContext().viewportSize.y);
-	// FrameData.m_ViewProjection = m_EditorCamera->GetViewMatrix();
-	// FrameData.m_CameraPosition = m_EditorCamera->GetPosition();
-	// FrameData.m_InvProjection = glm::inverse(FrameData.m_Projection);
-	// FrameData.m_InvViewProjection = glm::inverse(FrameData.m_ViewProjection);
-	// RenderPipeline::Get().GetContext().FrameDataUB->Update();
+	auto& ctx = RenderPipeline::Get().GetContext();
+	auto& frameData = ctx.FrameDataUB.edit();
+
+	float aspect = 1.0f * ctx.viewportSize.x / ctx.viewportSize.y;
+	glm::mat4 proj = m_EditorCamera->GetProjectionMatrix(aspect);
+	glm::mat4 view = m_EditorCamera->GetViewMatrix();
+
+	frameData.clipFromViewMatrix = proj;
+	frameData.viewFromClipMatrix = glm::inverse(proj);
+	frameData.viewFromWorldMatrix = view;
+	frameData.worldFromViewMatrix = glm::inverse(view);
+	frameData.clipFromWorldMatrix = proj * view;
+	frameData.worldFromClipMatrix = glm::inverse(proj * view);
 
 	RenderPipeline::Get().Render(m_ActiveScene, RenderPipeline::Get().GetContext().viewportSize);
 }

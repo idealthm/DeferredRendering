@@ -6,7 +6,9 @@
 #include "DescriptorSetLayout.h"
 #include "Common/Handle.h"
 #include "MaterialParser.h"
+#include "../../Include/BufferInterfaceBlock.h"
 
+class BufferInterfaceBlock;
 class DescriptorSetLayout;
 
 namespace RHI
@@ -23,6 +25,9 @@ class Material
 public:
 	Material() = default;
 
+	using FieldInfo = BufferInterfaceBlock::FieldInfo;
+	using SamplerInfo = SamplerInterfaceBlock::SamplerInfo;
+
 	// New — from .matb binary via MaterialParser
 	explicit Material(MaterialParser& parser);
 
@@ -34,10 +39,11 @@ public:
 	const SamplerInfo* FindSampler(const std::string& name) const;
 
 	const FieldInfo* FindField(const std::string& name) const;
-	const std::vector<FieldInfo>& GetFields() const { return m_UniformBlock.fields; }
+	const std::vector<BufferInterfaceBlock::FieldInfo>& GetFields() const;
 
 	RHI::RasterState GetRasterState() const { return m_RasterState; }
 	RHI::StencilState GetStencilState() const { return m_StencilState; }
+	uint32_t GetRequiredAttributes() const { return m_RequiredAttributes; }
 
 	const DescriptorSetLayout& GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	const DescriptorSetLayout& GetPerViewDescriptorSetLayout() const { return m_PerViewDescriptorSetLayout; }
@@ -45,6 +51,7 @@ public:
 private:
 	RHI::RasterState m_RasterState;
 	RHI::StencilState m_StencilState;
+	uint32_t m_RequiredAttributes = 0;
 
 	Program::ShaderSource      m_ShaderData;
 	DescriptorSetLayout		   m_PerViewDescriptorSetLayout;

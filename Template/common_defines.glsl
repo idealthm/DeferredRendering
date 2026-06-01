@@ -2,6 +2,11 @@
 #define LAYOUT_LOCATION(x) layout(location = x)
 #endif
 
+#ifdef TARGET_VULKAN_ENVIRONMENT
+#define gl_VertexID   gl_VertexIndex
+#define gl_InstanceID gl_InstanceIndex
+#endif
+
 #define bool2    bvec2
 #define bool3    bvec3
 #define bool4    bvec4
