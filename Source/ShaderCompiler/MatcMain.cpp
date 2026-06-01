@@ -4,11 +4,12 @@
 #include <string>
 #include <vector>
 
-#include "GLSLGenerator.h"
 #include "IncludeExpander.h"
 #include "MaterialSpec.h"
+#include "ShaderGenerator.h"
 #include "Common/Serialization/MaterialChunks.h"
 #include "EngineEnum.h"
+#include "ShaderInputBuilder.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -216,6 +217,37 @@ static uint32_t ComputeStd140Size(UniformType t, const std::string& structName)
 }
 
 // ============================================================
+// Build structured objects from MaterialSpec
+// ============================================================
+static void BuildUib(MaterialSpec& spec)
+{
+	BufferInterfaceBlock::Builder builder;
+	builder.name("MaterialParams").alignment(BufferInterfaceBlock::Alignment::std140);
+
+	for (auto& p : spec.properties)
+	{
+		if (p.kind != PropertyParam::Kind::Uniform) continue;
+		Std140Info info = GetStd140Info(p.uniformType);
+		builder.add({{ p.name, 0, p.uniformType, std::string(p.structName), static_cast<uint8_t>(info.size), {} }});
+	}
+	spec.materialUib = builder.build();
+}
+
+static void BuildSib(MaterialSpec& spec)
+{
+	SamplerInterfaceBlock::Builder builder;
+	builder.name("materialParams");
+
+	descriptor_binding_t binding = 1;
+	for (auto& p : spec.properties)
+	{
+		if (p.kind != PropertyParam::Kind::Sampler) continue;
+		builder.add(p.name, binding++, p.samplerType, RHI::SamplerFormat::FLOAT, false);
+	}
+	spec.materialSib = builder.build();
+}
+
+// ============================================================
 // Write .matb binary file
 // ============================================================
 
@@ -231,7 +263,7 @@ static const char* ToString(MaterialDomain domain)
 }
 
 static void WriteMaterialBinary(const std::string& fullOutputDir,
-                                const MaterialSpec& spec,
+                                MaterialSpec& spec,
                                 const std::string& vertSource,
                                 const std::string& fragSource,
                                 bool hasSpv)
@@ -283,69 +315,22 @@ static void WriteMaterialBinary(const std::string& fullOutputDir,
 	for (auto& k : spec.constants)
 		constants.push_back(k.name);
 
-	// ── Build UIB (uniform interface block) ──────────────────────────
-	BufferInterfaceBlock uib;
-	uib.instanceName = "materialParams";
-	uib.structName   = "MaterialParams";
-	uib.layout       = MemoryLayout::std_140;
-
-	uint32_t fieldOffset = 0;
-	for (auto& p : spec.properties)
-	{
-		if (p.kind != PropertyParam::Kind::Uniform)
-			continue;
-
-		Std140Info info = GetStd140Info(p.uniformType);
-		uint32_t aligned = (fieldOffset + info.alignment - 1) & ~(info.alignment - 1);
-
-		FieldInfo field;
-		field.name       = p.name;
-		field.offset     = static_cast<uint16_t>(aligned);
-		field.stride     = static_cast<uint8_t>(info.size);
-		field.type       = UniformTypeToFieldType(p.uniformType);
-		field.structName = p.structName;
-		uib.fields.push_back(std::move(field));
-
-		fieldOffset = aligned + info.size;
-	}
-	// Align struct size to 16
-	uib.size = (fieldOffset + 15) & ~15u;
-
-	// ── Build SIB (sampler interface block) ──────────────────────────
-	SamplerInterfaceBlock sib;
-	sib.mName = spec.name;
-
-	descriptor_binding_t samplerBinding = 1; // start after UBO
-	size_t samplerIndex = 0;
-	for (auto& p : spec.properties)
-	{
-		if (p.kind != PropertyParam::Kind::Sampler)
-			continue;
-		if (samplerIndex >= sib.mSamplersInfoList.size())
-			break;
-
-		SamplerInfo& s = sib.mSamplersInfoList[samplerIndex++];
-		s.name    = p.name;
-		s.sampler = p.samplerType;
-		s.binding = samplerBinding++;
-	}
-
 	// ── Build DescriptorSetBindings (per-set binding list) ───────────
 	DescriptorSetInfo descBindings{};
 
 	auto& setView = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_VIEW)];
-	setView.push_back({ "FrameUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
-		static_cast<uint8_t>(PerViewBindingPoint::FRAME_UNIFORM) });
+	setView.push_back({ "FrameUniforms.frameUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
+		static_cast<uint8_t>(PerViewBindingPoints::FRAME_UNIFORM) });
 
 	auto& setRenderable = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_RENDERABLE)];
-	setRenderable.push_back({ "ObjectUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
-		static_cast<uint8_t>(PerRenderableBindingPoint::OBJECT_UNIFORM) });
+	setRenderable.push_back({ "ObjectUniforms.objectUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
+		static_cast<uint8_t>(PerRenderableBindingPoints::OBJECT_UNIFORM) });
 
 	auto& setMat = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_MATERIAL)];
-	setMat.push_back({ "MaterialParams", RHI::DescriptorType::UNIFORM_BUFFER,
+	setMat.push_back({ "MaterialParams.materialParams", RHI::DescriptorType::UNIFORM_BUFFER,
 		static_cast<uint8_t>(PerMaterialBindingPoint::MATERIAL_UNIFORM) });
 
-	samplerBinding = 1; // just for this set. (0 for ubo)
+	descriptor_binding_t samplerBinding = 1; // just for this set. (0 for ubo)
 	for (auto& p : spec.properties)
 	{
 		if (p.kind != PropertyParam::Kind::Sampler)
@@ -396,26 +381,8 @@ static void WriteMaterialBinary(const std::string& fullOutputDir,
 
 	// ── Build AttributeInfo (vertex inputs / fragment outputs) ───────
 	ChunkAttributeInfo::Container attrInfo;
-
-	for (VertexAttribute attr : spec.requiredAttributes)
-	{
-		VariableParam v;
-		v.name     = VertexAttributeToName(attr);
-		v.location = static_cast<uint8_t>(VertexAttributeToLocation(attr));
-		const char* glsl = VertexAttributeToGLSLType(attr);
-		if      (std::strcmp(glsl, "vec2")  == 0) v.type = FieldType::FLOAT2;
-		else if (std::strcmp(glsl, "uvec4") == 0) v.type = FieldType::UINT4;
-		else                                       v.type = FieldType::FLOAT4;
-		attrInfo.inputs.push_back(v);
-	}
-
-	// Fragment output: default fragColor at location 0
-	attrInfo.outputs.push_back({ "fragColor", FieldType::FLOAT4, 0 });
-	for (auto& o : spec.outputs)
-	{
-		FieldType ft = (o.type == "color") ? FieldType::FLOAT4 : FieldType::FLOAT;
-		attrInfo.outputs.push_back({ o.name, ft, 0 });
-	}
+	attrInfo.inputs  = BuildVertexInputs(spec);
+	attrInfo.outputs = BuildFragmentOutputs(spec);
 
 	// ── Collect chunks ───────────────────────────────────────────────
 	ChunkContainer cc;
@@ -427,8 +394,8 @@ static void WriteMaterialBinary(const std::string& fullOutputDir,
 	                            cc.Set<ChunkVersion>(1u);                  chunkCount++;
 	                            cc.Set<ChunkShading>(std::string(spec.shadingModel)); chunkCount++;
 	                            cc.Set<ChunkDomain>(std::move(domain));        chunkCount++;
-	                            cc.Set<ChunkUib>(std::move(uib));              chunkCount++;
-	                            cc.Set<ChunkSib>(std::move(sib));              chunkCount++;
+	                            cc.Set<ChunkUib>(std::move(spec.materialUib));              chunkCount++;
+	                            cc.Set<ChunkSib>(std::move(spec.materialSib));              chunkCount++;
 	                            cc.Set<ChunkDescriptorSetBindings>(std::move(descBindings)); chunkCount++;
 	                            cc.Set<ChunkDescriptorSetLayout>(std::move(descSetLayouts)); chunkCount++;
 	                            cc.Set<ChunkAttributeInfo>(std::move(attrInfo));       chunkCount++;
@@ -511,9 +478,9 @@ static void DumpMatb(const std::string& path)
 	if (cc.Get<ChunkUib>(uib))
 	{
 		sep();
-		std::cout << "[ChunkUib]  " << uib.structName << " / " << uib.instanceName
-		          << "  size=" << uib.size << '\n';
-		for (auto& f : uib.fields)
+		std::cout << "[ChunkUib]  " << uib.getName()
+		          << "  size=" << uib.getSize() << '\n';
+		for (auto& f : uib.getFieldInfoList())
 			std::cout << "  " << f.name << "  off=" << f.offset << "  type=" << (int)f.type
 			          << "  stride=" << (int)f.stride << "  struct=" << f.structName << '\n';
 	}
@@ -523,11 +490,11 @@ static void DumpMatb(const std::string& path)
 	if (cc.Get<ChunkSib>(sib))
 	{
 		sep();
-		std::cout << "[ChunkSib]  " << sib.mName << '\n';
-		for (auto& s : sib.mSamplersInfoList)
+		std::cout << "[ChunkSib]  " << sib.getName() << '\n';
+		for (auto& s : sib.getSamplerInfoList())
 			if (!s.name.empty())
 				std::cout << "  " << s.name << "  binding=" << (int)s.binding
-				          << "  type=" << (int)s.sampler << '\n';
+				          << "  type=" << (int)s.type << '\n';
 	}
 
 	// DescriptorSetBindings
@@ -725,11 +692,6 @@ int main(int Argc, char* Argv[])
     {
         spec.fragmentCode = "void material(out MaterialInputs inputs)\n{\n}";
     }
-    // default Attributes
-    if (spec.shadingModel != "unlit")
-    {
-        spec.requiredAttributes.push_back(VertexAttribute::TANGENTS);
-    }
 
     // --- Step 2: Expand includes ---
     std::string inputDir = GetDirectory(inputFile);
@@ -754,18 +716,18 @@ int main(int Argc, char* Argv[])
         return 1;
     }
 
-    // --- Step 3: Generate GLSL ---
-    SetTemplateDirectory(templateDir);
-    SetTargetVulkan(targetEnv.find("vulkan") != std::string::npos);
-    std::cout << "matc: using template directory: " << templateDir << '\n';
+    // --- Step 3: Build structured objects --------------------------
+    BuildUib(spec);
+    BuildSib(spec);
 
-    std::ostringstream vertOs;
-    GenerateVertexShader(vertOs, spec, expandedVert);
-    std::string vertSource = vertOs.str();
+    // --- Step 4: Generate GLSL --------------------------------------
+    ShaderGenerator shaderGen;
+    shaderGen.SetTemplateDirectory(templateDir);
+    shaderGen.SetTargetVulkan(targetEnv.rfind("vulkan", 0) == 0);
+    std::cout << "matc: using template directory: " << templateDir << std::endl;
 
-    std::ostringstream fragOs;
-    GenerateFragmentShader(fragOs, spec, expandedFrag);
-    std::string fragSource = fragOs.str();
+    std::string vertSource = shaderGen.GenerateVertexShader(spec, expandedVert);
+    std::string fragSource = shaderGen.GenerateFragmentShader(spec, expandedFrag);
 
     // --- Step 4: Write GLSL output ---
     std::string fullOutputDir = workDir + "/" + outputDir + "/" + spec.name;
@@ -838,7 +800,8 @@ int main(int Argc, char* Argv[])
     }
 
     // --- Step 6: Write .matb binary ---
-    WriteMaterialBinary(fullOutputDir, spec, vertSource, fragSource,
+    WriteMaterialBinary(fullOutputDir, spec,
+                        vertSource, fragSource,
                         !preprocessOnly && !codeOnly);
 
     std::cout << "matc: done.\n";

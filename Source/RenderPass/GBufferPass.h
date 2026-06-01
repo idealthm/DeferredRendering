@@ -1,11 +1,14 @@
 #pragma once
 #include <memory>
+#include <vector>
 
 #include "RenderPass.h"
 
 class RenderTarget;
 struct RenderContext;
-class FrameBuffer;
+struct PerRenderableData;
+
+namespace RHI { struct HwBufferObject; }
 
 class GBufferPass : public RenderPass
 {
@@ -17,4 +20,7 @@ public:
 
 private:
 	Ref<RenderTarget> m_RenderTarget;
+	DescriptorSet m_DescriptorSetPerRender;
+	Handle<RHI::HwBufferObject> m_ModelDataHandle;
+	std::vector<PerRenderableData> m_PerRenderableData;
 };

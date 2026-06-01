@@ -10,8 +10,8 @@ MaterialInstance::MaterialInstance(const Ref<Material>& material)
 {
 	RHI::RHIDriver& driver = gEngine->GetDriver();
 
-	if (material->GetUniformBlock().fields.size() > 0) {
-		m_UniformBuffer = UniformBuffer(material->GetUniformBlock().size);
+	if (material->GetUniformBlock().getFieldInfoList().size() > 0) {
+		m_UniformBuffer = UniformBuffer(material->GetUniformBlock().getSize());
 		m_UniformBufferHandle = driver.CreateBufferObject(m_UniformBuffer.GetSize(),
 				RHI::BufferObjectBinding::UNIFORM, RHI::BufferUsage::STATIC);
 	}
@@ -30,7 +30,7 @@ bool MaterialInstance::SetParameter(const std::string& name, const Ref<Texture>&
 {
 	std::cout << "SetParameter" << " " << name << std::endl;
 
-	const SamplerInfo* samplerInfo = m_Material->FindSampler(name);
+	const Material::SamplerInfo* samplerInfo = m_Material->FindSampler(name);
 
 	if (texture && texture->TextureHandleCanMutate())
 	{

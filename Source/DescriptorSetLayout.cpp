@@ -3,7 +3,7 @@
 #include "Engine.h"
 #include "RHI/RHIDriver.h"
 
-DescriptorSetLayout::DescriptorSetLayout(RHI::RHIDriver& driver, RHI::DescriptorSetLayout&& descriptorSetLayout) noexcept
+DescriptorSetLayout::DescriptorSetLayout(RHI::RHIDriver& driver, RHI::DescriptorSetLayout descriptorSetLayout) noexcept
 {
 	for (auto&& desc : descriptorSetLayout.bindings) {
 		mMaxDescriptorBinding = std::max(mMaxDescriptorBinding, desc.binding);

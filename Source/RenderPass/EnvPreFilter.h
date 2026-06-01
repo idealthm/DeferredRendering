@@ -13,5 +13,4 @@ public:
 private:
 	RHI::TextureDesc	m_Desc;
 	Ref<Program>			m_Shader;
-	UnitCube			m_UnitCube;
 };

@@ -43,7 +43,7 @@ public:
 	bool SetParameter(const std::string& name, const Ref<Texture>& texture, const TextureSampler& sampler);
 
 	template<typename T>
-	bool GetParameter(const std::string& name, T& outValue) const;
+	T GetParameter(const std::string& name) const;
 
 	bool IsDirty()  const { return m_Dirty; }
 	void ClearDirty()     { m_Dirty = false; }
@@ -76,18 +76,16 @@ private:
 template<typename T, typename = std::enable_if_t<!std::is_same_v<Ref<Texture>, T>, T>>
 bool MaterialInstance::SetParameter(const std::string& name, const T& value)
 {
-	const FieldInfo* field = m_Material->FindField(name);
-	if (!field) return false;
-	m_UniformBuffer.SetValue(field->offset, value);
+	const Material::FieldInfo* field = m_Material->FindField(name);
+	m_UniformBuffer.SetValue(field->getBufferOffset(), value);
 	m_Dirty = true;
 	return true;
 }
 
 template<typename T>
-bool MaterialInstance::GetParameter(const std::string& name, T& outValue) const
+T MaterialInstance::GetParameter(const std::string& name) const
 {
-	if (!m_Material) return false;
-	const FieldInfo* field = m_Material->FindField(name);
-	if (!field) return false;
-	return m_UniformBuffer.GetValue(field->offset, outValue);
+	const Material::FieldInfo* field = m_Material->FindField(name);
+	ASSERT(field);
+	return m_UniformBuffer.GetValue<T>(field->getBufferOffset());
 }

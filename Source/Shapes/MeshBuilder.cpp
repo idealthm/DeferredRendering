@@ -20,9 +20,9 @@ static std::vector<uint32_t> cubeIndices = {
     // Bottom face
     16, 17, 18,
     18, 19, 16,
-    // Top face
-    20, 21, 22,
-    22, 23, 20
+    // Top face (fixed winding)
+    20, 22, 21,
+    22, 20, 23
 };
 
 // Packed cube data: pos(3) normal(3) uv(2) tangent(3) = 11 floats per vertex
@@ -57,7 +57,7 @@ static float cubeRaw[] = {
      1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
     -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f,
 
-    // Top face (20-23)
+    // Top face (fixed winding) (20-23)
     -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
      1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,  1.0f,  0.0f,  0.0f,
      1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
@@ -65,7 +65,7 @@ static float cubeRaw[] = {
 };
 
 static Asset BuildAssetFromInterleaved(const float* raw, size_t vertexCount,
-                                        const std::vector<uint32_t>& indices, int strideFloats, Ref<Material> material)
+                                        const std::vector<uint32_t>& indices, int strideFloats)
 {
     Asset asset;
     asset.indices = indices;
@@ -95,7 +95,6 @@ static Asset BuildAssetFromInterleaved(const float* raw, size_t vertexCount,
     Part part;
     part.offset = 0;
     part.count = indices.size();
-    part.mi = CreateRef<MaterialInstance>(material);
     mesh.parts.push_back(part);
     asset.meshes.push_back(mesh);
 
@@ -106,11 +105,12 @@ Ref<StaticMesh> MeshBuilder::BuildCube()
 {
     constexpr int stride = 11; // pos(3)+normal(3)+uv(2)+tangent(3)
     constexpr size_t vertexCount = 24;
-    Asset asset = BuildAssetFromInterleaved(cubeRaw, vertexCount, cubeIndices, stride, gEngine->GetDefaultShapeMaterial());
-    return StaticMesh::Create(asset);
+    Asset asset = BuildAssetFromInterleaved(cubeRaw, vertexCount, cubeIndices, stride);
+
+    return StaticMesh::Create(asset, CreateRef<MaterialInstance>(gEngine->GetDefaultShapeMaterial()));
 }
 
-static std::vector<uint32_t> QuadIndices = { 0, 1, 2, 1, 2, 3 };
+static std::vector<uint32_t> QuadIndices = { 0, 1, 2, 1, 3, 2 };
 
 static float QuadRaw[] = {
     -1.0f,  1.0f,
@@ -143,9 +143,8 @@ Ref<StaticMesh> MeshBuilder::BuildQuad()
     Part part;
     part.offset = 0;
     part.count = static_cast<uint32_t>(QuadIndices.size());
-    part.mi = CreateRef<MaterialInstance>(gEngine->GetDefaultShapeMaterial());
     mesh.parts.push_back(part);
     asset.meshes.push_back(mesh);
 
-    return StaticMesh::Create(asset);
+    return StaticMesh::Create(asset, CreateRef<MaterialInstance>(gEngine->GetDefaultShapeMaterial()));
 }

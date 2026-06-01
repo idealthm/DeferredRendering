@@ -45,9 +45,7 @@ struct RenderContext
 
 	TypedUniformBuffer<PerViewUib> FrameDataUB;
 	TypedUniformBuffer<LightData> LightDataUB;
-	TypedUniformBuffer<ModelData> ModelDataUB;
 
 	Handle<RHI::HwBufferObject> FrameDataHandle;
 	Handle<RHI::HwBufferObject> LightDataHandle;
-	Handle<RHI::HwBufferObject> ModelDataHandle;
 };

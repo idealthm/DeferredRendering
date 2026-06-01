@@ -2,6 +2,8 @@
 
 #include "ChunkContainer.h"
 #include "Common/Material/MaterialTypes.h"
+#include "../../../Include/BufferInterfaceBlock.h"
+#include "../../../Include/SamplerInterfaceBlock.h"
 
 #include <cstdint>
 #include <string>
@@ -29,16 +31,16 @@ inline FArchive& operator<<(FArchive& ar, FlatProperty& v)
 // Element-level operator<<
 // =============================================================================
 
-inline FArchive& operator<<(FArchive& ar, FieldInfo& v)
+inline FArchive& operator<<(FArchive& ar, BufferInterfaceBlock::FieldInfo& v)
 {
     ar << v.name << v.offset << v.stride << v.type
        << v.isArray << v.size << v.structName << v.sizeName;
     return ar;
 }
 
-inline FArchive& operator<<(FArchive& ar, SamplerInfo& v)
+inline FArchive& operator<<(FArchive& ar, SamplerInterfaceBlock::SamplerInfo& v)
 {
-    ar << v.name << v.sampler << v.format << v.binding;
+    ar << v.name << v.uniformName << v.binding << v.type << v.format << v.multisample;
     return ar;
 }
 
@@ -80,14 +82,48 @@ struct ChunkUib
     using Container = BufferInterfaceBlock;
     static bool Serialize(FArchive& ar, Container& obj)
     {
-        ar << obj.instanceName << obj.structName << obj.size
-           << obj.layout;
+        std::string name;
+        uint32_t size32 = 0;
+        uint8_t alignByte = 0;
 
-        uint32_t count = ar.IsLoading() ? 0 : static_cast<uint32_t>(obj.fields.size());
+        if (!ar.IsLoading())
+        {
+            name    = obj.getName();
+            size32  = static_cast<uint32_t>(obj.getSize());
+            alignByte = static_cast<uint8_t>(obj.getAlignment());
+        }
+
+        ar << name << size32 << alignByte;
+
+        uint32_t count = ar.IsLoading() ? 0 : static_cast<uint32_t>(obj.getFieldInfoList().size());
         ar << count;
-        if (ar.IsLoading()) obj.fields.resize(count);
-        for (auto& f : obj.fields)
-            ar << f;
+
+        if (ar.IsLoading())
+        {
+            BufferInterfaceBlock::Builder builder;
+            builder.name(name).alignment(static_cast<BufferInterfaceBlock::Alignment>(alignByte));
+
+            for (uint32_t i = 0; i < count; i++)
+            {
+                BufferInterfaceBlock::FieldInfo f;
+                ar << f;
+                builder.add({{
+                    f.name,
+                    f.size,
+                    f.type,
+                    f.structName,
+                    f.stride,
+                    f.sizeName
+                }});
+            }
+            obj = std::move(builder.build());
+        }
+        else
+        {
+            for (auto& f : obj.getFieldInfoList())
+                ar << const_cast<BufferInterfaceBlock::FieldInfo&>(f);
+        }
+
         return true;
     }
 };
@@ -98,9 +134,39 @@ struct ChunkSib
     using Container = SamplerInterfaceBlock;
     static bool Serialize(FArchive& ar, Container& obj)
     {
-        ar << obj.mName << obj.mStageFlags;
-        for (auto& s : obj.mSamplersInfoList)
-            ar << s;
+        std::string name;
+        uint8_t stageFlags = 0;
+
+        if (!ar.IsLoading())
+        {
+            name       = obj.getName();
+            stageFlags = static_cast<uint8_t>(obj.getStageFlags());
+        }
+
+        ar << name << stageFlags;
+
+        uint32_t count = ar.IsLoading() ? 0 : static_cast<uint32_t>(obj.getSamplerInfoList().size());
+        ar << count;
+
+        if (ar.IsLoading())
+        {
+            SamplerInterfaceBlock::Builder builder;
+            builder.name(name).stageFlags(static_cast<RHI::ShaderStageFlags>(stageFlags));
+
+            for (uint32_t i = 0; i < count; i++)
+            {
+                SamplerInterfaceBlock::SamplerInfo s;
+                ar << s;
+                builder.add(s.name, s.binding, s.type, s.format, s.multisample);
+            }
+            obj = std::move(builder.build());
+        }
+        else
+        {
+            for (auto& s : obj.getSamplerInfoList())
+                ar << const_cast<SamplerInterfaceBlock::SamplerInfo&>(s);
+        }
+
         return true;
     }
 };

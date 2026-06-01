@@ -384,7 +384,7 @@ namespace RHI
 		CreateBufferObject(h, size, target, usage);
 		return h;
 	}
-	Handle<HwVertexBufferInfo> GLDriver::CreateVertexBufferInfo(size_t bufferCount, size_t attributeCount, AttributeArray attribute)
+	Handle<HwVertexBufferInfo> GLDriver::CreateVertexBufferInfo(size_t bufferCount, size_t attributeCount, const AttributeArray& attribute)
 	{
 		Handle<HwVertexBufferInfo> h = InitHandle<GLVertexBufferInfo>();
 		CreateVertexBufferInfo(h, bufferCount, attributeCount, attribute);
@@ -514,7 +514,7 @@ namespace RHI
 		glBufferData(bo->gl.binding, bo->byteCount, nullptr, RHI_Internal::GetGLBufferUsage(usage));
 	}
 
-	void GLDriver::CreateVertexBufferInfo(Handle<HwVertexBufferInfo> h, size_t bufferCount, size_t attributeCount, AttributeArray attributes)
+	void GLDriver::CreateVertexBufferInfo(Handle<HwVertexBufferInfo> h, size_t bufferCount, size_t attributeCount, const AttributeArray& attributes)
 	{
 		construct<GLVertexBufferInfo>(h, bufferCount, attributeCount, attributes);
 	}
@@ -976,6 +976,11 @@ namespace RHI
 		gl.activeTexture(OpenGLContext::DUMMY_TEXTURE_BINDING);
 
 		glGenerateMipmap(t->gl.target);
+	}
+	uint32_t GLDriver::GetNativeTextureId(Handle<HwTexture> h) const
+	{
+		GLTexture* t = handle_cast<GLTexture*>(h);
+		return t ? t->gl.id : 0;
 	}
 
 	void GLDriver::textureStorage(GLTexture* t, uint32_t width, uint32_t height, uint32_t depth) noexcept

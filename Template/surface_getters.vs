@@ -1,5 +1,23 @@
 ﻿
+mat4 getWorldFromModelMatrix() {
+    return object_uniforms_worldFromModelMatrix;
+}
+
+mat3 getWorldFromModelNormalMatrix() {
+    return object_uniforms_worldFromModelNormalMatrix;
+}
+
+int getVertexIndex() {
+    return gl_VertexID;
+}
+
 vec4 getPosition() { return mesh_position; }
+
+vec4 computeWorldPosition() {
+    mat4 transform = getWorldFromModelMatrix();
+    vec3 position = getPosition().xyz;
+    return mulMat4x4Float3(transform, position);
+}
 
 #if defined(HAS_ATTRIBUTE_CUSTOM0)
 vec4 getCustom0() { return mesh_custom0; }

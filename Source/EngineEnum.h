@@ -13,12 +13,14 @@ enum class DescriptorSetBindingPoints : uint8_t {
 };
 
 
-enum class PerViewBindingPoint : uint8_t {
+enum class PerViewBindingPoints : uint8_t {
 	FRAME_UNIFORM = 0,
+	NUM_PER_VIEW_BINDING_POINTS,
 };
 
-enum class PerRenderableBindingPoint : uint8_t {
+enum class PerRenderableBindingPoints : uint8_t {
 	OBJECT_UNIFORM = 0,
+	NUM_PER_RENDERABLE_BINDING_POINTS,
 };
 
 enum class PerMaterialBindingPoint : uint8_t {
@@ -34,10 +36,10 @@ enum class GBufferBindingPoint : uint8_t {
 
 template <> struct EnableBitMaskOperators<DescriptorSetBindingPoints> : public std::true_type {};
 template <> struct EnableIntegerOperators<DescriptorSetBindingPoints> : public std::true_type {};
-template <> struct EnableBitMaskOperators<PerViewBindingPoint> : public std::true_type {};
-template <> struct EnableIntegerOperators<PerViewBindingPoint> : public std::true_type {};
-template <> struct EnableBitMaskOperators<PerRenderableBindingPoint> : public std::true_type {};
-template <> struct EnableIntegerOperators<PerRenderableBindingPoint> : public std::true_type {};
+template <> struct EnableBitMaskOperators<PerViewBindingPoints> : public std::true_type {};
+template <> struct EnableIntegerOperators<PerViewBindingPoints> : public std::true_type {};
+template <> struct EnableBitMaskOperators<PerRenderableBindingPoints> : public std::true_type {};
+template <> struct EnableIntegerOperators<PerRenderableBindingPoints> : public std::true_type {};
 template <> struct EnableBitMaskOperators<PerMaterialBindingPoint> : public std::true_type {};
 template <> struct EnableIntegerOperators<PerMaterialBindingPoint> : public std::true_type {};
 template <> struct EnableBitMaskOperators<GBufferBindingPoint> : public std::true_type {};

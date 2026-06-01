@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "BufferInterfaceBlock.h"
+#include "SamplerInterfaceBlock.h"
 #include "Common/Material/MaterialCommon.h"
 #include "Common/Material/MaterialTypes.h"
 
@@ -42,6 +44,8 @@ struct MaterialSpec
     std::vector<OutputParam> outputs;
     std::string vertexCode;
     std::string fragmentCode;
+    BufferInterfaceBlock materialUib;
+    SamplerInterfaceBlock materialSib;
 };
 
 MaterialSpec ParseMaterialSpec(const std::string& jsonString);

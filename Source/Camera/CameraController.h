@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "View.h"
 #include "Common/Core.h"
 
 class Event;
@@ -17,4 +18,5 @@ public:
 
 private:
 	Ref<Camera>		m_ActiveCamera;
+	View			m_View;
 };

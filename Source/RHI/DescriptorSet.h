@@ -53,6 +53,7 @@ struct DescriptorSet
 	Handle<RHI::HwDescriptorSet>	handle;
 
 	DescriptorSet() = default;
+	~DescriptorSet();
 
 	DescriptorSet(const DescriptorSetLayout& layout)
 		: dirty(std::numeric_limits<uint64_t>::max())

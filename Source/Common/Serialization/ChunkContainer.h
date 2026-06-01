@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -22,10 +23,11 @@ public:
     template<typename ChunkT>
     void Set(typename ChunkT::Container&& obj)
     {
+        using T = std::decay_t<decltype(obj)>;
         m_Pending.push_back({
             ChunkT::Tag,
-            [obj = std::move(obj)](FArchive& ar) mutable {
-                ChunkT::Serialize(ar, obj);
+            [pObj = std::make_shared<T>(std::move(obj))](FArchive& ar) mutable {
+                ChunkT::Serialize(ar, *pObj);
             }
         });
     }

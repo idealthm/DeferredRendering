@@ -4,17 +4,19 @@
 
 #include "Lights/Light.h"
 
-constexpr size_t CONFIG_MAX_INSTANCES = 128;
+constexpr size_t CONFIG_MAX_INSTANCES = 64;
 
 
 struct PerViewUib
 {
-	glm::mat4 m_viewFormWorldMatrix;	// clip		view  <-	world
-	glm::mat4 m_worldFormViewMatrix;	// clip		view  ->	world
-	glm::mat4 m_clipFromViewMatrix; 	// clip	<-	view	 	world
-	glm::mat4 m_viewFromClipMatrix; 	// clip	->	view	 	world
-	glm::mat4 m_clipFromWorldMatrix;	// clip	<-	view  <- 	world
-	glm::mat4 m_worldFromClipMatrix;	// clip	->	view  -> 	world
+	static constexpr std::string_view _name = std::string_view{"FrameUniforms"};
+
+	glm::mat4 viewFromWorldMatrix;	// clip		view  <-	world
+	glm::mat4 worldFromViewMatrix;	// clip		view  ->	world
+	glm::mat4 clipFromViewMatrix; 	// clip	<-	view	 	world
+	glm::mat4 viewFromClipMatrix; 	// clip	->	view	 	world
+	glm::mat4 clipFromWorldMatrix;	// clip	<-	view  <- 	world
+	glm::mat4 worldFromClipMatrix;	// clip	->	view  -> 	world
 
 	int RenderMode;
 };
@@ -70,13 +72,22 @@ struct mat44 : public std::array<vec4, 4> {
 
 }
 
-struct ModelInfo
+struct PerRenderableData
 {
-	std140::mat44 ModelTransform;
-	std140::mat33 ModelNormal;
+	std140::mat44 worldFromModelMatrix;
+	std140::mat33 worldFormModelNormalMatrix;
+	int32_t morphTargetCount;
+	int32_t flagsChannels;                   // see packFlags() below (0x00000fll)
+	int32_t objectId;                        // used for picking
+	float userData;
+
+	glm::vec4 reserved[8];
 };
 
-struct ModelData
+static_assert(sizeof(PerRenderableData) == 256, "PerRenderableData size must be 256 bytes");
+
+struct PerRenderableUib
 {
-	ModelInfo models[CONFIG_MAX_INSTANCES];
+	static constexpr std::string_view _name = std::string_view{"ObjectUniforms"};
+	PerRenderableData models[CONFIG_MAX_INSTANCES];
 };

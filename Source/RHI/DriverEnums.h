@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <Common/Utils/BitmaskEnum.h>
 
+#include "Common/Utils/PoolAllocator.h"
+
 static constexpr size_t MAX_VERTEX_ATTRIBUTE_COUNT  = 16;
 static constexpr size_t MAX_SAMPLER_COUNT           = 62;   // Maximum needed at feature level 3.
 static constexpr size_t MAX_VERTEX_BUFFER_COUNT     = 16;   // Max number of bound buffer objects.
@@ -20,14 +22,20 @@ using descriptor_binding_t = uint8_t;
 
 namespace RHI
 {
-	enum class SamplerType : uint8_t;
-
 	enum class SamplerType : uint8_t {
 		SAMPLER_2D,
 		SAMPLER_2D_ARRAY,
 		SAMPLER_CUBEMAP,
 		SAMPLER_3D,
 		SAMPLER_CUBEMAP_ARRAY,
+	};
+
+	//! Texture sampler format
+	enum class SamplerFormat : uint8_t {
+		INT = 0,        //!< signed integer sampler
+		UINT = 1,       //!< unsigned integer sampler
+		FLOAT = 2,      //!< float sampler
+		SHADOW = 3      //!< shadow sampler (PCF)
 	};
 
 	enum class PrimitiveType : uint8_t {
@@ -421,6 +429,9 @@ struct RasterState {
         blendFunctionSrcAlpha = BlendFunction::ONE;
         blendFunctionDstRGB = BlendFunction::ZERO;
         blendFunctionDstAlpha = BlendFunction::ZERO;
+        colorWrite = true;
+        depthWrite = true;
+        depthFunc = SamplerCompareFunc::Less;
     }
 
     bool operator == (RasterState rhs) const noexcept { return u == rhs.u; }
@@ -697,6 +708,9 @@ using AttributeArray = std::array<Attribute, MAX_VERTEX_ATTRIBUTE_COUNT>;
 }
 template<> struct EnableBitMaskOperators<RHI::TextureUsage> : public std::true_type { };
 template<> struct EnableIntegerOperators<RHI::TextureUsage> : public std::true_type { };
+
+template<> struct EnableBitMaskOperators<RHI::ShaderStageFlags> : public std::true_type { };
+template<> struct EnableIntegerOperators<RHI::ShaderStageFlags> : public std::true_type { };
 
 template<> struct EnableBitMaskOperators<RHI::TargetBufferFlags> : public std::true_type { };
 template<> struct EnableIntegerOperators<RHI::TargetBufferFlags> : public std::true_type { };

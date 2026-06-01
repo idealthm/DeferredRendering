@@ -18,13 +18,19 @@ public:
 	void Shutdown();
 
 	RHI::RHIDriver& GetDriver() { return *m_Driver; }
-	Ref<Material> GetDefaultModelMaterial() { return m_ModelMaterial; }
-	Ref<Material> GetDefaultShapeMaterial() { return m_ShapeMaterial; }
+	const Ref<Material>& GetDefaultModelMaterial() { return m_ModelMaterial; }
+	const Ref<Material>& GetDefaultShapeMaterial() { return m_ShapeMaterial; }
+
+	DescriptorSetLayout const& GetPerRenderableSetLayout();
+	DescriptorSetLayout const& GetPerViewSetLayout();
 
 private:
 	std::unique_ptr<RHI::RHIDriver> m_Driver;
 	Ref<Material> m_ModelMaterial;
 	Ref<Material> m_ShapeMaterial;
+
+	DescriptorSetLayout m_PerRenderableSetLayout;
+	DescriptorSetLayout m_PerViewSetLayout;
 };
 
 extern Engine* gEngine;

@@ -1,5 +1,4 @@
 #include "MaterialSpec.h"
-#include "GLSLGenerator.h"
 #include "MaterialEnums.h"
 
 #include <stdexcept>
