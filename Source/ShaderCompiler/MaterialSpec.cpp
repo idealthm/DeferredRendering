@@ -5,9 +5,9 @@
 #include <unordered_map>
 #include <sstream>
 
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
+#include "Lexer/JsonishLexer.h"
+#include "Lexer/MaterialLexer.h"
+#include "Parser/JsonishParser.h"
 
 static VertexAttribute ParseVertexAttribute(const std::string& s)
 {
@@ -39,128 +39,185 @@ static VertexAttribute ParseVertexAttribute(const std::string& s)
     return it->second;
 }
 
-// Forward declaration
-static MaterialSpec ParseMaterialSpecImpl(const json& j);
-
-MaterialSpec ParseMaterialSpec(const std::string& jsonString)
+static std::string JsonString(const JsonishObject* obj, const char* key, const char* defaultVal = nullptr)
 {
-    json j = json::parse(jsonString);
-    return ParseMaterialSpecImpl(j);
+    if (!obj->hasKey(key))
+    {
+        if (defaultVal) return defaultVal;
+        throw std::runtime_error(std::string("missing required field '") + key + "'");
+    }
+    auto* v = obj->getValue(key)->toJsonString();
+    if (!v) throw std::runtime_error(std::string("field '") + key + "' must be a string");
+    return v->getString();
 }
 
-static MaterialSpec ParseMaterialSpecImpl(const json& j)
+// Forward declaration
+static MaterialSpec ParseMaterialSpecImpl(const JsonishObject* j);
+
+using BlockMap = std::unordered_map<std::string, std::string>;
+
+static BlockMap ParseTopLevelBlocks(const std::string& source)
+{
+    MaterialLexer lexer;
+    lexer.Lex(source.c_str(), source.size());
+    auto& lexemes = lexer.getLexemes();
+
+    BlockMap blocks;
+
+    for (size_t i = 0; i + 1 < lexemes.size(); )
+    {
+        if (lexemes[i].getType() != IDENTIFIER) { ++i; continue; }
+        if (lexemes[i + 1].getType() != BLOCK)  { ++i; continue; }
+
+        std::string key = lexemes[i].getStringValue();
+        auto trimmed = lexemes[i + 1].trimBlockMarkers();
+        blocks[key] = trimmed.getStringValue();
+        i += 2;
+    }
+
+    return blocks;
+}
+
+MaterialSpec ParseMaterialSpec(const std::string& source)
+{
+    auto blocks = ParseTopLevelBlocks(source);
+
+    MaterialSpec spec;
+
+    // --- material block → JsonishParser ---
+    auto matIt = blocks.find("material");
+    if (matIt != blocks.end())
+    {
+        std::string wrapped = "{" + matIt->second + "}";
+        JsonishLexer lexer;
+        lexer.Lex(wrapped.c_str(), wrapped.size());
+        JsonishParser parser(lexer.getLexemes());
+        auto root = parser.parse();
+        if (root) spec = ParseMaterialSpecImpl(root.get());
+    }
+
+    // --- code blocks: raw GLSL ---
+    auto vcIt = blocks.find("vertexCode");
+    if (vcIt != blocks.end()) spec.vertexCode = vcIt->second;
+
+    auto fcIt = blocks.find("fragmentCode");
+    if (fcIt != blocks.end()) spec.fragmentCode = fcIt->second;
+
+    return spec;
+}
+
+static MaterialSpec ParseMaterialSpecImpl(const JsonishObject* j)
 {
     MaterialSpec spec;
 
     // --- name (required) ---
-    if (!j.contains("name"))
-        throw std::runtime_error("missing required field 'name'");
-    spec.name = j["name"].get<std::string>();
+    spec.name = JsonString(j, "name");
 
     // --- pipeline (optional, defaults to "deferred") ---
     {
-        std::string pipelineStr = j.value("pipeline", "deferred");
+        std::string pipelineStr = j->hasKey("pipeline") ? JsonString(j, "pipeline") : "deferred";
         if (pipelineStr == "deferred")
             spec.pipeline = Pipeline::DEFERRED;
         else if (pipelineStr == "forward")
             spec.pipeline = Pipeline::FORWARD;
+        else if (pipelineStr == "lighting")
+            spec.pipeline = Pipeline::LIGHTING;
         else
             throw std::runtime_error("material '" + spec.name + "': invalid pipeline '" +
-                pipelineStr + "'. Valid: deferred, forward");
+                pipelineStr + "'. Valid: deferred, forward, lighting");
     }
 
     // --- shadingModel (optional, defaults to "unlit") ---
-    spec.shadingModel = j.value("shadingModel", "unlit");
+    spec.shadingModel = j->hasKey("shadingModel") ? JsonString(j, "shadingModel") : "unlit";
 
     // --- domain (required) ---
-    if (!j.contains("domain"))
-        throw std::runtime_error("material '" + spec.name + "': missing required field 'domain'");
-    
-    std::string domainStr = j["domain"].get<std::string>();
-    if (domainStr == "surface")
-        spec.domain = MaterialDomain::SURFACE;
-    else if (domainStr == "postprocess")
-        spec.domain = MaterialDomain::POST_PROCESS;
-    else if (domainStr == "compute")
-        spec.domain = MaterialDomain::COMPUTE;
-    else
-        throw std::runtime_error("material '" + spec.name + "': invalid domain '" + domainStr +
-            "'. Valid: surface, postprocess, compute");
+    {
+        std::string domainStr = JsonString(j, "domain");
+        if (domainStr == "surface")
+            spec.domain = MaterialDomain::SURFACE;
+        else if (domainStr == "postprocess")
+            spec.domain = MaterialDomain::POST_PROCESS;
+        else if (domainStr == "compute")
+            spec.domain = MaterialDomain::COMPUTE;
+        else
+            throw std::runtime_error("material '" + spec.name + "': invalid domain '" + domainStr +
+                "'. Valid: surface, postprocess, compute");
+    }
 
     // --- require (optional) ---
-    if (j.contains("require"))
+    if (j->hasKey("require"))
     {
-        const auto& req = j["require"];
-        if (!req.is_array())
+        auto* v = j->getValue("require");
+        auto* arr = v ? v->toJsonArray() : nullptr;
+        if (!arr)
             throw std::runtime_error("material '" + spec.name + "': 'require' must be an array");
 
-        for (size_t i = 0; i < req.size(); ++i)
+        for (size_t i = 0; i < arr->getElements().size(); ++i)
         {
-            if (!req[i].is_string())
+            auto* str = arr->getElements()[i]->toJsonString();
+            if (!str)
                 throw std::runtime_error("material '" + spec.name +
                     "': require[" + std::to_string(i) + "] must be a string");
-            try
-            {
-                spec.requiredAttributes.push_back(ParseVertexAttribute(req[i].get<std::string>()));
-            }
-            catch (const std::exception& e)
-            {
-                throw std::runtime_error("material '" + spec.name +
-                    "': require[" + std::to_string(i) + "]: " + e.what());
-            }
+            spec.requiredAttributes.push_back(ParseVertexAttribute(str->getString()));
         }
     }
 
     // --- constant (optional) ---
-    if (j.contains("constant"))
+    if (j->hasKey("constant"))
     {
-        const auto& arr = j["constant"];
-        if (!arr.is_array())
+        auto* v = j->getValue("constant");
+        auto* arr = v ? v->toJsonArray() : nullptr;
+        if (!arr)
             throw std::runtime_error("material '" + spec.name + "': 'constant' must be an array");
 
-        for (size_t i = 0; i < arr.size(); ++i)
+        for (size_t i = 0; i < arr->getElements().size(); ++i)
         {
-            const auto& c = arr[i];
-            if (!c.contains("type") || !c.contains("name"))
+            auto* obj = arr->getElements()[i]->toJsonObject();
+            if (!obj || !obj->hasKey("type") || !obj->hasKey("name"))
                 throw std::runtime_error("material '" + spec.name +
                     "': constant[" + std::to_string(i) + "] must have 'type' and 'name'");
             ConstantParam cp;
-            cp.type = c["type"].get<std::string>();
-            cp.name = c["name"].get<std::string>();
+            cp.type = JsonString(obj, "type");
+            cp.name = JsonString(obj, "name");
             spec.constants.push_back(std::move(cp));
         }
     }
 
     // --- variable (optional) ---
-    if (j.contains("variables"))
+    if (j->hasKey("variables"))
     {
-        const auto& arr = j["variables"];
-        if (!arr.is_array())
+        auto* v = j->getValue("variables");
+        auto* arr = v ? v->toJsonArray() : nullptr;
+        if (!arr)
             throw std::runtime_error("material '" + spec.name + "': 'variables' must be an array");
 
-        for (size_t i = 0; i < arr.size(); ++i)
+        for (size_t i = 0; i < arr->getElements().size(); ++i)
         {
-            const auto& v = arr[i];
-            spec.variables.push_back({ v.get<std::string>() });
+            auto* str = arr->getElements()[i]->toJsonString();
+            if (!str)
+                throw std::runtime_error("material '" + spec.name +
+                    "': variables[" + std::to_string(i) + "] must be a string");
+            spec.variables.push_back({ str->getString() });
         }
     }
 
     // --- property (optional) ---
-    if (j.contains("properties"))
+    if (j->hasKey("properties"))
     {
-        const auto& arr = j["properties"];
-        if (!arr.is_array())
-            throw std::runtime_error("material '" + spec.name + "': 'property' must be an array");
+        auto* v = j->getValue("properties");
+        auto* arr = v ? v->toJsonArray() : nullptr;
+        if (!arr)
+            throw std::runtime_error("material '" + spec.name + "': 'properties' must be an array");
 
-        for (size_t i = 0; i < arr.size(); ++i)
+        for (size_t i = 0; i < arr->getElements().size(); ++i)
         {
-            const auto& p = arr[i];
-            if (!p.contains("type") || !p.contains("name"))
+            auto* p = arr->getElements()[i]->toJsonObject();
+            if (!p || !p->hasKey("type") || !p->hasKey("name"))
                 throw std::runtime_error("material '" + spec.name +
                     "': property[" + std::to_string(i) + "] must have 'type' and 'name'");
 
-            std::string typeStr = p["type"].get<std::string>();
-            std::string propName = p["name"].get<std::string>();
+            std::string typeStr = JsonString(p, "type");
+            std::string propName = JsonString(p, "name");
 
             PropertyParam pp;
             pp.name = propName;
@@ -175,7 +232,7 @@ static MaterialSpec ParseMaterialSpecImpl(const json& j)
                 pp.kind = PropertyParam::Kind::Uniform;
                 pp.uniformType = ParseUniformType(typeStr);
                 if (pp.uniformType == UniformType::STRUCT)
-                    pp.structName = p.value("structName", "");
+                    pp.structName = p->hasKey("structName") ? JsonString(p, "structName") : "";
             }
             else
             {
@@ -183,7 +240,8 @@ static MaterialSpec ParseMaterialSpecImpl(const json& j)
                     "': property[" + std::to_string(i) + "]: unknown type '" + typeStr +
                     "'. Valid uniform types: BOOL, BOOL2..4, FLOAT, FLOAT2..4, INT, INT2..4, "
                     "UINT, UINT2..4, MAT3, MAT4, STRUCT. "
-                    "Valid sampler types: SAMPLER_2D, SAMPLER_2D_ARRAY, SAMPLER_CUBEMAP, SAMPLER_3D, SAMPLER_CUBEMAP_ARRAY");
+                    "Valid sampler types: SAMPLER_2D, SAMPLER_2D_ARRAY, SAMPLER_CUBEMAP, "
+                    "SAMPLER_3D, SAMPLER_CUBEMAP_ARRAY");
             }
 
             spec.properties.push_back(std::move(pp));
@@ -191,22 +249,23 @@ static MaterialSpec ParseMaterialSpecImpl(const json& j)
     }
 
     // --- output (optional) ---
-    if (j.contains("outputs"))
+    if (j->hasKey("outputs"))
     {
-        const auto& arr = j["outputs"];
-        if (!arr.is_array())
-            throw std::runtime_error("material '" + spec.name + "': 'output' must be an array");
+        auto* v = j->getValue("outputs");
+        auto* arr = v ? v->toJsonArray() : nullptr;
+        if (!arr)
+            throw std::runtime_error("material '" + spec.name + "': 'outputs' must be an array");
 
-        for (size_t i = 0; i < arr.size(); ++i)
+        for (size_t i = 0; i < arr->getElements().size(); ++i)
         {
-            const auto& o = arr[i];
-            if (!o.contains("type") || !o.contains("name"))
+            auto* o = arr->getElements()[i]->toJsonObject();
+            if (!o || !o->hasKey("type") || !o->hasKey("name"))
                 throw std::runtime_error("material '" + spec.name +
                     "': output[" + std::to_string(i) + "] must have 'type' and 'name'");
 
             OutputParam op;
-            op.type = o["type"].get<std::string>();
-            op.name = o["name"].get<std::string>();
+            op.type = JsonString(o, "type");
+            op.name = JsonString(o, "name");
 
             if (op.type != "color" && op.type != "depth")
                 throw std::runtime_error("material '" + spec.name +
@@ -216,12 +275,6 @@ static MaterialSpec ParseMaterialSpecImpl(const json& j)
             spec.outputs.push_back(std::move(op));
         }
     }
-
-    // --- vertexCode (optional) ---
-    spec.vertexCode = j.value("vertexCode", "");
-
-    // --- fragmentCode (optional) ---
-    spec.fragmentCode = j.value("fragmentCode", "");
 
     return spec;
 }

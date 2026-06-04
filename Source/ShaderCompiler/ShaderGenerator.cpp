@@ -66,9 +66,12 @@ void ShaderGenerator::EmitHeader(std::ostringstream& os, CodeGenerator& cg,
 	if (!perViewUib.isEmpty())
 		cg.generateUniforms(os, perViewUib);
 
-	auto & perRenderableUib = UIB::GetPerRenderableUIB();
-	if (!perRenderableUib.isEmpty())
-		cg.generateUniforms(os, perRenderableUib);
+	if (spec.pipeline != Pipeline::LIGHTING)
+	{
+		auto & perRenderableUib = UIB::GetPerRenderableUIB();
+		if (!perRenderableUib.isEmpty())
+			cg.generateUniforms(os, perRenderableUib);
+	}
 
 	if (!spec.materialUib.isEmpty())
 		cg.generateUniforms(os, spec.materialUib);
@@ -80,6 +83,10 @@ void ShaderGenerator::EmitHeader(std::ostringstream& os, CodeGenerator& cg,
 	cg.generateVaryingDefines(os, spec);
 	cg.generateConstantDefines(os, spec);
 	cg.generateAttributeDefines(os, spec);
+	cg.generatePropertyDefines(os, spec);
+
+	int shadingModelId = (spec.shadingModel == "lit") ? 1 : 0;
+	os << "#define SHADING_MODEL_ID " << shadingModelId << "\n";
 	os << '\n';
 }
 
@@ -95,6 +102,15 @@ std::string ShaderGenerator::GenerateVertexShader(
 	CodeGenerator cg;
 
 	EmitHeader(os, cg, spec);
+
+	// Lighting / PostProcess: simple full-screen quad
+	if (spec.pipeline == Pipeline::LIGHTING || spec.domain == MaterialDomain::POST_PROCESS)
+	{
+		os << "#define VERTEX_STAGE\n\n";
+		os << LoadTemplate("common_defines.glsl") << '\n';
+		os << LoadTemplate("surface_shading_main.vs") << '\n';
+		return os.str();
+	}
 
 	if (spec.domain == MaterialDomain::SURFACE)
 		os << "#define VERTEX_DOMAIN_DEVICE\n";
@@ -157,6 +173,30 @@ std::string ShaderGenerator::GenerateFragmentShader(
 	CodeGenerator cg;
 
 	EmitHeader(os, cg, spec);
+
+	// Lighting / PostProcess: read GBuffer + compute lighting, output single color
+	if (spec.pipeline == Pipeline::LIGHTING || spec.domain == MaterialDomain::POST_PROCESS)
+	{
+		if (m_TargetVulkan)
+			os << "#define TARGET_VULKAN_ENVIRONMENT\n";
+		os << "#define LIGHTING_PASS\n";
+		os << "#define FRAGMENT_STAGE\n\n";
+
+		os << LoadTemplate("common_defines.glsl") << '\n';
+		os << LoadTemplate("common_math.glsl") << '\n';
+		os << LoadTemplate("common_shading.glsl") << '\n';
+		os << LoadTemplate("surface_material_input.fs") << '\n';
+		os << LoadTemplate("lighting_uniforms.glsl") << '\n';
+		os << LoadTemplate("surface_shading_parameters.fs") << '\n';
+
+		if (!expandedFragmentCode.empty())
+			os << "// User fragment code\n" << expandedFragmentCode << '\n';
+
+		os << LoadTemplate("surface_shading_unlit.fs") << '\n';
+		os << LoadTemplate("surface_shading_lit.fs") << '\n';
+		os << LoadTemplate("surface_shading_main.fs") << '\n';
+		return os.str();
+	}
 
 	if (m_TargetVulkan)
 		os << "#define TARGET_VULKAN_ENVIRONMENT\n";

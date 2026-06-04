@@ -15,6 +15,7 @@ enum class DescriptorSetBindingPoints : uint8_t {
 
 enum class PerViewBindingPoints : uint8_t {
 	FRAME_UNIFORM = 0,
+	LIGHT_DATA    = 1,
 	NUM_PER_VIEW_BINDING_POINTS,
 };
 
@@ -28,9 +29,9 @@ enum class PerMaterialBindingPoint : uint8_t {
 };
 
 enum class GBufferBindingPoint : uint8_t {
-	G_BUFFER_ALBEDO = 0,
-	G_BUFFER_NORMAL = 1,
-	G_BUFFER_POSITION = 2,
+	G_BUFFER_DEPTH    = 0,
+	G_BUFFER_NORMAL   = 1,
+	G_BUFFER_ALBEDO   = 2,
 	G_BUFFER_MATERIAL = 3,
 };
 

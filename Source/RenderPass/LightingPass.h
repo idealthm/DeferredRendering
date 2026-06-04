@@ -4,8 +4,7 @@
 #include "Shapes/ScreenQuad.h"
 
 class MaterialInstance;
-class Material;
-class FrameBuffer;
+class RenderTarget;
 
 class LightingPass : public RenderPass
 {
@@ -14,12 +13,11 @@ public:
 	virtual ~LightingPass() = default;
 
 	void Setup(RenderContext& ctx) override;
-
 	void Execute(Ref<Scene> scene, RenderContext& ctx) override;
 
 private:
-	Ref<Program> m_Shader;
+	Ref<RenderTarget> m_RenderTarget;
 	ScreenQuad  m_ScreenQuad;
-	Ref<Material> m_Material;
 	Ref<MaterialInstance> m_MaterialInstance;
+	DescriptorSet m_GBufferDescriptorSet;
 };

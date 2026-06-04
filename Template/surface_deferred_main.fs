@@ -1,31 +1,29 @@
 
 layout(location = 0) out vec3 gAlbedo;
 layout(location = 1) out vec3 gNormal;
-layout(location = 2) out vec3 gPosition;
-layout(location = 3) out vec3 gRMS;
+// location 2: reconstructed from depth, no output needed
+layout(location = 2) out vec4 gMaterial;
 
 void main() {
-    // filament_lodBias = frameUniforms.lodBias;
-    
     logical_instance_index = instance_index;
     initObjectUniforms();
 
-    // See surface_shading_parameters.fs
-    // Computes global variables we need to evaluate material and lighting
-    computeShadingParams();
+    vec3 n = vertex_worldNormal;
+    vec3 t = vertex_worldTangent.xyz;
+    vec3 b = cross(n, t) * vertex_worldTangent.w;
 
-    // Initialize the inputs to sensible default values, see surface_material_inputs.fs
+    shading_tangentToWorld = mat3(t, b, n);
+    computeShadingParams(vertex_worldPosition.xyz, vertex_worldNormal);
+
     MaterialInputs inputs;
     initMaterial(inputs);
 
-    // Invoke user code
     material(inputs);
 
     gAlbedo = inputs.baseColor.xyz;
 
-    gRMS = vec3(inputs.roughness, inputs.metallic, inputs.ambientOcclusion);
+    gMaterial = vec4(inputs.roughness, inputs.metallic, inputs.ambientOcclusion,
+                     float(SHADING_MODEL_ID) / 255.0);
 
-    gNormal = inputs.normal;
-
-    gPosition = vertex_worldPosition.xyz;
+    gNormal = shading_normal;
 }

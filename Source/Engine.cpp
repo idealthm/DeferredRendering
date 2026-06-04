@@ -15,6 +15,7 @@ void Engine::Init()
 
 	m_PerRenderableSetLayout = DescriptorSetLayout(*m_Driver, DescriptorSets::GetPerRenderableSetLayout());
 	m_PerViewSetLayout = DescriptorSetLayout(*m_Driver, DescriptorSets::GetPerViewSetLayout());
+	m_GBufferSetLayout = DescriptorSetLayout(*m_Driver, DescriptorSets::GetGBufferSetLayout());
 }
 
 void Engine::Shutdown()
@@ -30,4 +31,9 @@ DescriptorSetLayout const& Engine::GetPerRenderableSetLayout()
 DescriptorSetLayout const& Engine::GetPerViewSetLayout()
 {
 	return m_PerViewSetLayout;
+}
+
+DescriptorSetLayout const& Engine::GetGBufferSetLayout()
+{
+	return m_GBufferSetLayout;
 }

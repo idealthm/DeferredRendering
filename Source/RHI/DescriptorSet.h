@@ -63,6 +63,8 @@ struct DescriptorSet
 
 	void commit(RHI::RHIDriver& driver, const DescriptorSetLayout& layout);
 
+	void commitSlow(RHI::RHIDriver& driver, const DescriptorSetLayout& layout);
+
 	void SetBuffer(descriptor_binding_t binding, Handle<RHI::HwBufferObject> h, uint32_t offset = 0, uint32_t size = 0);
 
 	void SetTexture(descriptor_binding_t binding, Handle<RHI::HwTexture> h, const RHI::SamplerParams& params);

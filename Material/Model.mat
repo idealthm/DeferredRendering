@@ -1,16 +1,33 @@
+material
 {
-    "name": "Model",
-    "pipeline": "deferred",
-    "shadingModel": "lit",
-    "require": ["POSITION", "TANGENTS", "UV0"],
-    "properties": [
-      { "type": "sampler2d", "name": "albedo" },
-      { "type": "sampler2d", "name": "normal" },
-      { "type": "sampler2d", "name": "roughness" },
-      { "type": "sampler2d", "name": "metallic" },
-      { "type": "sampler2d", "name": "ao" }
+    name: Model,
+    pipeline: deferred,
+    shadingModel: lit,
+    require: [POSITION, TANGENTS, UV0],
+    properties: [
+      { type: sampler2d, name: albedo },
+      { type: sampler2d, name: normal },
+      { type: sampler2d, name: roughness },
+      { type: sampler2d, name: metallic },
+      { type: sampler2d, name: ao }
     ],
-    "domain": "surface",
-    "vertexCode": "void materialVertex(inout MaterialVertexInputs material) {\n        \n    }",
-    "fragmentCode": "void material(inout MaterialInputs material) {\n        prepareMaterial(material);\n        material.roughness         = texture(materialParams_roughness, getUV0().xy).r;\n        material.metallic          = texture(materialParams_metallic, getUV0().xy).r;\n        material.ambientOcclusion  = texture(materialParams_ao, getUV0().xy).r;\n        material.baseColor.rgb     = texture(materialParams_albedo, getUV0().xy).rgb;\n        material.normal            = normalize(texture(materialParams_normal, getUV0().xy).rgb * 2.0 - 1.0);\n    }"
+    domain: surface
+}
+vertexCode
+{
+    void materialVertex(inout MaterialVertexInputs material) 
+    {
+    }
+}
+
+fragmentCode
+{
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.normal            = normalize(texture(materialParams_normal, getUV0().xy).rgb * 2.0 - 1.0);
+        material.roughness         = texture(materialParams_roughness, getUV0().xy).r;
+        material.metallic          = texture(materialParams_metallic, getUV0().xy).r;
+        material.ambientOcclusion  = texture(materialParams_ao, getUV0().xy).r;
+        material.baseColor.rgb     = texture(materialParams_albedo, getUV0().xy).rgb;
+    }
 }

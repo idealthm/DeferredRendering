@@ -25,6 +25,7 @@ namespace UIB
 				{"clipFromWorldMatrix", 0, BufferInterfaceBlock::Type::MAT4},
 				{"worldFromClipMatrix", 0, BufferInterfaceBlock::Type::MAT4},
 				{"RenderMode", 0, BufferInterfaceBlock::Type::UINT},
+				{"iblParams", 0, BufferInterfaceBlock::Type::FLOAT4},
 			})
 			.build();
 		return uib;

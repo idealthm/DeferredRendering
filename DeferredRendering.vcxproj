@@ -87,6 +87,7 @@ if %errorlevel% neq 0 exit /b 1
 for %%f in ("$(ProjectDir)Material\*.mat") do (
   "$(SolutionDir)Binaries\$(Platform)\$(Configuration)\ShaderCompiler.exe" "%%f" --target opengl4.5 --template-dir "$(ProjectDir)Template" -o CompiledMaterials || exit /b 1
 )
+      "$(SolutionDir)Binaries\$(Platform)\$(Configuration)\ShaderCompiler.exe" "__lighting__" --target opengl4.5 --template-dir "$(ProjectDir)Template" -o CompiledMaterials || exit /b 1
 endlocal</Command>
       <Message>Copy DLL + compile all .mat shaders to SPIR-V</Message>
     </PreBuildEvent>
@@ -126,6 +127,7 @@ if %errorlevel% neq 0 exit /b 1
 for %%f in ("$(ProjectDir)Material\*.mat") do (
   "$(SolutionDir)Binaries\$(Platform)\$(Configuration)\ShaderCompiler.exe" "%%f" --target opengl4.5 --template-dir "$(ProjectDir)Template" -o CompiledMaterials || exit /b 1
 )
+      "$(SolutionDir)Binaries\$(Platform)\$(Configuration)\ShaderCompiler.exe" "__lighting__" --target opengl4.5 --template-dir "$(ProjectDir)Template" -o CompiledMaterials || exit /b 1
 endlocal</Command>
       <Message>Copy DLL + compile all .mat shaders to SPIR-V</Message>
     </PreBuildEvent>
@@ -714,8 +716,13 @@ endlocal</Command>
     <Content Include="Assets\textures\toy_box_normal.png" />
     <Content Include="Assets\textures\window.png" />
     <Content Include="Assets\textures\wood.png" />
+    <Content Include="Material\CubeConvolution.mat" />
+    <Content Include="Material\EquirectToCube.mat" />
+    <Content Include="Material\IBLPrefilter.mat" />
     <Content Include="Material\Model.mat" />
     <Content Include="Material\Shape.mat" />
+    <Content Include="Material\skyBox.mat" />
+    <Content Include="Material\ToneMapping.mat" />
     <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_AmbientOcclusion.jpg" />
     <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_BaseColor.jpg" />
     <Content Include="Resource\Textures\Gravel_001_SD\Gravel_001_Height.png" />
@@ -765,6 +772,7 @@ endlocal</Command>
     <Content Include="Template\surface_material_input.fs" />
     <Content Include="Template\surface_material_input.vs" />
     <Content Include="Template\surface_forward_main.vs" />
+    <Content Include="Template\surface_shading_main.vs" />
     <Content Include="Template\surface_types.glsl" />
     <Content Include="Template\surface_varying.glsl" />
     <Content Include="vendor\includes\assimp\.editorconfig" />
@@ -774,6 +782,7 @@ endlocal</Command>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Template\surface_shading_lit.fs" />
+    <Compile Include="Template\surface_shading_main.fs" />
     <Compile Include="Template\surface_shading_parameters.fs" />
     <Compile Include="Template\surface_shading_unlit.fs" />
   </ItemGroup>

@@ -3,31 +3,18 @@
     MaterialVertexInputs material;
     initMaterialVertex(material);
 
-    #if !defined(USE_OPTIMIZED_DEPTH_VERTEX_SHADER)
+    // Extract the normal and tangent in world space from the input quaternion
+    // We encode the orthonormal basis as a quaternion to save space in the attributes
+    toTangentFrame(mesh_tangents, material.worldNormal, vertex_worldTangent.xyz);
 
-    #if defined(HAS_ATTRIBUTE_TANGENTS)
-        // If the material defines a value for the "normal" property, we need to output
-        // the full orthonormal basis to apply normal mapping
-        #if defined(MATERIAL_NEEDS_TBN)
-            // Extract the normal and tangent in world space from the input quaternion
-            // We encode the orthonormal basis as a quaternion to save space in the attributes
-            toTangentFrame(mesh_tangents, material.worldNormal, vertex_worldTangent.xyz);
-    
-            // We don't need to normalize here, even if there's a scale in the matrix
-            // because we ensure the worldFromModelNormalMatrix pre-scales the normal such that
-            // all its components are < 1.0. This prevents the bitangent to exceed the range of fp16
-            // in the fragment shader, where we renormalize after interpolation
-            vertex_worldTangent.xyz = getWorldFromModelNormalMatrix() * vertex_worldTangent.xyz;
-            vertex_worldTangent.w = mesh_tangents.w;
-            material.worldNormal = getWorldFromModelNormalMatrix() * material.worldNormal;
-        #else // MATERIAL_NEEDS_TBN
-            // Without anisotropy or normal mapping we only need the normal vector
-            toTangentFrame(mesh_tangents, material.worldNormal);
-    
-            material.worldNormal = getWorldFromModelNormalMatrix() * material.worldNormal;
-    
-        #endif // MATERIAL_HAS_ANISOTROPY || MATERIAL_HAS_NORMAL 
-    #endif // HAS_ATTRIBUTE_TANGENTS
+    // We don't need to normalize here, even if there's a scale in the matrix
+    // because we ensure the worldFromModelNormalMatrix pre-scales the normal such that
+    // all its components are < 1.0. This prevents the bitangent to exceed the range of fp16
+    // in the fragment shader, where we renormalize after interpolation
+    vertex_worldTangent.xyz = getWorldFromModelNormalMatrix() * vertex_worldTangent.xyz;
+    vertex_worldTangent.w = mesh_tangents.w;
+    material.worldNormal = getWorldFromModelNormalMatrix() * material.worldNormal;
+        
     
         // Invoke user code
         materialVertex(material);
