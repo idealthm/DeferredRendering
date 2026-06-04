@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 #include "IncludeExpander.h"
 #include "MaterialSpec.h"
@@ -33,7 +34,7 @@ static void PrintUsage()
         "  --target <env>        Target environment for glslc\n"
         "                        (e.g. vulkan1.2, opengl4.5; default: vulkan1.2)\n"
         "  --glslc <path>        Path to glslc executable\n"
-        "                        (default: C:\\VulkanSDK\\1.3.216.0\\Bin\\glslc.exe)\n"
+        "                        (default: $VULKAN_SDK/Bin/glslc.exe or glslc.exe)\n"
         "  --include <path>      Additional include search path (repeatable)\n"
         "  --template-dir <path> Path to template directory (default: Template/)\n"
         "  -h, --help            Print usage and exit\n\n"
@@ -322,9 +323,18 @@ static void WriteMaterialBinary(const std::string& fullOutputDir,
 	setView.push_back({ "FrameUniforms.frameUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
 		static_cast<uint8_t>(PerViewBindingPoints::FRAME_UNIFORM) });
 
-	auto& setRenderable = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_RENDERABLE)];
-	setRenderable.push_back({ "ObjectUniforms.objectUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
-		static_cast<uint8_t>(PerRenderableBindingPoints::OBJECT_UNIFORM) });
+	if (spec.pipeline == Pipeline::LIGHTING)
+	{
+		setView.push_back({ "LightData.lightData", RHI::DescriptorType::UNIFORM_BUFFER,
+			static_cast<uint8_t>(PerViewBindingPoints::LIGHT_DATA) });
+	}
+
+	if (spec.pipeline != Pipeline::LIGHTING)
+	{
+		auto& setRenderable = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_RENDERABLE)];
+		setRenderable.push_back({ "ObjectUniforms.objectUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
+			static_cast<uint8_t>(PerRenderableBindingPoints::OBJECT_UNIFORM) });
+	}
 
 	auto& setMat = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_MATERIAL)];
 	setMat.push_back({ "MaterialParams.materialParams", RHI::DescriptorType::UNIFORM_BUFFER,
@@ -338,12 +348,12 @@ static void WriteMaterialBinary(const std::string& fullOutputDir,
 		setMat.push_back({"materialParams_" + p.name, RHI::DescriptorType::SAMPLER, (uint8_t)setMat.size() });
 	}
 
-	if (spec.pipeline == Pipeline::DEFERRED)
+	if (spec.pipeline == Pipeline::LIGHTING)
 	{
 		auto& setGBuffer = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::G_BUFFER)];
-		setGBuffer.push_back({ "gAlbedo",   RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_ALBEDO) });
+		setGBuffer.push_back({ "gDepth",    RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_DEPTH) });
 		setGBuffer.push_back({ "gNormal",   RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_NORMAL) });
-		setGBuffer.push_back({ "gPosition", RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_POSITION) });
+		setGBuffer.push_back({ "gAlbedo",   RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_ALBEDO) });
 		setGBuffer.push_back({ "gMaterial", RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_MATERIAL) });
 	}
 
@@ -364,8 +374,8 @@ static void WriteMaterialBinary(const std::string& fullOutputDir,
 		}
 	}
 
-	// Layout[1]: G_BUFFER bindings (deferred only)
-	if (spec.pipeline == Pipeline::DEFERRED)
+	// Layout[1]: G_BUFFER bindings (lighting only)
+	if (spec.pipeline == Pipeline::LIGHTING)
 	{
 		auto& layout = descSetLayouts[1].bindings;
 		auto& src = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::G_BUFFER)];
@@ -568,6 +578,67 @@ static void DumpMatb(const std::string& path)
 	sep();
 }
 
+static int BuildLightingMaterial(
+    const std::string& outputDir, const std::string& workDir,
+    const std::string& templateDir, const std::string& glslcPath,
+    const std::string& targetEnv)
+{
+    MaterialSpec spec;
+    spec.name = "Lighting";
+    spec.pipeline = Pipeline::LIGHTING;
+    spec.shadingModel = "lit";
+    spec.domain = MaterialDomain::SURFACE;
+    spec.variables.push_back({ "uv", FieldType::FLOAT4, 0 });
+
+    spec.fragmentCode = "";
+    spec.vertexCode = "";
+
+    std::cout << "matc: built Lighting material from code\n";
+
+    BuildUib(spec);
+    BuildSib(spec);
+
+    ShaderGenerator shaderGen;
+    shaderGen.SetTemplateDirectory(templateDir);
+    shaderGen.SetTargetVulkan(targetEnv.rfind("vulkan", 0) == 0);
+
+    std::string expandedVert, expandedFrag;
+    std::string vertSource = shaderGen.GenerateVertexShader(spec, expandedVert);
+    std::string fragSource = shaderGen.GenerateFragmentShader(spec, expandedFrag);
+
+    std::string fullOutputDir = (workDir.empty() ? std::string("Material") : workDir) + "/" + outputDir + "/" + spec.name;
+    CreateDirectoryA(fullOutputDir.c_str(), nullptr);
+
+    {
+        std::string f = fullOutputDir + "/" + spec.name + ".vert";
+        std::ofstream ofs(f); ofs << vertSource;
+        std::cout << "matc: wrote " << f << " (" << vertSource.size() << " bytes)\n";
+    }
+    {
+        std::string f = fullOutputDir + "/" + spec.name + ".frag";
+        std::ofstream ofs(f); ofs << fragSource;
+        std::cout << "matc: wrote " << f << " (" << fragSource.size() << " bytes)\n";
+    }
+
+    std::vector<std::string> glslcArgs;
+    glslcArgs.push_back("--target-env=" + targetEnv);
+
+    if (!RunGlslc(glslcPath, fullOutputDir + "/" + spec.name + ".vert",
+                  fullOutputDir + "/" + spec.name + ".vert.spv", "vert", glslcArgs))
+    {
+        std::cerr << "matc: error: vertex shader compilation failed\n";
+        return 1;
+    }
+    if (!RunGlslc(glslcPath, fullOutputDir + "/" + spec.name + ".frag",
+                  fullOutputDir + "/" + spec.name + ".frag.spv", "frag", glslcArgs))
+    {
+        std::cerr << "matc: error: fragment shader compilation failed\n";
+        return 1;
+    }
+
+    WriteMaterialBinary(fullOutputDir, spec, vertSource, fragSource, true);
+    return 0;
+}
 // ============================================================
 
 int main(int Argc, char* Argv[])
@@ -575,7 +646,13 @@ int main(int Argc, char* Argv[])
     std::string inputFile;
     std::string outputDir = "CompiledMaterials";
     std::string workDir;
-    std::string glslcPath = "C:\\VulkanSDK\\1.3.216.0\\Bin\\glslc.exe";
+    std::string glslcPath;
+	{
+		char* vulkanSdk = nullptr; _dupenv_s(&vulkanSdk, nullptr, "VULKAN_SDK");
+		glslcPath = vulkanSdk ? std::string(vulkanSdk) + "/Bin/glslc.exe" : "glslc.exe";
+        free(vulkanSdk);
+		                     
+	}
     std::string templateDir = "Template";
     std::string targetEnv = "vulkan1.2";
     std::vector<std::string> includePaths;
@@ -636,6 +713,11 @@ int main(int Argc, char* Argv[])
     {
         DumpMatb(dumpPath);
         return 0;
+    }
+
+    if (inputFile == "__lighting__")
+    {
+        return BuildLightingMaterial(outputDir, workDir, templateDir, glslcPath, targetEnv);
     }
 
     if (inputFile.empty())
@@ -730,7 +812,7 @@ int main(int Argc, char* Argv[])
     std::string fragSource = shaderGen.GenerateFragmentShader(spec, expandedFrag);
 
     // --- Step 4: Write GLSL output ---
-    std::string fullOutputDir = workDir + "/" + outputDir + "/" + spec.name;
+    std::string fullOutputDir = (workDir.empty() ? std::string("Material") : workDir) + "/" + outputDir + "/" + spec.name;
     EnsureDirectory(fullOutputDir);
 
     std::string vertFile = fullOutputDir + "/" + spec.name + ".vert";
@@ -807,3 +889,5 @@ int main(int Argc, char* Argv[])
     std::cout << "matc: done.\n";
     return 0;
 }
+
+// Build the LIGHTING pipeline material from code (no .mat JSON needed)

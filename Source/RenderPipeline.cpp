@@ -23,6 +23,10 @@ void RenderPipeline::Init(uint32_t width, uint32_t height)
 {
 	m_Context.ShadowWidth  = 2048.f;
 	m_Context.ShadowHeight = 2048.f;
+	m_Context.FrameDataHandle = gEngine->GetDriver().CreateBufferObject(m_Context.FrameDataUB.getSize(),
+			RHI::BufferObjectBinding::UNIFORM, RHI::BufferUsage::DYNAMIC);
+	m_Context.LightDataHandle = gEngine->GetDriver().CreateBufferObject(m_Context.LightDataUB.getSize(),
+			RHI::BufferObjectBinding::UNIFORM, RHI::BufferUsage::DYNAMIC);
 
 	auto defaultTexBuilder = Texture::Builder()
 		.SetWidth(1).SetHeight(1)
@@ -78,19 +82,20 @@ void RenderPipeline::Render(Ref<Scene>& scene, const glm::u32vec2& viewportSize)
 				RHI::BufferObjectBinding::UNIFORM, RHI::BufferUsage::DYNAMIC);
 		}
 		driver.updateBufferObject(m_Context.FrameDataHandle, m_Context.FrameDataUB.toBufferDescriptor(driver));
-
-		m_PerViewDescriptorSet.SetBuffer(+PerViewBindingPoints::FRAME_UNIFORM, m_Context.FrameDataHandle,
-			0, m_Context.FrameDataUB.getSize());
 		m_Context.FrameDataUB.clean();
 	}
+	m_PerViewDescriptorSet.SetBuffer(+PerViewBindingPoints::FRAME_UNIFORM, m_Context.FrameDataHandle,
+		0, m_Context.FrameDataUB.getSize());
+
+	// LightData UBO — buffer handle bound here, content uploaded later by LightingPass
+	m_PerViewDescriptorSet.SetBuffer(+PerViewBindingPoints::LIGHT_DATA, m_Context.LightDataHandle,
+		0, sizeof(LightData));
+
 	m_PerViewDescriptorSet.commit(driver, gEngine->GetPerViewSetLayout());
 	m_PerViewDescriptorSet.bind(driver, DescriptorSetBindingPoints::PER_VIEW);
 
 	StartPass(scene, m_GBufferPass, viewportSize);
-	// StartPass(scene, m_ShadowPass, viewportSize);
-	// StartPass(scene, m_LightPass, viewportSize);
-	// StartPass(scene, m_SkyLightPass, viewportSize);
-	// StartPass(scene, m_ToneMappingPass, viewportSize);
+	StartPass(scene, m_LightPass, viewportSize);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

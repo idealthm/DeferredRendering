@@ -17,6 +17,7 @@ namespace RHI {
 enum class Pipeline : uint8_t {
     DEFERRED = 0,
     FORWARD  = 1,
+    LIGHTING = 2,
 };
 
 // =============================================================================

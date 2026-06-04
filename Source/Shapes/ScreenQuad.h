@@ -9,6 +9,8 @@ public:
 
 	Handle<RHI::HwRenderPrimitive> GetRenderPrimitiveHandle() const;
 	Handle<RHI::HwVertexBufferInfo> GetVertexBufferInfoHandle() const;
+	uint32_t GetIndexOffset() const { return m_IndexOffset; }
+	uint32_t GetIndexCount()  const { return m_IndexCount; }
 
 private:
 	Ref<RHI::RenderPrimitive> m_RenderPrimitive;

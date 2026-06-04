@@ -88,13 +88,13 @@ void Application::OnEvent(Event& e)
 		switch (e.GetKeyCode())
 		{
 			case Key::Escape: m_Running = false; return true;
-			// case Key::F1: ctx.FrameDataUB->Data.RenderMode = 1; return true;
-			// case Key::F2: ctx.FrameDataUB->Data.RenderMode = 2; return true;
-			// case Key::F3: ctx.FrameDataUB->Data.RenderMode = 3; return true;
-			// case Key::F4: ctx.FrameDataUB->Data.RenderMode = 4; return true;
-			// case Key::F5: ctx.FrameDataUB->Data.RenderMode = 5; return true;
-			// case Key::F6: ctx.FrameDataUB->Data.RenderMode = 6; return true;
-			// case Key::F7: ctx.FrameDataUB->Data.RenderMode = 7; return true;
+			case Key::F1: ctx.FrameDataUB.edit().RenderMode = 1; return true;
+			case Key::F2: ctx.FrameDataUB.edit().RenderMode = 2; return true;
+			case Key::F3: ctx.FrameDataUB.edit().RenderMode = 3; return true;
+			case Key::F4: ctx.FrameDataUB.edit().RenderMode = 4; return true;
+			case Key::F5: ctx.FrameDataUB.edit().RenderMode = 5; return true;
+			case Key::F6: ctx.FrameDataUB.edit().RenderMode = 6; return true;
+			case Key::F7: ctx.FrameDataUB.edit().RenderMode = 7; return true;
 		}
 		return false;
 	});

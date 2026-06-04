@@ -27,50 +27,6 @@ highp vec2 getUV1() {
 #endif
 #endif
 
-/** @public-api */
-highp mat3 getWorldTangentFrame() {
-    return shading_tangentToWorld;
-}
-
-/** @public-api */
-highp vec3 getWorldPosition() {
-    return shading_position;
-}
-
-/** @public-api */
-vec3 getWorldViewVector() {
-    return shading_view;
-}
-
 bool isPerspectiveProjection() {
     return frameUniforms.clipFromViewMatrix[2].w != 0.0;
-}
-
-#if defined(HAS_ATTRIBUTE_TANGENTS)
-
-/** @public-api */
-vec3 getWorldNormalVector() {
-    return shading_normal;
-}
-
-/** @public-api */
-vec3 getWorldGeometricNormalVector() {
-    return shading_geometricNormal;
-}
-
-/** @public-api */
-vec3 getWorldReflectedVector() {
-    return shading_reflected;
-}
-
-/** @public-api */
-float getNdotV() {
-    return shading_NoV;
-}
-
-#endif
-
-highp vec3 getNormalizedPhysicalViewportCoord() {
-    // make sure to handle our reversed-z
-    return vec3(shading_normalizedViewportCoord, gl_FragCoord.z);
 }

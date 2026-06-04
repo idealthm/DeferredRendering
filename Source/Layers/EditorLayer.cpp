@@ -64,10 +64,11 @@ void EditorLayer::LoadScene(std::string path)
 	Ref<StaticMesh> PlaneMesh = MeshBuilder::BuildCube();
 	PlaneActor->SetStaticMesh(PlaneMesh);
 	auto mi = PlaneMesh->GetMaterial();
+
 	mi->SetParameter("albedo", glm::vec3(0.3f, 0.4f, 0.5f));
-	mi->SetParameter("roughness", 0.5f);
-	mi->SetParameter("metallic", 0.3f);
-	mi->SetParameter("ao", 0.f);
+	mi->SetParameter("roughness", 0.9f);
+	mi->SetParameter("metallic", 0.1f);
+	mi->SetParameter("ao", 0.1f);
 
 	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.json"));
 

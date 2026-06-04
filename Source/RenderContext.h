@@ -22,7 +22,6 @@ struct RenderContext
 
 	Ref<Texture> BRDF_LUT;
 
-	Ref<Texture> GBuffer_Position;
 	Ref<Texture> GBuffer_Normal;
 	Ref<Texture> GBuffer_Albedo;
 	Ref<Texture> GBuffer_Material;

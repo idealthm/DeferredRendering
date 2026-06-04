@@ -19,11 +19,12 @@ using namespace TextureFactory;
 GBufferPass::GBufferPass()
 	: m_DescriptorSetPerRender(gEngine->GetPerRenderableSetLayout())
 {
+	m_ModelDataHandle = gEngine->GetDriver().CreateBufferObject(sizeof(PerRenderableUib), RHI::BufferObjectBinding::UNIFORM,
+			RHI::BufferUsage::DYNAMIC);
 }
 
 void GBufferPass::Setup(RenderContext& ctx)
 {
-	CreateResource(ctx.GBuffer_Position, CreateGBuffer(ctx.viewportSize.x, ctx.viewportSize.y, RHI::Format::RGBA16F));
 	CreateResource(ctx.GBuffer_Normal,   CreateGBuffer(ctx.viewportSize.x, ctx.viewportSize.y, RHI::Format::RGBA16F));
 	CreateResource(ctx.GBuffer_Albedo,   CreateGBuffer(ctx.viewportSize.x, ctx.viewportSize.y, RHI::Format::RGBA8));
 	CreateResource(ctx.GBuffer_Material, CreateGBuffer(ctx.viewportSize.x, ctx.viewportSize.y, RHI::Format::RGBA8));
@@ -32,8 +33,7 @@ void GBufferPass::Setup(RenderContext& ctx)
 	RenderTarget::Builder builder;
 	builder.texture(AttachmentPoint::COLOR0, ctx.GBuffer_Albedo);
 	builder.texture(AttachmentPoint::COLOR1, ctx.GBuffer_Normal);
-	builder.texture(AttachmentPoint::COLOR2, ctx.GBuffer_Position);
-	builder.texture(AttachmentPoint::COLOR3, ctx.GBuffer_Material);
+	builder.texture(AttachmentPoint::COLOR2, ctx.GBuffer_Material);
 	builder.texture(AttachmentPoint::DEPTH, ctx.GBuffer_Depth);
 
 	m_RenderTarget = builder.Build();
@@ -93,19 +93,11 @@ void GBufferPass::Execute(Ref<Scene> scene, RenderContext& ctx)
 
 	auto& driver = gEngine->GetDriver();
 
-	// Lazy-create GPU buffer sized for full UBO (CONFIG_MAX_INSTANCES * sizeof(PerRenderableData))
-	uint32_t const bufferSize = CONFIG_MAX_INSTANCES * sizeof(PerRenderableData);
-	if (!m_ModelDataHandle)
-	{
-		m_ModelDataHandle = driver.CreateBufferObject(bufferSize, RHI::BufferObjectBinding::UNIFORM,
-			RHI::BufferUsage::DYNAMIC);
-	}
-
 	// Begin GBuffer render pass
 	RHI::RenderPassParams rpParams{};
 	rpParams.viewport = { 0, 0, ctx.viewportSize.x, ctx.viewportSize.y };
 	rpParams.flags.clear = RHI::TargetBufferFlags::COLOR0 | RHI::TargetBufferFlags::COLOR1 |
-	                       RHI::TargetBufferFlags::COLOR2 | RHI::TargetBufferFlags::COLOR3 |
+	                       RHI::TargetBufferFlags::COLOR2 |
 	                       RHI::TargetBufferFlags::DEPTH;
 	rpParams.clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 	rpParams.clearDepth = 1.0;
@@ -135,7 +127,7 @@ void GBufferPass::Execute(Ref<Scene> scene, RenderContext& ctx)
 		driver.updateBufferObject(m_ModelDataHandle, std::move(bd));
 
 		m_DescriptorSetPerRender.SetBuffer(+PerRenderableBindingPoints::OBJECT_UNIFORM, m_ModelDataHandle,
-			0, bufferSize);
+			0, sizeof(PerRenderableUib));
 		m_DescriptorSetPerRender.commit(driver, gEngine->GetPerRenderableSetLayout());
 		m_DescriptorSetPerRender.bind(driver, DescriptorSetBindingPoints::PER_RENDERABLE);
 

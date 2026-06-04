@@ -23,6 +23,7 @@ public:
 
 	DescriptorSetLayout const& GetPerRenderableSetLayout();
 	DescriptorSetLayout const& GetPerViewSetLayout();
+	DescriptorSetLayout const& GetGBufferSetLayout();
 
 private:
 	std::unique_ptr<RHI::RHIDriver> m_Driver;
@@ -31,6 +32,7 @@ private:
 
 	DescriptorSetLayout m_PerRenderableSetLayout;
 	DescriptorSetLayout m_PerViewSetLayout;
+	DescriptorSetLayout m_GBufferSetLayout;
 };
 
 extern Engine* gEngine;

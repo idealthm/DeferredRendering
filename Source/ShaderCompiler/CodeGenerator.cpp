@@ -70,6 +70,13 @@ stream& CodeGenerator::generateConstantDefines(stream& out, const struct Materia
 	return out;
 }
 
+stream& CodeGenerator::generatePropertyDefines(stream& out, const struct MaterialSpec& spec) const
+{
+	for (const auto& p : spec.properties)
+		out << EmitDefine("MATERIAL_HAS_" + UpperCase(p.name));
+	return out;
+}
+
 stream& CodeGenerator::generateAttributeDefines(stream& out, const struct MaterialSpec& spec) const
 {
 	auto attrMacro = [](VertexAttribute attr) -> const char* {

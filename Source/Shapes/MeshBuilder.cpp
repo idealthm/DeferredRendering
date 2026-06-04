@@ -6,8 +6,9 @@
 #include "Model/MeshSection.h"
 
 static std::vector<uint32_t> cubeIndices = {
-    0, 1, 2,
-    2, 3, 0,
+	// Back face (fixed winding)
+	2, 1, 0,
+	0, 3, 2,
     // Front face
     4, 5, 6,
     6, 7, 4,
@@ -64,6 +65,18 @@ static float cubeRaw[] = {
     -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f
 };
 
+static glm::vec4 PackTangentFrame(glm::vec3 n, glm::vec3 t)
+{
+    n = glm::normalize(n);
+    t = glm::normalize(t);
+    glm::vec3 b = glm::cross(n, t);
+    glm::mat3 m;
+    m[0] = t; m[1] = b; m[2] = n;
+    glm::quat q = glm::quat_cast(m);
+    if (q.w < 0) q = -q;
+    return glm::vec4(q.x, q.y, q.z, q.w);
+}
+
 static Asset BuildAssetFromInterleaved(const float* raw, size_t vertexCount,
                                         const std::vector<uint32_t>& indices, int strideFloats)
 {
@@ -79,14 +92,16 @@ static Asset BuildAssetFromInterleaved(const float* raw, size_t vertexCount,
     {
         const float* v = raw + i * strideFloats;
         asset.positions.push_back({v[0], v[1], v[2], 1.0f});
-        asset.normals.push_back({v[3], v[4], v[5], 0.0f});
+        glm::vec3 n = glm::normalize(glm::vec3(v[3], v[4], v[5]));
+        asset.normals.push_back({n.x, n.y, n.z, 0.0f});
         float u = glm::clamp(v[6], 0.0f, 1.0f);
         float vv = glm::clamp(v[7], 0.0f, 1.0f);
         asset.texCoords0.push_back({
             static_cast<uint16_t>(u * 65535.0f),
             static_cast<uint16_t>(vv * 65535.0f)
         });
-        asset.tangents.push_back({v[8], v[9], v[10], 1.0f});
+        glm::vec3 t = glm::vec3(v[8], v[9], v[10]);
+        asset.tangents.push_back(PackTangentFrame(n, t));
     }
 
     Mesh mesh;

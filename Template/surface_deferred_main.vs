@@ -8,36 +8,22 @@
     MaterialVertexInputs material;
     initMaterialVertex(material);
 
-    #if !defined(USE_OPTIMIZED_DEPTH_VERTEX_SHADER)
+    // Extract the normal and tangent in world space from the input quaternion
+    // We encode the orthonormal basis as a quaternion to save space in the attributes
+    toTangentFrame(mesh_tangents, material.worldNormal, vertex_worldTangent.xyz);
 
-    #if defined(HAS_ATTRIBUTE_TANGENTS)
-        // If the material defines a value for the "normal" property, we need to output
-        // the full orthonormal basis to apply normal mapping
-        #if defined(MATERIAL_NEEDS_TBN)
-            // Extract the normal and tangent in world space from the input quaternion
-            // We encode the orthonormal basis as a quaternion to save space in the attributes
-            toTangentFrame(mesh_tangents, material.worldNormal, vertex_worldTangent.xyz);
+    // We don't need to normalize here, even if there's a scale in the matrix
+    // because we ensure the worldFromModelNormalMatrix pre-scales the normal such that
+    // all its components are < 1.0. This prevents the bitangent to exceed the range of fp16
+    // in the fragment shader, where we renormalize after interpolation
+    vertex_worldTangent.xyz = getWorldFromModelNormalMatrix() * vertex_worldTangent.xyz;
+    vertex_worldTangent.w = mesh_tangents.w;
+    material.worldNormal = getWorldFromModelNormalMatrix() * material.worldNormal;
     
-            // We don't need to normalize here, even if there's a scale in the matrix
-            // because we ensure the worldFromModelNormalMatrix pre-scales the normal such that
-            // all its components are < 1.0. This prevents the bitangent to exceed the range of fp16
-            // in the fragment shader, where we renormalize after interpolation
-            vertex_worldTangent.xyz = getWorldFromModelNormalMatrix() * vertex_worldTangent.xyz;
-            vertex_worldTangent.w = mesh_tangents.w;
-            material.worldNormal = getWorldFromModelNormalMatrix() * material.worldNormal;
-        #else // MATERIAL_NEEDS_TBN
-            // Without anisotropy or normal mapping we only need the normal vector
-            toTangentFrame(mesh_tangents, material.worldNormal);
+    // Invoke user code
+    materialVertex(material);
     
-            material.worldNormal = getWorldFromModelNormalMatrix() * material.worldNormal;
-    
-        #endif // MATERIAL_HAS_ANISOTROPY || MATERIAL_HAS_NORMAL 
-    #endif // HAS_ATTRIBUTE_TANGENTS
-    
-        // Invoke user code
-        materialVertex(material);
-    
-        // Handle built-in interpolated attributes
+    // Handle built-in interpolated attributes
     #if defined(HAS_ATTRIBUTE_COLOR)
         vertex_color = material.color;
     #endif
@@ -62,13 +48,11 @@
         VARIABLE_CUSTOM_AT3 = material.VARIABLE_CUSTOM3;
     #endif
     
-        // The world position can be changed by the user in materialVertex()
-        vertex_worldPosition.xyz = material.worldPosition.xyz;
     
-    #ifdef HAS_ATTRIBUTE_TANGENTS
-        vertex_worldNormal = material.worldNormal;
-    #endif
-    
+    // The world position can be changed by the user in materialVertex()
+    vertex_worldPosition.xyz = material.worldPosition.xyz;
+    vertex_worldNormal = normalize(material.worldNormal);
+
     #if defined(VARIANT_HAS_SHADOWING) && defined(VARIANT_HAS_DIRECTIONAL_LIGHTING)
         vertex_lightSpacePosition = computeLightSpacePosition(
                 vertex_worldPosition.xyz, vertex_worldNormal,
@@ -76,8 +60,6 @@
                 shadowUniforms.shadows[0].normalBias,
                 shadowUniforms.shadows[0].lightFromWorldMatrix);
     #endif
-    
-    #endif // !defined(USE_OPTIMIZED_DEPTH_VERTEX_SHADER)
     
     vec4 position = getClipFromWorldMatrix() * getWorldPosition(material);
     vertex_position = position;

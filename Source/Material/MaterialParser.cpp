@@ -6,7 +6,11 @@ MaterialParser::MaterialParser(const std::string& path)
 {
 	std::ifstream file(path, std::ios::binary | std::ios::ate);
 	if (!file.is_open())
+	{
+		std::cerr << "MaterialParser: cannot open '" << path << "'\n";
+		__debugbreak();
 		return;
+	}
 	const size_t fileSize = static_cast<size_t>(file.tellg());
 	file.seekg(0);
 	m_Buffer.resize(fileSize);

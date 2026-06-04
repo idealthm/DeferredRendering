@@ -107,12 +107,14 @@ namespace Util
                 if (aiMesh->HasTangentsAndBitangents()) {
                     glm::vec3 t(aiMesh->mTangents[i].x, aiMesh->mTangents[i].y, aiMesh->mTangents[i].z);
                     glm::vec3 n(aiMesh->mNormals[i].x, aiMesh->mNormals[i].y, aiMesh->mNormals[i].z);
-                    glm::vec3 b(aiMesh->mBitangents[i].x, aiMesh->mBitangents[i].y, aiMesh->mBitangents[i].z);
-                    // Compute handedness: sign of dot(cross(n, t), b)
-                    float sign = glm::dot(glm::cross(n, t), b) >= 0.0f ? 1.0f : -1.0f;
-                    asset.tangents.push_back({t.x, t.y, t.z, sign});
+                    glm::vec3 b = glm::cross(n, t);
+                    glm::mat3 m;
+                    m[0] = t; m[1] = b; m[2] = n;
+                    glm::quat q = glm::quat_cast(m);
+                    if (q.w < 0) q = -q;
+                    asset.tangents.push_back({q.x, q.y, q.z, q.w});
                 } else {
-                    asset.tangents.push_back({1.0f, 0.0f, 0.0f, 1.0f});
+                    asset.tangents.push_back({0.0f, 0.0f, 0.0f, 1.0f});
                 }
 
                 // TexCoords0

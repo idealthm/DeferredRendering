@@ -1,12 +1,8 @@
 
 LAYOUT_LOCATION(0) VARYING vec4 vertex_worldPosition;
 
-#if defined(HAS_ATTRIBUTE_TANGENTS)
 LAYOUT_LOCATION(1) VARYING vec3 vertex_worldNormal;
-#if defined(MATERIAL_NEEDS_TBN)
 LAYOUT_LOCATION(2) VARYING vec4 vertex_worldTangent;
-#endif
-#endif
 
 LAYOUT_LOCATION(3) VARYING vec4 vertex_position;
 

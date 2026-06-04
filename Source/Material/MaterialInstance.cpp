@@ -28,8 +28,6 @@ Handle<RHI::HwProgram> MaterialInstance::GetShader() const
 bool MaterialInstance::SetParameter(const std::string& name, const Ref<Texture>& texture,
 	const TextureSampler& sampler)
 {
-	std::cout << "SetParameter" << " " << name << std::endl;
-
 	const Material::SamplerInfo* samplerInfo = m_Material->FindSampler(name);
 
 	if (texture && texture->TextureHandleCanMutate())

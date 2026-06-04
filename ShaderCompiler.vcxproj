@@ -87,6 +87,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common\Material\MaterialBuilder.h" />
+    <ClInclude Include="Source\Lexer\JsonLexme.h" />
+    <ClInclude Include="Source\Lexer\Lexeme.h" />
+    <ClInclude Include="Source\Lexer\Lexer.h" />
+    <ClInclude Include="Source\Lexer\MaterialLexeme.h" />
+    <ClInclude Include="Source\Lexer\MaterialLexer.h" />
+    <ClInclude Include="Source\Lexer\JsonishLexer.h" />
+    <ClInclude Include="Source\Parser\JsonishParser.h" />
     <ClInclude Include="Source\ShaderCompiler\CodeGenerator.h" />
     <ClInclude Include="Source\ShaderCompiler\ShaderGenerator.h" />
     <ClInclude Include="Source\ShaderCompiler\MaterialEnums.h" />
@@ -101,6 +108,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common\Material\MaterialBuilder.cpp" />
+    <ClCompile Include="Source\Lexer\JsonishLexer.cpp" />
+    <ClCompile Include="Source\Lexer\MaterialLexer.cpp" />
+    <ClCompile Include="Source\Parser\JsonishParser.cpp" />
     <ClCompile Include="Source\ShaderCompiler\CodeGenerator.cpp" />
     <ClCompile Include="Include\BufferInterfaceBlock.cpp" />
     <ClCompile Include="Include\SamplerInterfaceBlock.cpp" />

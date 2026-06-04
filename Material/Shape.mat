@@ -1,15 +1,28 @@
-{
-    "name": "Shape",
-    "pipeline": "deferred",
-    "shadingModel": "lit",
-    "require": ["POSITION", "TANGENTS", "UV0"],
-    "properties": [
-      { "type": "float3", "name": "albedo" },
-      { "type": "float", "name": "roughness" },
-      { "type": "float", "name": "metallic" },
-      { "type": "float", "name": "ao" }
+material {
+    name: Shape,
+    pipeline: deferred,
+    shadingModel: lit,
+    require: [POSITION, TANGENTS, UV0],
+    properties: [
+      { type: float3, name: albedo },
+      { type: float,  name: roughness },
+      { type: float,  name: metallic },
+      { type: float,  name: ao }
     ],
-    "domain": "surface",
-    "vertexCode": "void materialVertex(inout MaterialVertexInputs material) {\n        \n    }",
-    "fragmentCode": "void material(inout MaterialInputs material) {\n        prepareMaterial(material);\n        material.roughness         = materialParams.roughness;\n        material.metallic          = materialParams.metallic;\n        material.ambientOcclusion  = materialParams.ao;\n        material.baseColor.rgb     = materialParams.albedo;\n    }"
+    domain: surface
+}
+vertexCode
+{
+    void materialVertex(inout MaterialVertexInputs material) {
+    }
+}
+fragmentCode
+{
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.roughness         = materialParams.roughness;
+        material.metallic          = materialParams.metallic;
+        material.ambientOcclusion  = materialParams.ao;
+        material.baseColor.rgb     = materialParams.albedo;
+    }
 }

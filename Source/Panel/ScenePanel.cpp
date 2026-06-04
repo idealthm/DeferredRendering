@@ -34,7 +34,7 @@ void ScenePanel::OnImGuiRender(Ref<Scene>& scene)
 	m_Hovered = ImGui::IsWindowHovered();
 	ImVec2 vec2 = ImGui::GetContentRegionAvail();
 
-	auto& finalColor = RenderPipeline::Get().GetContext().GBuffer_Albedo;
+	auto& finalColor = RenderPipeline::Get().GetContext().Final_SceneColor;
 
 	auto* dl = ImGui::GetWindowDrawList();
 	ImVec2 cursor = ImGui::GetCursorScreenPos();

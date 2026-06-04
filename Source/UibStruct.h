@@ -19,6 +19,8 @@ struct PerViewUib
 	glm::mat4 worldFromClipMatrix;	// clip	->	view  -> 	world
 
 	int RenderMode;
+	int _pad0[3];               // std140 padding to align iblParams at offset 400
+	alignas(16) glm::vec4 iblParams; // x=prefilterMipCount, y=skyboxIntensity, z=envIntensity
 };
 
 struct alignas(16) LightInfo {
@@ -32,7 +34,10 @@ struct alignas(16) LightInfo {
 	int32_t type;
 
 	glm::vec4 params;    // x: 聚光灯内角, y: 聚光灯外角, z: 是否产生阴影, w: 预留
-}; 
+};
+
+// GLSL counterpart: vec4 position; vec4 color; vec4 direction; vec4 params;
+static_assert(sizeof(LightInfo) == 64, "LightInfo must be 64 bytes (4 x vec4 in std140)");
 
 struct LightData
 {

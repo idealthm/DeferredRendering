@@ -15,11 +15,14 @@ DescriptorSet::~DescriptorSet()
 
 void DescriptorSet::commit(RHI::RHIDriver& driver, const DescriptorSetLayout& layout)
 {
-	if (!dirty.any())
+	if (dirty.any())
 	{
-		return;
+		commitSlow(driver, layout);
 	}
+}
 
+void DescriptorSet::commitSlow(RHI::RHIDriver& driver, const DescriptorSetLayout& layout)
+{
 	dirty.clear();
 
 	if (handle)

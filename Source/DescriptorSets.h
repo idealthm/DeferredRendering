@@ -9,6 +9,7 @@ namespace DescriptorSets
 {
 	RHI::DescriptorSetLayout const& GetPerRenderableSetLayout() noexcept;
 	RHI::DescriptorSetLayout const& GetPerViewSetLayout() noexcept;
+	RHI::DescriptorSetLayout const& GetGBufferSetLayout() noexcept;
 }
 
 

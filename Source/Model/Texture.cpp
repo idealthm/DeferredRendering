@@ -16,6 +16,7 @@ Texture::Texture(const RHI::TextureDesc& desc)
 {
 	m_Desc = desc;
 	m_Handle = gEngine->GetDriver().CreateTexture(desc.Target, desc.LevelCount, desc.Format, 1, desc.Width, desc.Height, desc.DepthOrLayers, desc.Usage);
+	m_HandleForSampling = m_Handle;
 }
 
 Texture::~Texture()

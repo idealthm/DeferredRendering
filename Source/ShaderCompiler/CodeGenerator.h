@@ -92,6 +92,9 @@ public:
 	/// CONST_xxx
 	stream& generateConstantDefines(stream& out, const struct MaterialSpec& spec) const;
 
+	/// MATERIAL_HAS_xxx — one for each property
+	stream& generatePropertyDefines(stream& out, const struct MaterialSpec& spec) const;
+
 	/// HAS_ATTRIBUTE_xxx + implied HAS_ATTRIBUTE_POSITION
 	stream& generateAttributeDefines(stream& out, const struct MaterialSpec& spec) const;
 
