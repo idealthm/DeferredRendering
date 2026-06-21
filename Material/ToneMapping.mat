@@ -1,8 +1,9 @@
-material {
+material
+{
     name: ToneMapping,
     pipeline: deferred,
     shadingModel: unlit,
-    domain: postprocess,
+    domain: postprocess
 }
 vertex
 {
