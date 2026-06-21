@@ -1,16 +1,19 @@
-material {
-    name: skyBox,
-    pipeline: deferred,
-    shadingModel: unlit,
-    domain: postprocess,
+material
+{
+    "name": "skyBox",
+    "pipeline": "deferred",
+    "shadingModel": "unlit",
+    "domain": "postprocess"
 }
 vertex
 {
-    void materialVertex(inout MaterialVertexInputs material) {
+    void postProcessVertex(inout PostProcessVertexInputs postProcess) {
+        postProcess.vertex.xy = uvToRenderTargetUV(postProcess.normalizedUV);
     }
 }
 fragment
 {
-    void material(inout MaterialInputs material) {
+    void postProcess(inout PostProcessInputs postProcess) {
+        postProcess.color = texture(materialParams_skybox, getUV0().xy);
     }
 }

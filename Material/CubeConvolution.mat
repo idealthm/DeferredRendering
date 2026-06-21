@@ -2,7 +2,7 @@ material {
     name: CubeConvolution,
     pipeline: deferred,
     shadingModel: unlit,
-    domain: postprocess,
+    domain: postprocess
 }
 vertex
 {

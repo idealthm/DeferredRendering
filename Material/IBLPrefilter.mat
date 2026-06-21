@@ -12,7 +12,7 @@ material {
     outputs : [
         {   name : outx, target : color, type : float3 },
         {   name : outy, target : color, type : float3 },
-        {   name : outz, target : color, type : float3 },
+        {   name : outz, target : color, type : float3 }
     ],
     constants : [
         {

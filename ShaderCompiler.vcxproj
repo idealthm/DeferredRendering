@@ -66,6 +66,9 @@
       <AdditionalOptions>
       </AdditionalOptions>
     </Link>
+    <PostBuildEvent>
+      <Command>call "$(ProjectDir)Scripts\PostBuild.bat" "$(OutDir)" "$(ProjectDir)Template" "$(ProjectDir)Material"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -84,6 +87,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>call "$(ProjectDir)Scripts\PostBuild.bat" "$(OutDir)" "$(ProjectDir)Template" "$(ProjectDir)Material"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common\Material\MaterialBuilder.h" />

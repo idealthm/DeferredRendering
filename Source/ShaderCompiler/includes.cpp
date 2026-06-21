@@ -169,9 +169,7 @@ bool resolveIncludes(IncludeResult& root, IncludeCallback callback,
         if (!callback) {
             return false;
         }
-        IncludeResult resolved {
-            .includeName = include.name
-        };
+        IncludeResult resolved { include.name };
         if (!callback(root.name, resolved)) {
             std::cout << "The included file \"" << include.name.c_str()
                           << "\" could not be found." << std::endl;

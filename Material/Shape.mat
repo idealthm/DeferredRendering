@@ -2,7 +2,7 @@ material {
     name: Shape,
     pipeline: deferred,
     shadingModel: lit,
-    require: [POSITION, TANGENTS, UV0],
+    requires: [POSITION, TANGENTS, UV0],
     parameters: [
       { type: float3, name: albedo },
       { type: float,  name: roughness },

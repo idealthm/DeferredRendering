@@ -116,43 +116,20 @@ namespace
 			auto* obj = arr->getElements()[i]->toJsonObject(); if (!obj) return false;
 			const char* name = JsonString(obj, "name"); if (!name) return false;
 
-			// Legacy "type" key — value determines sampler vs uniform
-			if (obj->hasKey("type"))
+			std::string t = JsonString(obj, "type");
+			if (t.empty()) { std::cerr << "Parameter '" << name << "': missing 'type'" << std::endl; return false; }
+
+			if (IsValidSamplerType(t))
+				builder.parameter(name, ParseSamplerType(t));
+			else if (IsValidUniformType(t))
 			{
-				std::string t = JsonString(obj, "type");
-				if (IsValidSamplerType(t))
-					builder.parameter(name, ParseSamplerType(t));
-				else if (IsValidUniformType(t))
-				{
-					auto ut = ParseUniformType(t);
-					if (obj->hasKey("size")) {
-						auto* sz = obj->getValue("size")->toJsonNumber();
-						builder.parameter(name, sz ? static_cast<size_t>(sz->getFloat()) : 1, ut);
-					} else builder.parameter(name, ut);
-				}
-				else { std::cerr << "Parameter '" << name << "': unknown type '" << t << "'" << std::endl; return false; }
-				continue;
+				auto ut = ParseUniformType(t);
+				if (obj->hasKey("size")) {
+					auto* sz = obj->getValue("size")->toJsonNumber();
+					builder.parameter(name, sz ? static_cast<size_t>(sz->getFloat()) : 1, ut);
+				} else builder.parameter(name, ut);
 			}
-			// Explicit "samplerType" / "uniformType"
-			if (obj->hasKey("samplerType")) {
-				std::string s = JsonString(obj, "samplerType");
-				if (IsValidSamplerType(s)) { builder.parameter(name, ParseSamplerType(s)); continue; }
-				std::cerr << "Unknown sampler: " << s << std::endl; return false;
-			}
-			if (obj->hasKey("uniformType")) {
-				std::string s = JsonString(obj, "uniformType");
-				if (IsValidUniformType(s)) {
-					auto ut = ParseUniformType(s);
-					if (obj->hasKey("size")) {
-						auto* sz = obj->getValue("size")->toJsonNumber();
-						builder.parameter(name, sz ? static_cast<size_t>(sz->getFloat()) : 1, ut);
-					} else builder.parameter(name, ut);
-					continue;
-				}
-				std::cerr << "Unknown uniform: " << s << std::endl; return false;
-			}
-			std::cerr << "Parameter '" << name << "': needs 'type', 'samplerType', or 'uniformType'" << std::endl;
-			return false;
+			else { std::cerr << "Parameter '" << name << "': unknown type '" << t << "'" << std::endl; return false; }
 		}
 		return true;
 	}
@@ -335,11 +312,9 @@ ParametersProcessor::ParametersProcessor()
 	using T = JsonishValue::Type;
 	mParameters["name"]            = { &processName,         T::STRING };
 	mParameters["parameters"]      = { &processParameters,   T::ARRAY };
-	mParameters["properties"]      = { &processParameters,   T::ARRAY }; // legacy
 	mParameters["constants"]       = { &processConstants,    T::ARRAY };
 	mParameters["variables"]       = { &processVariables,    T::ARRAY };
 	mParameters["requires"]        = { &processRequires,     T::ARRAY };
-	mParameters["require"]         = { &processRequires,     T::ARRAY }; // legacy
 	mParameters["blending"]        = { &processBlending,     T::STRING };
 	mParameters["blendFunction"]   = { &processBlendFunction,T::OBJECT };
 	mParameters["vertexDomain"]    = { &processVertexDomain, T::STRING };
