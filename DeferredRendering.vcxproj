@@ -762,7 +762,9 @@ endlocal</Command>
     <Content Include="Template\common_getter.glsl" />
     <Content Include="Template\common_math.glsl" />
     <Content Include="Template\common_shading.glsl" />
-    <Content Include="Template\surface_builtins.glsl" />
+    <Content Include="Template\post_process_getters.vs" />
+    <Content Include="Template\post_process_inputs.vs" />
+    <Content Include="Template\post_process_main.vs" />
     <Content Include="Template\surface_deferred_main.fs" />
     <Content Include="Template\surface_deferred_main.vs" />
     <Content Include="Template\surface_getters.fs" />
@@ -781,6 +783,9 @@ endlocal</Command>
     <Content Include="vendor\includes\assimp\revision.h.in" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Template\post_process_inputs.fs" />
+    <Compile Include="Template\post_process_main.fs" />
+    <Compile Include="Template\surface_depth_main.fs" />
     <Compile Include="Template\surface_shading_lit.fs" />
     <Compile Include="Template\surface_shading_main.fs" />
     <Compile Include="Template\surface_shading_parameters.fs" />

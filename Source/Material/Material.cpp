@@ -11,8 +11,11 @@ Material::Material(MaterialParser& parser)
 	parser.Get<ChunkUib>(m_UniformBlock);
 	parser.Get<ChunkSib>(m_SamplerBlock);
 	parser.Get<ChunkSpirv>(spirv);
-	m_ShaderData[0] = std::move(spirv.vertexSpirv);
-	m_ShaderData[1] = std::move(spirv.fragmentSpirv);
+	// TODO: multi-pass lookup by pass string
+	if (!spirv.empty()) {
+		m_ShaderData[0] = std::move(spirv[0].vertexSpirv);
+		m_ShaderData[1] = std::move(spirv[0].fragmentSpirv);
+	}
 	parser.Get<ChunkDescriptorSetBindings>(m_DescriptorSetLayouts);
 	parser.Get<ChunkRequiredAttrs>(m_RequiredAttributes);
 

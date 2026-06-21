@@ -1,1 +1,646 @@
 ﻿#include "MaterialBuilder.h"
+
+#include <fstream>
+
+#include "DescriptorSetLayout.h"
+#include "DescriptorSets.h"
+#include "MaterialInfo.h"
+#include "ShaderCompiler/MaterialSpec.h"
+#include "Package.h"
+#include "Common/Serialization/ChunkContainer.h"
+#include "Common/Serialization/MaterialChunks.h"
+#include "ShaderCompiler/includes.h"
+#include "ShaderCompiler/ShaderGenerator.h"
+#include "ShaderCompiler/UibGenerator.h"
+
+const MaterialBuilder::AttributeDatabase MaterialBuilder::sAttributeDatabase = {{
+    { "position",      AttributeType::FLOAT4, VertexAttribute::POSITION     },
+    { "tangents",      AttributeType::FLOAT4, VertexAttribute::TANGENTS     },
+    { "color",         AttributeType::FLOAT4, VertexAttribute::COLOR        },
+    { "uv0",           AttributeType::FLOAT2, VertexAttribute::UV0          },
+    { "uv1",           AttributeType::FLOAT2, VertexAttribute::UV1          },
+    { "bone_indices",  AttributeType::UINT4,  VertexAttribute::BONE_INDICES },
+    { "bone_weights",  AttributeType::FLOAT4, VertexAttribute::BONE_WEIGHTS },
+    { },
+    { "custom0",       AttributeType::FLOAT4, VertexAttribute::CUSTOM0      },
+    { "custom1",       AttributeType::FLOAT4, VertexAttribute::CUSTOM1      },
+    { "custom2",       AttributeType::FLOAT4, VertexAttribute::CUSTOM2      },
+    { "custom3",       AttributeType::FLOAT4, VertexAttribute::CUSTOM3      },
+    { "custom4",       AttributeType::FLOAT4, VertexAttribute::CUSTOM4      },
+    { "custom5",       AttributeType::FLOAT4, VertexAttribute::CUSTOM5      },
+    { "custom6",       AttributeType::FLOAT4, VertexAttribute::CUSTOM6      },
+    { "custom7",       AttributeType::FLOAT4, VertexAttribute::CUSTOM7      },
+}};
+
+MaterialBuilder& MaterialBuilder::name(const std::string& name) noexcept {
+    mMaterialName = std::string(name);
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::fileName(const char* fileName) noexcept {
+    mFileName = std::string(fileName);
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::material(const char* code, size_t line) noexcept {
+    mMaterialFragmentCode.setUnresolved(std::string(code));
+    mMaterialFragmentCode.setLineOffset(line);
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::includeCallback(IncludeCallback callback) noexcept {
+    mIncludeCallback = std::move(callback);
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::spirvCompiler(SpirvCompiler compiler) noexcept {
+    mSpirvCompiler = std::move(compiler);
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::materialVertex(const char* code, size_t line) noexcept {
+    mMaterialVertexCode.setUnresolved(std::string(code));
+    mMaterialVertexCode.setLineOffset(line);
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::shading(Shading shading) noexcept {
+    mShading = shading;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::pipeline(Pipeline pipeline) noexcept {
+    mPipeline = pipeline;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::interpolation(Interpolation interpolation) noexcept {
+    mInterpolation = interpolation;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::variable(Variable v, const char* name) noexcept {
+    switch (v) {
+        case Variable::CUSTOM0:
+        case Variable::CUSTOM1:
+        case Variable::CUSTOM2:
+        case Variable::CUSTOM3:
+            assert(size_t(v) < MATERIAL_VARIABLES_COUNT);
+            mVariables[size_t(v)] = { std::string(name), false };
+            break;
+    }
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::parameter(const char* name, size_t size, UniformType type) noexcept {
+    ASSERT(mParameterCount < MAX_PARAMETERS_COUNT);
+    mParameters[mParameterCount++] = { name, type, size };
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::parameter(const char* name, UniformType type) noexcept {
+    return parameter(name, 1, type);
+}
+
+
+MaterialBuilder& MaterialBuilder::parameter(const char* name, SamplerType samplerType,
+        SamplerFormat format, bool multisample) noexcept {
+    ASSERT(!multisample ||
+            (format != SamplerFormat::SHADOW &&
+                    (samplerType == SamplerType::SAMPLER_2D ||
+                            samplerType == SamplerType::SAMPLER_2D_ARRAY)))
+
+    ASSERT(mParameterCount < MAX_PARAMETERS_COUNT);
+    mParameters[mParameterCount++] = { name, samplerType, format, multisample };
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::require(VertexAttribute attribute) noexcept {
+    mRequiredAttributes.set(attribute);
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::groupSize(const glm::uvec3& groupSize) noexcept {
+    mGroupSize = groupSize;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::materialDomain(
+        MaterialBuilder::MaterialDomain materialDomain) noexcept {
+    mMaterialDomain = materialDomain;
+    if (mMaterialDomain == MaterialDomain::COMPUTE) {
+    }
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::blending(BlendingMode blending) noexcept {
+    mBlendingMode = blending;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::customBlendFunctions(
+        BlendFunction srcRGB, BlendFunction srcA,
+        BlendFunction dstRGB, BlendFunction dstA) noexcept {
+    mCustomBlendFunctions[0] = srcRGB;
+    mCustomBlendFunctions[1] = srcA;
+    mCustomBlendFunctions[2] = dstRGB;
+    mCustomBlendFunctions[3] = dstA;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::postLightingBlending(BlendingMode blending) noexcept {
+    mPostLightingBlendingMode = blending;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::vertexDomain(VertexDomain domain) noexcept {
+    mVertexDomain = domain;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::culling(CullingMode culling) noexcept {
+    mCullingMode = culling;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::colorWrite(bool enable) noexcept {
+    mColorWrite = enable;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::depthWrite(bool enable) noexcept {
+    mDepthWrite = enable;
+    mDepthWriteSet = true;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::depthCulling(bool enable) noexcept {
+    mDepthTest = enable;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::instanced(bool enable) noexcept {
+    mInstanced = enable;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::doubleSided(bool doubleSided) noexcept {
+    mDoubleSided = doubleSided;
+    mDoubleSidedCapability = true;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::flipUV(bool flipUV) noexcept {
+    mFlipUV = flipUV;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::customSurfaceShading(bool customSurfaceShading) noexcept {
+    mCustomSurfaceShading = customSurfaceShading;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::shaderDefine(const char* name, const char* value) noexcept {
+    mDefines.emplace_back(name, value);
+    return *this;
+}
+
+bool MaterialBuilder::hasSamplerType(SamplerType samplerType) const noexcept {
+    for (size_t i = 0, c = mParameterCount; i < c; i++) {
+        auto const& param = mParameters[i];
+        if (param.isSampler() && param.samplerType == samplerType) {
+            return  true;
+        }
+    }
+    return false;
+}
+
+void MaterialBuilder::prepareToBuild(MaterialInfo& info) noexcept {
+
+    // Build the per-material sampler block and uniform block.
+    SamplerInterfaceBlock::Builder sbb;
+    BufferInterfaceBlock::Builder ibb;
+    // sampler bindings start at 1, 0 is the ubo
+    for (size_t i = 0, binding = 1, c = mParameterCount; i < c; i++) {
+        auto const& param = mParameters[i];
+        if (param.isSampler()) {
+            sbb.add({ param.name.data(), param.name.size() },
+                    binding++, param.samplerType, param.format, param.multisample);
+        } else if (param.isUniform()) {
+            ibb.add({{{ param.name.data(), param.name.size() },
+                      uint32_t(param.size == 1u ? 0u : param.size), param.uniformType}});
+        }
+    }
+
+    if (mSpecularAntiAliasing) {
+        ibb.add({
+                { "_specularAntiAliasingVariance",  0, UniformType::FLOAT },
+                { "_specularAntiAliasingThreshold", 0, UniformType::FLOAT },
+        });
+    }
+
+    if (mBlendingMode == BlendingMode::MASKED) {
+        ibb.add({{ "_maskThreshold", 0, UniformType::FLOAT}});
+    }
+
+    if (mDoubleSidedCapability) {
+        ibb.add({{ "_doubleSided", 0, UniformType::BOOL}});
+    }
+
+    mRequiredAttributes.set(VertexAttribute::POSITION);
+    if (mShading != Shading::UNLIT || mShadowMultiplier) {
+        mRequiredAttributes.set(VertexAttribute::TANGENTS);
+    }
+
+    info.sib = sbb.name("MaterialParams").build();
+    info.uib = ibb.name("MaterialParams").build();
+
+    info.isLit = isLit();
+    info.hasDoubleSidedCapability = mDoubleSidedCapability;
+    info.has3dSamplers = hasSamplerType(SamplerType::SAMPLER_3D);
+    info.flipUV = mFlipUV;
+    info.requiredAttributes = mRequiredAttributes;
+    info.blendingMode = mBlendingMode;
+    info.postLightingBlendingMode = mPostLightingBlendingMode;
+    info.shading = mShading;
+    info.groupSize = mGroupSize;
+}
+
+bool MaterialBuilder::ShaderCode::resolveIncludes(IncludeCallback callback,
+        const std::string& fileName) noexcept {
+    if (!mCode.empty()) {
+        ResolveOptions options { true, true };
+        IncludeResult source { fileName, mCode, getLineOffset(), std::string("")
+        };
+        if (!::resolveIncludes(source, std::move(callback), options)) {
+            return false;
+        }
+        mCode = source.text;
+    }
+
+    mIncludesResolved = true;
+    return true;
+}
+
+bool MaterialBuilder::generateShaders(ChunkContainer& container, const MaterialInfo& /*info*/) const {
+    MaterialSpec spec;
+    toMaterialSpec(spec);
+
+    ShaderGenerator sg(mProperties, mVariables, mOutputs, mDefines, mPushConstants,
+            mMaterialFragmentCode.getResolved(), mMaterialFragmentCode.getLineOffset(),
+            mMaterialVertexCode.getResolved(), mMaterialVertexCode.getLineOffset(),
+            mMaterialDomain);
+
+    std::string vertCode = mMaterialVertexCode.getResolved();
+    std::string fragCode = mMaterialFragmentCode.getResolved();
+
+    ChunkGlsl::Container glslEntries;
+    ChunkSpirv::Container spirvEntries;
+
+    auto addPass = [&](const std::string& passName, ShaderGenerator::Pass pass) {
+        std::string vs = sg.GenerateShader(ShaderGenerator::Stage::Vertex, pass, spec, vertCode);
+        std::string fs = sg.GenerateShader(ShaderGenerator::Stage::Fragment, pass, spec, fragCode);
+        glslEntries.push_back({passName, vs, fs});
+
+        if (mSpirvCompiler) {
+            std::vector<uint8_t> vertSpv, fragSpv;
+            if (mSpirvCompiler(vs, fs, vertSpv, fragSpv))
+                spirvEntries.push_back({passName, std::move(vertSpv), std::move(fragSpv)});
+        }
+    };
+
+    if (mMaterialDomain == MaterialDomain::POST_PROCESS) {
+        std::string vs = sg.GeneratePostProcessShader(ShaderGenerator::Stage::Vertex, spec, vertCode);
+        std::string fs = sg.GeneratePostProcessShader(ShaderGenerator::Stage::Fragment, spec, fragCode);
+        glslEntries.push_back({"PostProcess", vs, fs});
+    } else if (mPipeline == Pipeline::LIGHTING) {
+        addPass("Lighting", ShaderGenerator::Pass::Lighting);
+    } else {
+        // Depth pass: vertex shader uses user vertex code, fragment is depth-only (no material eval)
+        {
+            std::string vs = sg.GenerateShader(ShaderGenerator::Stage::Vertex, ShaderGenerator::Pass::Depth, spec, vertCode);
+            std::string fs = sg.GenerateShader(ShaderGenerator::Stage::Fragment, ShaderGenerator::Pass::Depth, spec, std::string{});
+            glslEntries.push_back({"Depth", vs, fs});
+            if (mSpirvCompiler) {
+                std::vector<uint8_t> vertSpv, fragSpv;
+                if (mSpirvCompiler(vs, fs, vertSpv, fragSpv))
+                    spirvEntries.push_back({"Depth", std::move(vertSpv), std::move(fragSpv)});
+            }
+        }
+        addPass("GBuffer",  ShaderGenerator::Pass::GBuffer);
+    }
+
+    container.push<ChunkGlsl>(std::move(glslEntries));
+    if (!spirvEntries.empty())
+        container.push<ChunkSpirv>(std::move(spirvEntries));
+
+    return true;
+}
+
+MaterialBuilder& MaterialBuilder::output(VariableQualifier qualifier, OutputTarget target,
+        OutputType type, const char* name, int location) noexcept {
+    ASSERT(target != OutputTarget::DEPTH || type == OutputType::FLOAT)
+    ASSERT(target != OutputTarget::DEPTH || qualifier == VariableQualifier::OUT)
+
+    ASSERT(location >= -1)
+
+    // A location value of -1 signals using the default location. We'll simply take the previous
+    // output's location and add 1.
+    if (location == -1) {
+        location = mOutputs.empty() ? 0 : mOutputs.back().location + 1;
+    }
+
+    // Unconditionally add this output, then we'll check if we've maxed on on any particular target.
+    mOutputs.emplace_back(name, qualifier, target, type, location);
+
+    uint8_t colorOutputCount = 0;
+    uint8_t depthOutputCount = 0;
+    for (const auto& output : mOutputs) {
+        if (output.target == OutputTarget::COLOR) {
+            colorOutputCount++;
+        }
+        if (output.target == OutputTarget::DEPTH) {
+            depthOutputCount++;
+        }
+    }
+
+    ASSERT(colorOutputCount <= MAX_COLOR_OUTPUT)
+    ASSERT(depthOutputCount <= MAX_DEPTH_OUTPUT)
+
+    assert(mOutputs.size() <= MAX_COLOR_OUTPUT + MAX_DEPTH_OUTPUT);
+
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::enableFramebufferFetch() noexcept {
+    // This API is temporary, it is used to enable EXT_framebuffer_fetch for GLSL shaders,
+    // this is used sparingly by filament's post-processing stage.
+    mEnableFramebufferFetch = true;
+    return *this;
+}
+
+MaterialBuilder& MaterialBuilder::vertexDomainDeviceJittered(bool enabled) noexcept {
+    mVertexDomainDeviceJittered = enabled;
+    return *this;
+}
+
+Package MaterialBuilder::build() {
+    bool success;
+
+    // Force post process materials to be unlit. This prevents imposing a lot of extraneous
+    // data, code, and expectations for materials which do not need them.
+    if (mMaterialDomain == MaterialDomain::POST_PROCESS) {
+        mShading = Shading::UNLIT;
+    }
+
+    // Add a default color output.
+    if (mMaterialDomain == MaterialDomain::POST_PROCESS && mOutputs.empty()) {
+        output(VariableQualifier::OUT,
+                OutputTarget::COLOR, OutputType::FLOAT4, "color");
+    }
+
+    // Resolve #include directives if a callback is provided.
+    // When no callback, the code has no includes to resolve — mark as resolved.
+    if (mIncludeCallback) {
+        if (!mMaterialFragmentCode.resolveIncludes(mIncludeCallback, mFileName) ||
+            !mMaterialVertexCode.resolveIncludes(mIncludeCallback, mFileName)) {
+            return Package::invalidPackage();
+        }
+    } else {
+        mMaterialFragmentCode.resolveIncludes(
+            [](const std::string&, IncludeResult&) { return false; }, mFileName);
+        mMaterialVertexCode.resolveIncludes(
+            [](const std::string&, IncludeResult&) { return false; }, mFileName);
+    }
+
+    if (mCustomSurfaceShading && mShading != Shading::LIT) {
+        return Package::invalidPackage();
+    }
+
+    // prepareToBuild must be called first, to populate mCodeGenPermutations.
+    MaterialInfo info{};
+    prepareToBuild(info);
+
+    // Create chunk tree.
+    ChunkContainer container;
+    writeCommonChunks(container, info);
+    if (mMaterialDomain == MaterialDomain::SURFACE) {
+        writeSurfaceChunks(container);
+    }
+
+    // Generate all shaders and write the shader chunks.
+
+    success = generateShaders(container, info);
+    if (!success) {
+        // Return an empty package to signal a failure to build the material.
+        return Package::invalidPackage();
+    }
+
+    // Dry-run to measure size, then serialize.
+    FArchiveWrite dryAr;
+    container.Serialize(dryAr);
+
+    Package package(dryAr.Tell());
+    FArchiveWrite ar(package.getData(), package.getSize());
+    container.Serialize(ar);
+    return package;
+}
+
+static const char* to_string(RHI::ShaderStageFlags stageFlags) noexcept {
+    switch (stageFlags) {
+        case RHI::ShaderStageFlags::NONE:                    return "{ }";
+        case RHI::ShaderStageFlags::VERTEX:                  return "{ vertex }";
+        case RHI::ShaderStageFlags::FRAGMENT:                return "{ fragment }";
+        case RHI::ShaderStageFlags::COMPUTE:                 return "{ compute }";
+        case RHI::ShaderStageFlags::ALL_SHADER_STAGE_FLAGS:  return "{ vertex | fragment | compute }";
+    }
+    return nullptr;
+}
+
+bool MaterialBuilder::hasCustomVaryings() const noexcept {
+    for (const auto& variable : mVariables) {
+        if (!variable.name.empty()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MaterialBuilder::needsStandardDepthProgram() const noexcept {
+    const bool hasEmptyVertexCode = mMaterialVertexCode.getResolved().empty();
+    return !hasEmptyVertexCode ||
+           hasCustomVaryings() ||
+           mBlendingMode == BlendingMode::MASKED ||
+           (mTransparentShadow &&
+            (mBlendingMode == BlendingMode::TRANSPARENT ||
+             mBlendingMode == BlendingMode::FADE));
+}
+
+void MaterialBuilder::writeCommonChunks(ChunkContainer& container, MaterialInfo& info) const noexcept
+{
+    container.push<ChunkName>(mMaterialName);
+    container.push<ChunkDomain>(static_cast<uint8_t>(mMaterialDomain));
+
+    using Container = std::vector<std::pair<std::string, uint8_t>>;
+    Container attributes;
+    attributes.reserve(sAttributeDatabase.size());
+    for (auto const& attribute: sAttributeDatabase) {
+        std::string name("mesh_");
+        name.append(attribute.name);
+        attributes.emplace_back(std::string{ name.data(), name.size() }, attribute.location);
+    }
+    container.push<MaterialAttributesInfoChunk>(std::move(attributes));
+
+    // User parameters (UBO)
+    container.push<MaterialUniformInterfaceBlockChunk>(std::move(info.uib));
+
+    RHI::DescriptorSetLayout const perViewDescriptorSetLayout = DescriptorSets::GetPerViewSetLayout();
+
+    // Descriptor layout and descriptor name/binding mapping (const ref, before sib is moved)
+    container.push<MaterialDescriptorBindingsChuck>(info.sib, perViewDescriptorSetLayout);
+    container.push<MaterialDescriptorSetLayoutChunk>(info.sib, perViewDescriptorSetLayout);
+
+    // User texture parameters (moves sib, must be last)
+    container.push<ChunkSib>(std::move(info.sib));
+
+    if (mMaterialDomain != MaterialDomain::COMPUTE) {
+        // User Subpass
+        container.push<ChunkDoubleSided>(mDoubleSided);
+        container.push<ChunkBlendingMode>(static_cast<uint8_t>(mBlendingMode));
+
+        if (mBlendingMode == BlendingMode::CUSTOM) {
+            uint32_t const blendFunctions =
+                    (uint32_t(mCustomBlendFunctions[0]) << 24) |
+                    (uint32_t(mCustomBlendFunctions[1]) << 16) |
+                    (uint32_t(mCustomBlendFunctions[2]) <<  8) |
+                    (uint32_t(mCustomBlendFunctions[3]) <<  0);
+            container.push<ChunkBlendFunction>(blendFunctions);
+        }
+
+        container.push<ChunkColorWrite>(mColorWrite);
+        container.push<ChunkDepthWriteSet>(mDepthWriteSet);
+        container.push<ChunkDepthWrite>(mDepthWrite);
+        container.push<ChunkDepthTest>(mDepthTest);
+        container.push<ChunkCullingMode>(static_cast<uint8_t>(mCullingMode));
+
+        std::vector<FlatProperty> properties;
+        for (size_t i = 0; i < MATERIAL_PROPERTIES_COUNT; i++) {
+            if (mProperties[i]) {
+                FlatProperty fp;
+                fp.name = std::to_string(i);
+                fp.propertyId = static_cast<uint8_t>(i);
+                properties.push_back(std::move(fp));
+            }
+        }
+        container.push<ChunkProperties>(std::move(properties));
+    }
+}
+
+void MaterialBuilder::writeSurfaceChunks(ChunkContainer& container) const noexcept {
+    if (mBlendingMode == BlendingMode::MASKED) {
+        container.push<ChunkMaskThreshold>(mMaskThreshold);
+    }
+
+    container.push<ChunkShading>(std::string(mShading == Shading::LIT ? "lit" : "unlit"));
+
+    if (mShading == Shading::UNLIT) {
+        container.push<ChunkShadowMultiplier>(mShadowMultiplier);
+    }
+
+    container.push<ChunkRequiredAttrs>(mRequiredAttributes.getValue());
+}
+
+MaterialBuilder& MaterialBuilder::noSamplerValidation(bool enabled) noexcept {
+    mNoSamplerValidation = enabled;
+    return *this;
+}
+
+void MaterialBuilder::toMaterialSpec(MaterialSpec& spec) const noexcept
+{
+    spec.name = mMaterialName;
+    spec.pipeline = mPipeline;
+    spec.domain = mMaterialDomain;
+
+    switch (mShading)
+    {
+    case Shading::UNLIT:              spec.shadingModel = "unlit"; break;
+    case Shading::LIT:                spec.shadingModel = "lit"; break;
+    case Shading::SUBSURFACE:         spec.shadingModel = "subsurface"; break;
+    case Shading::CLOTH:              spec.shadingModel = "cloth"; break;
+    case Shading::SPECULAR_GLOSSINESS: spec.shadingModel = "specularGlossiness"; break;
+    }
+
+    mRequiredAttributes.forEachSetBit([&](size_t bit) {
+        spec.requiredAttributes.push_back(static_cast<VertexAttribute>(bit));
+    });
+
+    for (uint8_t i = 0; i < mParameterCount; ++i)
+    {
+        auto& p = mParameters[i];
+        PropertyParam pp;
+        pp.name = p.name;
+        if (p.isSampler())
+        {
+            pp.kind = PropertyParam::Kind::Sampler;
+            pp.samplerType = p.samplerType;
+        }
+        else if (p.isUniform())
+        {
+            pp.kind = PropertyParam::Kind::Uniform;
+            pp.uniformType = p.uniformType;
+        }
+        else continue;
+        spec.properties.push_back(std::move(pp));
+    }
+
+    for (auto& k : mPushConstants)
+    {
+        ConstantParam cp;
+        cp.name = k.name;
+        cp.type = (k.type == ConstantType::INT) ? "int" :
+                  (k.type == ConstantType::FLOAT) ? "float" : "bool";
+        spec.constants.push_back(std::move(cp));
+    }
+
+    for (size_t i = 0; i < MaterialBuilder::MATERIAL_VARIABLES_COUNT; ++i)
+    {
+        if (!mVariables[i].name.empty())
+            spec.variables.push_back({ mVariables[i].name, FieldType::FLOAT4, (uint8_t)i });
+    }
+
+    for (auto& o : mOutputs)
+    {
+        OutputParam op;
+        op.name = o.name;
+        op.type = (o.target == OutputTarget::COLOR) ? "color" : "depth";
+        spec.outputs.push_back(std::move(op));
+    }
+
+    spec.vertexCode   = mMaterialVertexCode.getResolved();
+    spec.fragmentCode = mMaterialFragmentCode.getResolved();
+
+    // Build UIB from uniform parameters
+    {
+        BufferInterfaceBlock::Builder builder;
+        builder.name("MaterialParams").alignment(BufferInterfaceBlock::Alignment::std140);
+        for (uint8_t i = 0; i < mParameterCount; ++i) {
+            auto& p = mParameters[i];
+            if (!p.isUniform()) continue;
+            builder.add({{ p.name, 0, p.uniformType, {}, 0, {} }});
+        }
+        spec.materialUib = std::move(builder.build());
+    }
+
+    // Build SIB from sampler parameters
+    {
+        SamplerInterfaceBlock::Builder builder;
+        builder.name("materialParams");
+        descriptor_binding_t binding = 1;
+        for (uint8_t i = 0; i < mParameterCount; ++i) {
+            auto& p = mParameters[i];
+            if (!p.isSampler()) continue;
+            builder.add(p.name, binding++, p.samplerType, RHI::SamplerFormat::FLOAT, false);
+        }
+        spec.materialSib = std::move(builder.build());
+    }
+}

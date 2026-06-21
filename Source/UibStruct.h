@@ -94,5 +94,5 @@ static_assert(sizeof(PerRenderableData) == 256, "PerRenderableData size must be 
 struct PerRenderableUib
 {
 	static constexpr std::string_view _name = std::string_view{"ObjectUniforms"};
-	PerRenderableData models[CONFIG_MAX_INSTANCES];
+	PerRenderableData data[CONFIG_MAX_INSTANCES];
 };

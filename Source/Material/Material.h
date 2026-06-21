@@ -16,7 +16,6 @@ namespace RHI
 	struct HwProgram;
 }
 
-struct MaterialInfo;
 class Program;
 class MaterialParser;
 

@@ -3,7 +3,7 @@ material {
     pipeline: deferred,
     shadingModel: lit,
     require: [POSITION, TANGENTS, UV0],
-    properties: [
+    parameters: [
       { type: float3, name: albedo },
       { type: float,  name: roughness },
       { type: float,  name: metallic },
@@ -11,12 +11,12 @@ material {
     ],
     domain: surface
 }
-vertexCode
+vertex
 {
     void materialVertex(inout MaterialVertexInputs material) {
     }
 }
-fragmentCode
+fragment
 {
     void material(inout MaterialInputs material) {
         prepareMaterial(material);
