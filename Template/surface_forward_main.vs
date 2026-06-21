@@ -51,38 +51,5 @@
         vertex_worldNormal = material.worldNormal;
     #endif
     
-    #if defined(VARIANT_HAS_SHADOWING) && defined(VARIANT_HAS_DIRECTIONAL_LIGHTING)
-        vertex_lightSpacePosition = computeLightSpacePosition(
-                vertex_worldPosition.xyz, vertex_worldNormal,
-                frameUniforms.lightDirection,
-                shadowUniforms.shadows[0].normalBias,
-                shadowUniforms.shadows[0].lightFromWorldMatrix);
-    #endif
-    
     #endif // !defined(USE_OPTIMIZED_DEPTH_VERTEX_SHADER)
-    
-        vec4 position;
-    
-    #if defined(VERTEX_DOMAIN_DEVICE)
-        // The other vertex domains are handled in initMaterialVertex()->computeWorldPosition()
-        position = getPosition();
-    
-        // this must happen before we compensate for vulkan below
-        vertex_position = position;
-    
-    #if defined(TARGET_VULKAN_ENVIRONMENT)
-        // In Vulkan, clip space is Y-down. In OpenGL and Metal, clip space is Y-up.
-        position.y = -position.y;
-    #endif
-    
-    #if !defined(TARGET_VULKAN_ENVIRONMENT)
-        // This is not needed in Vulkan or Metal because clipControl is always (1, 0)
-        // (We don't use a dot() here because it workaround a spirv-opt optimization that in turn
-        //  causes a crash on PowerVR, see #5118)
-        position.z = position.z * frameUniforms.clipControl.x + position.w * frameUniforms.clipControl.y;
-    #endif
-    
-        // some PowerVR drivers crash when gl_Position is written more than once
-        gl_Position = position;
-#endif
 }

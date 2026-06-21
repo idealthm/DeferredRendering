@@ -55,13 +55,6 @@ inline int VertexAttributeToLocation(VertexAttribute attr)
 struct BufferInterfaceBlock;
 struct MaterialSpec;
 
-enum class ShaderStage
-{
-	Vertex,
-	Fragment,
-	Compute,
-};
-
 using stream = std::ostringstream;
 
 class CodeGenerator

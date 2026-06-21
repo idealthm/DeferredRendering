@@ -111,3 +111,15 @@ enum class Property : uint8_t {
     SPECULAR_COLOR_FACTOR,   //!< float3, lit shading models only, except subsurface and cloth
 };
 
+// =============================================================================
+// Blending / shading / vertex domain — referenced by builder and runtime
+// =============================================================================
+enum class BlendingMode : uint8_t {
+    OPAQUE, TRANSPARENT, ADD, MASKED, FADE, MULTIPLY, SCREEN, CUSTOM
+};
+enum class Shading : uint8_t { UNLIT, LIT, SUBSURFACE, CLOTH, SPECULAR_GLOSSINESS };
+enum class Interpolation : uint8_t { SMOOTH, FLAT };
+enum class VertexDomain : uint8_t { OBJECT, WORLD, VIEW, DEVICE };
+enum class ConstantType : uint8_t { INT, FLOAT, BOOL };
+enum class ShaderStage : uint8_t { VERTEX = 0, FRAGMENT = 1, COMPUTE = 2 };
+

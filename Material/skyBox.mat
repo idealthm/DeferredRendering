@@ -1,0 +1,16 @@
+material {
+    name: skyBox,
+    pipeline: deferred,
+    shadingModel: unlit,
+    domain: postprocess,
+}
+vertex
+{
+    void materialVertex(inout MaterialVertexInputs material) {
+    }
+}
+fragment
+{
+    void material(inout MaterialInputs material) {
+    }
+}

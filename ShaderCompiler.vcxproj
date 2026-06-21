@@ -87,6 +87,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common\Material\MaterialBuilder.h" />
+    <ClInclude Include="Source\Common\Material\MaterialInfo.h" />
+    <ClInclude Include="Source\Common\Material\Package.h" />
     <ClInclude Include="Source\Lexer\JsonLexme.h" />
     <ClInclude Include="Source\Lexer\Lexeme.h" />
     <ClInclude Include="Source\Lexer\Lexer.h" />
@@ -95,6 +97,9 @@
     <ClInclude Include="Source\Lexer\JsonishLexer.h" />
     <ClInclude Include="Source\Parser\JsonishParser.h" />
     <ClInclude Include="Source\ShaderCompiler\CodeGenerator.h" />
+    <ClInclude Include="Source\ShaderCompiler\IncludeCallbaks.h" />
+    <ClInclude Include="Source\ShaderCompiler\MaterialCompiler.h" />
+    <ClInclude Include="Source\ShaderCompiler\ParameterProcessor.h" />
     <ClInclude Include="Source\ShaderCompiler\ShaderGenerator.h" />
     <ClInclude Include="Source\ShaderCompiler\MaterialEnums.h" />
     <ClInclude Include="Source\ShaderCompiler\MaterialSpec.h" />
@@ -104,6 +109,7 @@
     <ClInclude Include="Source\Common\Serialization\MaterialBinaryArchive.h" />
     <ClInclude Include="Source\Common\Serialization\MaterialChunks.h" />
     <ClInclude Include="Source\Common\Material\MaterialTypes.h" />
+    <ClInclude Include="Source\ShaderCompiler\TemplateProvider.h" />
     <ClInclude Include="Source\ShaderCompiler\UibGenerator.h" />
   </ItemGroup>
   <ItemGroup>
@@ -114,12 +120,20 @@
     <ClCompile Include="Source\ShaderCompiler\CodeGenerator.cpp" />
     <ClCompile Include="Include\BufferInterfaceBlock.cpp" />
     <ClCompile Include="Include\SamplerInterfaceBlock.cpp" />
+    <ClCompile Include="Source\ShaderCompiler\includes.cpp" />
+    <ClCompile Include="Source\ShaderCompiler\MaterialCompiler.cpp" />
+    <ClCompile Include="Source\ShaderCompiler\ParameterProcessor.cpp" />
     <ClCompile Include="Source\ShaderCompiler\ShaderGenerator.cpp" />
     <ClCompile Include="Source\ShaderCompiler\MatcMain.cpp" />
     <ClCompile Include="Source\ShaderCompiler\MaterialSpec.cpp" />
     <ClCompile Include="Source\ShaderCompiler\ShaderInputBuilder.cpp" />
     <ClCompile Include="Source\ShaderCompiler\IncludeExpander.cpp" />
+    <ClCompile Include="Source\ShaderCompiler\TemplateProvider.cpp" />
     <ClCompile Include="Source\ShaderCompiler\UibGenerator.cpp" />
+    <ClCompile Include="Source\DescriptorSets.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Source\ShaderCompiler\includes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

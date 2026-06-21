@@ -53,14 +53,6 @@
     vertex_worldPosition.xyz = material.worldPosition.xyz;
     vertex_worldNormal = normalize(material.worldNormal);
 
-    #if defined(VARIANT_HAS_SHADOWING) && defined(VARIANT_HAS_DIRECTIONAL_LIGHTING)
-        vertex_lightSpacePosition = computeLightSpacePosition(
-                vertex_worldPosition.xyz, vertex_worldNormal,
-                frameUniforms.lightDirection,
-                shadowUniforms.shadows[0].normalBias,
-                shadowUniforms.shadows[0].lightFromWorldMatrix);
-    #endif
-    
     vec4 position = getClipFromWorldMatrix() * getWorldPosition(material);
     vertex_position = position;
     gl_Position = position;

@@ -20,6 +20,8 @@ constexpr auto CreateScope(Args&& ... args)
 	return std::make_unique<T>(std::forward<Args>(args)...);
 }
 
+template <typename T> using UniquePtr = std::unique_ptr<T>;
+
 #define BIT(x) (1 << (x))
 #define ASSERT(x) if(!(x)) __debugbreak();
 

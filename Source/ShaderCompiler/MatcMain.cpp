@@ -5,12 +5,11 @@
 #include <vector>
 #include <cstdlib>
 
-#include "IncludeExpander.h"
-#include "MaterialSpec.h"
-#include "ShaderGenerator.h"
+#include "MaterialCompiler.h"
+#include "Common/Material/MaterialBuilder.h"
+#include "Common/Material/Package.h"
 #include "Common/Serialization/MaterialChunks.h"
 #include "EngineEnum.h"
-#include "ShaderInputBuilder.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -153,289 +152,6 @@ static bool RunGlslc(const std::string& glslcPath,
 // ============================================================
 // std140 layout helpers
 // ============================================================
-struct Std140Info { uint32_t size; uint32_t alignment; };
-
-static Std140Info GetStd140Info(UniformType t)
-{
-	switch (t)
-	{
-	case UniformType::BOOL:  return {4, 4};
-	case UniformType::BOOL2: return {8, 8};
-	case UniformType::BOOL3: return {12, 16};
-	case UniformType::BOOL4: return {16, 16};
-	case UniformType::FLOAT: return {4, 4};
-	case UniformType::FLOAT2: return {8, 8};
-	case UniformType::FLOAT3: return {12, 16};
-	case UniformType::FLOAT4: return {16, 16};
-	case UniformType::INT:   return {4, 4};
-	case UniformType::INT2:  return {8, 8};
-	case UniformType::INT3:  return {12, 16};
-	case UniformType::INT4:  return {16, 16};
-	case UniformType::UINT:  return {4, 4};
-	case UniformType::UINT2: return {8, 8};
-	case UniformType::UINT3: return {12, 16};
-	case UniformType::UINT4: return {16, 16};
-	case UniformType::MAT3:  return {48, 16};
-	case UniformType::MAT4:  return {64, 16};
-	case UniformType::STRUCT: return {0, 0};
-	}
-	return {0, 0};
-}
-
-static FieldType UniformTypeToFieldType(UniformType t)
-{
-	switch (t)
-	{
-	case UniformType::BOOL:  return FieldType::BOOL;
-	case UniformType::BOOL2: return FieldType::BOOL2;
-	case UniformType::BOOL3: return FieldType::BOOL3;
-	case UniformType::BOOL4: return FieldType::BOOL4;
-	case UniformType::FLOAT: return FieldType::FLOAT;
-	case UniformType::FLOAT2: return FieldType::FLOAT2;
-	case UniformType::FLOAT3: return FieldType::FLOAT3;
-	case UniformType::FLOAT4: return FieldType::FLOAT4;
-	case UniformType::INT:   return FieldType::INT;
-	case UniformType::INT2:  return FieldType::INT2;
-	case UniformType::INT3:  return FieldType::INT3;
-	case UniformType::INT4:  return FieldType::INT4;
-	case UniformType::UINT:  return FieldType::UINT;
-	case UniformType::UINT2: return FieldType::UINT2;
-	case UniformType::UINT3: return FieldType::UINT3;
-	case UniformType::UINT4: return FieldType::UINT4;
-	case UniformType::MAT3:  return FieldType::MAT3;
-	case UniformType::MAT4:  return FieldType::MAT4;
-	case UniformType::STRUCT: return FieldType::STRUCT;
-	}
-	return FieldType::FLOAT;
-}
-
-static uint32_t ComputeStd140Size(UniformType t, const std::string& structName)
-{
-	if (t == UniformType::STRUCT)
-		return 0; // struct size unknown at compile time — placeholder
-	auto info = GetStd140Info(t);
-	return info.size;
-}
-
-// ============================================================
-// Build structured objects from MaterialSpec
-// ============================================================
-static void BuildUib(MaterialSpec& spec)
-{
-	BufferInterfaceBlock::Builder builder;
-	builder.name("MaterialParams").alignment(BufferInterfaceBlock::Alignment::std140);
-
-	for (auto& p : spec.properties)
-	{
-		if (p.kind != PropertyParam::Kind::Uniform) continue;
-		Std140Info info = GetStd140Info(p.uniformType);
-		builder.add({{ p.name, 0, p.uniformType, std::string(p.structName), static_cast<uint8_t>(info.size), {} }});
-	}
-	spec.materialUib = builder.build();
-}
-
-static void BuildSib(MaterialSpec& spec)
-{
-	SamplerInterfaceBlock::Builder builder;
-	builder.name("materialParams");
-
-	descriptor_binding_t binding = 1;
-	for (auto& p : spec.properties)
-	{
-		if (p.kind != PropertyParam::Kind::Sampler) continue;
-		builder.add(p.name, binding++, p.samplerType, RHI::SamplerFormat::FLOAT, false);
-	}
-	spec.materialSib = builder.build();
-}
-
-// ============================================================
-// Write .matb binary file
-// ============================================================
-
-static const char* ToString(MaterialDomain domain)
-{
-	switch (domain)
-	{
-	case MaterialDomain::SURFACE:      return "surface";
-	case MaterialDomain::POST_PROCESS: return "postprocess";
-	case MaterialDomain::COMPUTE:      return "compute";
-	}
-	return "unknown";
-}
-
-static void WriteMaterialBinary(const std::string& fullOutputDir,
-                                MaterialSpec& spec,
-                                const std::string& vertSource,
-                                const std::string& fragSource,
-                                bool hasSpv)
-{
-	// ── Build SPIR-V data ────────────────────────────────────────────
-	ChunkSpirv::Container spirvData{};
-	if (hasSpv)
-	{
-		auto readSpv = [](const std::string& path, std::vector<uint8_t>& out)
-		{
-			std::ifstream f(path, std::ios::binary | std::ios::ate);
-			if (!f) return;
-			out.resize(static_cast<size_t>(f.tellg()));
-			f.seekg(0);
-			f.read(reinterpret_cast<char*>(out.data()), out.size());
-		};
-		readSpv(fullOutputDir + "/" + spec.name + ".vert.spv", spirvData.vertexSpirv);
-		readSpv(fullOutputDir + "/" + spec.name + ".frag.spv", spirvData.fragmentSpirv);
-	}
-
-	// ── Build GLSL data ──────────────────────────────────────────────
-	ChunkGlsl::Container glslData{ vertSource, fragSource };
-
-	// ── Domain ───────────────────────────────────────────────────────
-	uint8_t domain = 0;
-	if (spec.domain == MaterialDomain::SURFACE)      domain = 0;
-	else if (spec.domain == MaterialDomain::POST_PROCESS) domain = 1;
-	else if (spec.domain == MaterialDomain::COMPUTE)     domain = 2;
-
-	// ── Required attributes mask ─────────────────────────────────────
-	uint32_t attrMask = 0;
-	for (auto attr : spec.requiredAttributes)
-		attrMask |= (1u << static_cast<uint32_t>(attr));
-
-	// ── Properties ───────────────────────────────────────────────────
-	std::vector<FlatProperty> properties;
-	for (auto& p : spec.properties)
-	{
-		FlatProperty fp;
-		fp.name = p.name;
-		fp.uniformType = p.kind == PropertyParam::Kind::Uniform
-			? static_cast<uint8_t>(p.uniformType)
-			: uint8_t(0);
-		properties.push_back(std::move(fp));
-	}
-
-	// ── Constants ────────────────────────────────────────────────────
-	std::vector<std::string> constants;
-	for (auto& k : spec.constants)
-		constants.push_back(k.name);
-
-	// ── Build DescriptorSetBindings (per-set binding list) ───────────
-	DescriptorSetInfo descBindings{};
-
-	auto& setView = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_VIEW)];
-	setView.push_back({ "FrameUniforms.frameUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
-		static_cast<uint8_t>(PerViewBindingPoints::FRAME_UNIFORM) });
-
-	if (spec.pipeline == Pipeline::LIGHTING)
-	{
-		setView.push_back({ "LightData.lightData", RHI::DescriptorType::UNIFORM_BUFFER,
-			static_cast<uint8_t>(PerViewBindingPoints::LIGHT_DATA) });
-	}
-
-	if (spec.pipeline != Pipeline::LIGHTING)
-	{
-		auto& setRenderable = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_RENDERABLE)];
-		setRenderable.push_back({ "ObjectUniforms.objectUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
-			static_cast<uint8_t>(PerRenderableBindingPoints::OBJECT_UNIFORM) });
-	}
-
-	auto& setMat = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_MATERIAL)];
-	setMat.push_back({ "MaterialParams.materialParams", RHI::DescriptorType::UNIFORM_BUFFER,
-		static_cast<uint8_t>(PerMaterialBindingPoint::MATERIAL_UNIFORM) });
-
-	descriptor_binding_t samplerBinding = 1; // just for this set. (0 for ubo)
-	for (auto& p : spec.properties)
-	{
-		if (p.kind != PropertyParam::Kind::Sampler)
-			continue;
-		setMat.push_back({"materialParams_" + p.name, RHI::DescriptorType::SAMPLER, (uint8_t)setMat.size() });
-	}
-
-	if (spec.pipeline == Pipeline::LIGHTING)
-	{
-		auto& setGBuffer = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::G_BUFFER)];
-		setGBuffer.push_back({ "gDepth",    RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_DEPTH) });
-		setGBuffer.push_back({ "gNormal",   RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_NORMAL) });
-		setGBuffer.push_back({ "gAlbedo",   RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_ALBEDO) });
-		setGBuffer.push_back({ "gMaterial", RHI::DescriptorType::SAMPLER, static_cast<uint8_t>(GBufferBindingPoint::G_BUFFER_MATERIAL) });
-	}
-
-	// ── Build DescriptorSetLayout (GPU layout objects) ───────────────────
-	std::array<RHI::DescriptorSetLayout, 2> descSetLayouts{};
-
-	// Layout[0]: PER_MATERIAL bindings
-	{
-		auto& layout = descSetLayouts[0].bindings;
-		auto& src = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::PER_MATERIAL)];
-		layout.resize(src.size());
-		for (size_t i = 0; i < src.size(); i++)
-		{
-			layout[i].type       = src[i].type;
-			layout[i].binding    = src[i].binding;
-			layout[i].stageFlags = RHI::ShaderStageFlags::ALL_SHADER_STAGE_FLAGS;
-			layout[i].count      = 1;
-		}
-	}
-
-	// Layout[1]: G_BUFFER bindings (lighting only)
-	if (spec.pipeline == Pipeline::LIGHTING)
-	{
-		auto& layout = descSetLayouts[1].bindings;
-		auto& src = descBindings[static_cast<uint8_t>(DescriptorSetBindingPoints::G_BUFFER)];
-		layout.resize(src.size());
-		for (size_t i = 0; i < src.size(); i++)
-		{
-			layout[i].type       = src[i].type;
-			layout[i].binding    = src[i].binding;
-			layout[i].stageFlags = RHI::ShaderStageFlags::FRAGMENT;
-			layout[i].count      = 1;
-		}
-	}
-
-	// ── Build AttributeInfo (vertex inputs / fragment outputs) ───────
-	ChunkAttributeInfo::Container attrInfo;
-	attrInfo.inputs  = BuildVertexInputs(spec);
-	attrInfo.outputs = BuildFragmentOutputs(spec);
-
-	// ── Collect chunks ───────────────────────────────────────────────
-	ChunkContainer cc;
-	uint32_t chunkCount = 0;
-
-	if (hasSpv)                 { cc.Set<ChunkSpirv>(std::move(spirvData)); chunkCount++; }
-	                            cc.Set<ChunkGlsl>(std::move(glslData));    chunkCount++;
-	                            cc.Set<ChunkName>(std::string(spec.name));  chunkCount++;
-	                            cc.Set<ChunkVersion>(1u);                  chunkCount++;
-	                            cc.Set<ChunkShading>(std::string(spec.shadingModel)); chunkCount++;
-	                            cc.Set<ChunkDomain>(std::move(domain));        chunkCount++;
-	                            cc.Set<ChunkUib>(std::move(spec.materialUib));              chunkCount++;
-	                            cc.Set<ChunkSib>(std::move(spec.materialSib));              chunkCount++;
-	                            cc.Set<ChunkDescriptorSetBindings>(std::move(descBindings)); chunkCount++;
-	                            cc.Set<ChunkDescriptorSetLayout>(std::move(descSetLayouts)); chunkCount++;
-	                            cc.Set<ChunkAttributeInfo>(std::move(attrInfo));       chunkCount++;
-	if (attrMask)               { cc.Set<ChunkRequiredAttrs>(std::move(attrMask)); chunkCount++; }
-	if (!properties.empty())    { cc.Set<ChunkProperties>(std::move(properties)); chunkCount++; }
-	if (!constants.empty())     { cc.Set<ChunkConstants>(std::move(constants));   chunkCount++; }
-
-	// ── Dry run → real write ─────────────────────────────────────────
-	FArchiveWrite dryAr;
-	cc.Serialize(dryAr);
-
-	std::vector<uint8_t> buffer(dryAr.Tell());
-	FArchiveWrite ar(buffer.data(), buffer.size());
-	cc.Serialize(ar);
-
-	// ── Write to disk ────────────────────────────────────────────────
-	std::string matbPath = fullOutputDir + "/" + spec.name + ".matb";
-	std::ofstream file(matbPath, std::ios::binary);
-	if (!file)
-	{
-		std::cerr << "matc: error: cannot write " << matbPath << '\n';
-		return;
-	}
-	file.write(reinterpret_cast<const char*>(buffer.data()), buffer.size());
-	std::cout << "matc: wrote " << matbPath << " (" << chunkCount << " chunks)\n";
-}
-
-// ============================================================
-// Dump .matb contents for debugging
-// ============================================================
 static void DumpMatb(const std::string& path)
 {
 	std::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -479,9 +195,11 @@ static void DumpMatb(const std::string& path)
 
 	// SPIR-V
 	ChunkSpirv::Container spv;
-	if (cc.Get<ChunkSpirv>(spv))
-		std::cout << "SPIR-V:        vert=" << spv.vertexSpirv.size()
-		          << "B  frag=" << spv.fragmentSpirv.size() << "B\n";
+	if (cc.Get<ChunkSpirv>(spv)) {
+		std::cout << "[ChunkSpirv]  " << spv.size() << " entries\n";
+		for (auto& e : spv)
+			std::cout << "  " << e.pass << ": vert=" << e.vertexSpirv.size() << "B  frag=" << e.fragmentSpirv.size() << "B\n";
+	}
 
 	// UIB
 	BufferInterfaceBlock uib;
@@ -578,316 +296,52 @@ static void DumpMatb(const std::string& path)
 	sep();
 }
 
-static int BuildLightingMaterial(
-    const std::string& outputDir, const std::string& workDir,
-    const std::string& templateDir, const std::string& glslcPath,
-    const std::string& targetEnv)
+static int BuildLightingMaterial(const CompilerConfig& config)
 {
-    MaterialSpec spec;
-    spec.name = "Lighting";
-    spec.pipeline = Pipeline::LIGHTING;
-    spec.shadingModel = "lit";
-    spec.domain = MaterialDomain::SURFACE;
-    spec.variables.push_back({ "uv", FieldType::FLOAT4, 0 });
-
-    spec.fragmentCode = "";
-    spec.vertexCode = "";
-
-    std::cout << "matc: built Lighting material from code\n";
-
-    BuildUib(spec);
-    BuildSib(spec);
-
-    ShaderGenerator shaderGen;
-    shaderGen.SetTemplateDirectory(templateDir);
-    shaderGen.SetTargetVulkan(targetEnv.rfind("vulkan", 0) == 0);
-
-    std::string expandedVert, expandedFrag;
-    std::string vertSource = shaderGen.GenerateVertexShader(spec, expandedVert);
-    std::string fragSource = shaderGen.GenerateFragmentShader(spec, expandedFrag);
-
-    std::string fullOutputDir = (workDir.empty() ? std::string("Material") : workDir) + "/" + outputDir + "/" + spec.name;
-    CreateDirectoryA(fullOutputDir.c_str(), nullptr);
-
-    {
-        std::string f = fullOutputDir + "/" + spec.name + ".vert";
-        std::ofstream ofs(f); ofs << vertSource;
-        std::cout << "matc: wrote " << f << " (" << vertSource.size() << " bytes)\n";
-    }
-    {
-        std::string f = fullOutputDir + "/" + spec.name + ".frag";
-        std::ofstream ofs(f); ofs << fragSource;
-        std::cout << "matc: wrote " << f << " (" << fragSource.size() << " bytes)\n";
-    }
-
-    std::vector<std::string> glslcArgs;
-    glslcArgs.push_back("--target-env=" + targetEnv);
-
-    if (!RunGlslc(glslcPath, fullOutputDir + "/" + spec.name + ".vert",
-                  fullOutputDir + "/" + spec.name + ".vert.spv", "vert", glslcArgs))
-    {
-        std::cerr << "matc: error: vertex shader compilation failed\n";
-        return 1;
-    }
-    if (!RunGlslc(glslcPath, fullOutputDir + "/" + spec.name + ".frag",
-                  fullOutputDir + "/" + spec.name + ".frag.spv", "frag", glslcArgs))
-    {
-        std::cerr << "matc: error: fragment shader compilation failed\n";
-        return 1;
-    }
-
-    WriteMaterialBinary(fullOutputDir, spec, vertSource, fragSource, true);
-    return 0;
+    MaterialBuilder builder;
+    builder.name("Lighting");
+    builder.pipeline(Pipeline::LIGHTING);
+    builder.shading(Shading::LIT);
+    builder.materialDomain(MaterialDomain::SURFACE);
+    builder.variable(MaterialBuilder::Variable::CUSTOM0, "uv");
+    std::cout << "matc: building Lighting material" << std::endl;
+    MaterialCompiler compiler;
+    return compiler.Build(builder, config) ? 0 : 1;
 }
 // ============================================================
 
 int main(int Argc, char* Argv[])
 {
-    std::string inputFile;
-    std::string outputDir = "CompiledMaterials";
+    CompilerConfig config;
     std::string workDir;
-    std::string glslcPath;
-	{
-		char* vulkanSdk = nullptr; _dupenv_s(&vulkanSdk, nullptr, "VULKAN_SDK");
-		glslcPath = vulkanSdk ? std::string(vulkanSdk) + "/Bin/glslc.exe" : "glslc.exe";
-        free(vulkanSdk);
-		                     
-	}
-    std::string templateDir = "Template";
-    std::string targetEnv = "vulkan1.2";
-    std::vector<std::string> includePaths;
-    std::vector<std::string> glslcExtraArgs;
-    bool codeOnly = false;
-    bool preprocessOnly = false;
-    bool debugInfo = false;
-    std::string optLevel;
     std::string dumpPath;
+    bool codeOnly = false;
 
-    // --- Parse arguments ---
-    for (int i = 1; i < Argc; ++i)
-    {
+    { char* vk = nullptr; _dupenv_s(&vk, nullptr, "VULKAN_SDK"); config.glslcPath = vk ? std::string(vk) + "/Bin/glslc.exe" : "glslc.exe"; free(vk); }
+
+    for (int i = 1; i < Argc; ++i) {
         std::string arg = Argv[i];
-
-        if (arg == "-I" && i + 1 < Argc)
-        {
-            std::string mode = Argv[++i];
-            if (mode == "codeonly") codeOnly = true;
-            else { std::cerr << "matc: unknown -I mode '" << mode << "'. Valid: codeonly\n"; return 1; }
-        }
-        else if (arg == "-E")
-            preprocessOnly = true;
-        else if (arg == "-g")
-            debugInfo = true;
-        else if (arg == "-O" && i + 1 < Argc)
-            optLevel = Argv[++i];
-        else if (arg == "-o" && i + 1 < Argc)
-            outputDir = Argv[++i];
-        else if (arg == "-w" && i + 1 < Argc)
-            workDir = Argv[++i];
-        else if (arg == "--target" && i + 1 < Argc)
-            targetEnv = Argv[++i];
-        else if (arg == "--glslc" && i + 1 < Argc)
-            glslcPath = Argv[++i];
-        else if (arg == "--include" && i + 1 < Argc)
-            includePaths.push_back(Argv[++i]);
-        else if (arg == "--dump" && i + 1 < Argc)
-            dumpPath = Argv[++i];
-        else if (arg == "--template-dir" && i + 1 < Argc)
-            templateDir = Argv[++i];
-        else if (arg == "-h" || arg == "--help")
-        {
-            PrintUsage();
-            return 0;
-        }
-        else if (!arg.empty() && arg[0] != '-')
-            inputFile = arg;
-        else
-        {
-            std::cerr << "matc: unknown argument: " << arg << '\n';
-            PrintUsage();
-            return 1;
-        }
+        if (arg == "-I" && i + 1 < Argc) { std::string m = Argv[++i]; if (m == "codeonly") codeOnly = true; else { std::cerr << "matc: unknown -I mode\n"; return 1; } }
+        else if (arg == "-o" && i + 1 < Argc) config.outputDir = Argv[++i];
+        else if (arg == "-w" && i + 1 < Argc) workDir = Argv[++i];
+        else if (arg == "--target" && i + 1 < Argc) config.targetEnv = Argv[++i];
+        else if (arg == "--glslc" && i + 1 < Argc) config.glslcPath = Argv[++i];
+        else if (arg == "--include" && i + 1 < Argc) config.includePaths.push_back(Argv[++i]);
+        else if (arg == "--dump" && i + 1 < Argc) dumpPath = Argv[++i];
+        else if (arg == "--template-dir" && i + 1 < Argc) config.templateDir = Argv[++i];
+        else if (arg == "-h" || arg == "--help") { PrintUsage(); return 0; }
+        else if (!arg.empty() && arg[0] != '-') config.inputFile = arg;
+        else { std::cerr << "matc: unknown argument: " << arg << '\n'; PrintUsage(); return 1; }
     }
 
-    if (!dumpPath.empty())
-    {
-        DumpMatb(dumpPath);
-        return 0;
-    }
+    if (!dumpPath.empty()) { DumpMatb(dumpPath); return 0; }
+    if (config.inputFile == "__lighting__") { return BuildLightingMaterial(config); }
+    if (config.inputFile.empty()) { std::cerr << "matc: missing input filename\n"; PrintUsage(); return 1; }
 
-    if (inputFile == "__lighting__")
-    {
-        return BuildLightingMaterial(outputDir, workDir, templateDir, glslcPath, targetEnv);
-    }
-
-    if (inputFile.empty())
-    {
-        std::cerr << "matc: missing input filename\n\n";
-        PrintUsage();
-        return 1;
-    }
-
-    // --- Resolve working directory ---
-    if (workDir.empty())
-        workDir = GetDirectory(inputFile);
-    while (!workDir.empty() && (workDir.back() == '/' || workDir.back() == '\\'))
-        workDir.pop_back();
-
-    // Default include search paths
-    if (includePaths.empty())
-    {
-        includePaths.push_back(workDir + "/Shaders");
-        includePaths.push_back(workDir);
-    }
-
-    // --- Step 1: Read and parse JSON ---
-    std::cout << "matc: reading " << inputFile << '\n';
-
-    MaterialSpec spec;
-    try
-    {
-        std::ifstream f(inputFile);
-        if (!f.is_open())
-        {
-            std::cerr << "matc: error: cannot open input file: " << inputFile << '\n';
-            return 1;
-        }
-
-        std::string jsonStr((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-        spec = ParseMaterialSpec(jsonStr);
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << "matc: error: " << e.what() << '\n';
-        return 1;
-    }
-
-    std::cout << "matc: parsed material '" << spec.name << "' ("
-              << ToString(spec.domain) << ", shading: " << spec.shadingModel << ")\n";
-
-    // default Code.
-    if (spec.vertexCode.empty())
-    {
-        spec.vertexCode = "void materialVertex(out MaterialVertexInputs inputs)\n{\n}";
-    }
-    if (spec.fragmentCode.empty())
-    {
-        spec.fragmentCode = "void material(out MaterialInputs inputs)\n{\n}";
-    }
-
-    // --- Step 2: Expand includes ---
-    std::string inputDir = GetDirectory(inputFile);
-    std::string expandedVert, expandedFrag;
-
-    try
-    {
-        if (!spec.vertexCode.empty())
-        {
-            expandedVert = ExpandIncludes(spec.vertexCode, inputDir, includePaths);
-            std::cout << "matc: expanded vertex includes\n";
-        }
-        if (!spec.fragmentCode.empty())
-        {
-            expandedFrag = ExpandIncludes(spec.fragmentCode, inputDir, includePaths);
-            std::cout << "matc: expanded fragment includes\n";
-        }
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << "matc: error expanding includes: " << e.what() << '\n';
-        return 1;
-    }
-
-    // --- Step 3: Build structured objects --------------------------
-    BuildUib(spec);
-    BuildSib(spec);
-
-    // --- Step 4: Generate GLSL --------------------------------------
-    ShaderGenerator shaderGen;
-    shaderGen.SetTemplateDirectory(templateDir);
-    shaderGen.SetTargetVulkan(targetEnv.rfind("vulkan", 0) == 0);
-    std::cout << "matc: using template directory: " << templateDir << std::endl;
-
-    std::string vertSource = shaderGen.GenerateVertexShader(spec, expandedVert);
-    std::string fragSource = shaderGen.GenerateFragmentShader(spec, expandedFrag);
-
-    // --- Step 4: Write GLSL output ---
-    std::string fullOutputDir = (workDir.empty() ? std::string("Material") : workDir) + "/" + outputDir + "/" + spec.name;
-    EnsureDirectory(fullOutputDir);
-
-    std::string vertFile = fullOutputDir + "/" + spec.name + ".vert";
-    std::string fragFile = fullOutputDir + "/" + spec.name + ".frag";
-
-    {
-        std::ofstream out(vertFile);
-        if (!out) { std::cerr << "matc: error: cannot write " << vertFile << '\n'; return 1; }
-        out << vertSource;
-        std::cout << "matc: wrote " << vertFile << " (" << vertSource.size() << " bytes)\n";
-    }
-    {
-        std::ofstream out(fragFile);
-        if (!out) { std::cerr << "matc: error: cannot write " << fragFile << '\n'; return 1; }
-        out << fragSource;
-        std::cout << "matc: wrote " << fragFile << " (" << fragSource.size() << " bytes)\n";
-    }
-
-    // --- Step 5: Compile / preprocess (unless code-only) ---
-    if (codeOnly)
-    {
-        std::cout << "matc: done (code-only).\n";
-        return 0;
-    }
-
-    // Build glslc argument list from options
-    // -E and SPIR-V compilation are mutually exclusive
-    if (preprocessOnly)
-    {
-        glslcExtraArgs.push_back("-E");
-    }
-    else
-    {
-        glslcExtraArgs.push_back("--target-env=" + targetEnv);
-        if (!optLevel.empty())
-            glslcExtraArgs.push_back("-O" + optLevel);
-        if (debugInfo)
-            glslcExtraArgs.push_back("-g");
-    }
-
-    // Compile vertex stage
-    if (!spec.vertexCode.empty() || spec.domain == MaterialDomain::SURFACE)
-    {
-        std::string outFile = preprocessOnly
-            ? fullOutputDir + "/" + spec.name + ".preprocessed.vert"
-            : fullOutputDir + "/" + spec.name + ".vert.spv";
-
-        if (!RunGlslc(glslcPath, vertFile, outFile, "vert", glslcExtraArgs))
-        {
-            std::cerr << "matc: error: vertex shader compilation failed\n";
-            return 1;
-        }
-    }
-
-    // Compile fragment stage
-    if (!spec.fragmentCode.empty() || spec.domain == MaterialDomain::SURFACE)
-    {
-        std::string outFile = preprocessOnly
-            ? fullOutputDir + "/" + spec.name + ".preprocessed.frag"
-            : fullOutputDir + "/" + spec.name + ".frag.spv";
-
-        if (!RunGlslc(glslcPath, fragFile, outFile, "frag", glslcExtraArgs))
-        {
-            std::cerr << "matc: error: fragment shader compilation failed\n";
-            return 1;
-        }
-    }
-
-    // --- Step 6: Write .matb binary ---
-    WriteMaterialBinary(fullOutputDir, spec,
-                        vertSource, fragSource,
-                        !preprocessOnly && !codeOnly);
-
-    std::cout << "matc: done.\n";
-    return 0;
+    if (workDir.empty()) workDir = GetDirectory(config.inputFile);
+    while (!workDir.empty() && (workDir.back() == '/' || workDir.back() == '\\')) workDir.pop_back();
+    if (config.includePaths.empty()) { config.includePaths.push_back(workDir + "/Shaders"); config.includePaths.push_back(workDir); }
+    config.compileSpirv = !codeOnly;
+    MaterialCompiler compiler;
+    return compiler.Run(config) ? 0 : 1;
 }
-
-// Build the LIGHTING pipeline material from code (no .mat JSON needed)

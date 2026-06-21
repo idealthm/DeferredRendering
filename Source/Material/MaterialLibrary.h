@@ -3,8 +3,8 @@
 #include <unordered_map>
 
 #include "Common/Core.h"
-#include "SpirvReflect/ShaderParse.h"
 
+class Material;
 class MaterialInstance;
 
 class MaterialLibrary
