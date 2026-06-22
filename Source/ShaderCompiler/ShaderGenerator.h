@@ -10,7 +10,6 @@ class ShaderGenerator
 {
 public:
 	enum class Stage : uint8_t { Vertex, Fragment, Compute };
-	enum class Pass  : uint8_t { Depth, GBuffer, Lighting };
 
 	ShaderGenerator() = default;
 	ShaderGenerator(MaterialBuilder::PropertyList const& properties,
@@ -22,7 +21,7 @@ public:
 	void SetTemplateDirectory(const std::string& dir) { m_TemplateDir = dir; }
 	void SetTargetVulkan(bool vulkan)                { m_TargetVulkan = vulkan; }
 
-	std::string GenerateShader(Stage stage, Pass pass, const MaterialSpec& spec, const std::string& userCode) const;
+	std::string GenerateShader(Stage stage, MaterialPass pass, const MaterialSpec& spec, const std::string& userCode) const;
 	std::string GeneratePostProcessShader(Stage stage, const MaterialSpec& spec, const std::string& userCode) const;
 	std::string GenerateComputeShader(const MaterialSpec& spec, const std::string& userCode) const;
 
@@ -34,17 +33,17 @@ private:
 	void EmitVaryingIn(std::ostringstream& os) const;
 	void EmitFragmentOutputs(std::ostringstream& os, const MaterialSpec& spec) const;
 
-	std::string GenDepthVS   (const MaterialSpec& spec, const std::string& code) const;
-	std::string GenDepthFS   (const MaterialSpec& spec, const std::string& code) const;
-	std::string GenGBufferVS (const MaterialSpec& spec, const std::string& code) const;
-	std::string GenGBufferFS (const MaterialSpec& spec, const std::string& code) const;
-	std::string GenLightingVS(const MaterialSpec& spec, const std::string& code) const;
-	std::string GenLightingFS(const MaterialSpec& spec, const std::string& code) const;
+	std::string GenDepthVS     (const MaterialSpec& spec, const std::string& code) const;
+	std::string GenDepthFS     (const MaterialSpec& spec, const std::string& code) const;
+	std::string GenSurfaceVS   (const MaterialSpec& spec, const std::string& code) const;
+	std::string GenSurfaceFS   (const MaterialSpec& spec, const std::string& code) const;
+	std::string GenLightingVS  (const MaterialSpec& spec, const std::string& code) const;
+	std::string GenLightingFS  (const MaterialSpec& spec, const std::string& code) const;
 	std::string GenPostProcessVS(const MaterialSpec& spec, const std::string& code) const;
 	std::string GenPostProcessFS(const MaterialSpec& spec, const std::string& code) const;
 
 	std::string LoadTemplate(const std::string& name) const;
-	std::string MainTemplate(Stage stage, Pass pass, Pipeline pipeline) const;
+	std::string MainTemplate(Stage stage, MaterialPass pass, Pipeline pipeline) const;
 
 	std::string m_TemplateDir = "Template";
 	bool m_TargetVulkan = true;

@@ -115,7 +115,7 @@ void GBufferPass::Execute(Ref<Scene> scene, RenderContext& ctx)
 		mi->Commit(driver);
 		mi->Use(driver);
 
-		state.program = mi->GetShader();
+		state.program = mi->GetShader(MaterialPass::Surface);
 		if (!state.program) continue;
 		state.vertexBufferInfo = renderItem.vertexBufferInfo;
 		state.rasterState = mi->GetMaterial()->GetRasterState();

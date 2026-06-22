@@ -7,6 +7,8 @@
 
 #include "Common/Material/MaterialBuilder.h"
 #include "Common/Material/Package.h"
+#include "Common/Serialization/ChunkContainer.h"
+#include "Common/Serialization/MaterialChunks.h"
 #include "IncludeCallbaks.h"
 #include "Lexer/JsonishLexer.h"
 #include "Lexer/MaterialLexeme.h"
@@ -42,6 +44,65 @@ MaterialCompiler::MaterialCompiler()
 // =============================================================================
 // Helpers
 // =============================================================================
+
+static const char* PassName(MaterialPass p)
+{
+	switch (p) {
+	case MaterialPass::Depth:       return "Depth";
+	case MaterialPass::Surface:     return "Surface";
+	case MaterialPass::Lighting:    return "Lighting";
+	case MaterialPass::PostProcess: return "PostProcess";
+	case MaterialPass::Compute:     return "Compute";
+	default: return "Unknown";
+	}
+}
+
+std::string MaterialCompiler::resolveMaterialName(const std::string& inputFile) const noexcept
+{
+	std::string name = inputFile;
+	auto pos = name.find_last_of("/\\");
+	if (pos != std::string::npos)
+		name = name.substr(pos + 1);
+	pos = name.rfind('.');
+	if (pos != std::string::npos)
+		name = name.substr(0, pos);
+	while (!name.empty() && name.front() == '_')
+		name.erase(0, 1);
+	while (!name.empty() && name.back() == '_')
+		name.pop_back();
+	if (name.empty())
+		name = "material";
+	return name;
+}
+
+void MaterialCompiler::writeGlslFiles(const uint8_t* data, size_t size,
+                                      const std::string& name,
+                                      const std::string& outputDir) const noexcept
+{
+	FArchiveRead ar(data, size);
+	ChunkContainer cc;
+	cc.Deserialize(ar);
+
+	ChunkGlsl::Container glslEntries;
+	if (!cc.Get<ChunkGlsl>(glslEntries) || glslEntries.empty())
+		return;
+
+	for (auto& e : glslEntries)
+	{
+		const char* pn = PassName(e.pass);
+		std::string vertFile = outputDir + "/" + name + "_" + pn + ".vert";
+		std::string fragFile = outputDir + "/" + name + "_" + pn + ".frag";
+
+		{
+			std::ofstream f(vertFile);
+			if (f) f << e.vertexGlsl;
+		}
+		{
+			std::ofstream f(fragFile);
+			if (f) f << e.fragmentGlsl;
+		}
+	}
+}
 
 bool MaterialCompiler::isValidJsonStart(const char* buffer, size_t size) noexcept
 {
@@ -221,21 +282,7 @@ bool MaterialCompiler::Run(const CompilerConfig& config)
 	}
 
 	std::string outputDir = config.outputDir.empty() ? "CompiledMaterials" : config.outputDir;
-	std::string materialName = config.inputFile;
-	{
-		auto pos = materialName.find_last_of("/\\");
-		if (pos != std::string::npos)
-			materialName = materialName.substr(pos + 1);
-		pos = materialName.rfind('.');
-		if (pos != std::string::npos)
-			materialName = materialName.substr(0, pos);
-		while (!materialName.empty() && materialName.front() == '_')
-			materialName.erase(0, 1);
-		while (!materialName.empty() && materialName.back() == '_')
-			materialName.pop_back();
-	}
-	if (materialName.empty())
-		materialName = "material";
+	std::string materialName = resolveMaterialName(config.inputFile);
 
 	std::string matbPath = outputDir + "/" + materialName + ".matb";
 	if (!writeFile(matbPath, pkg.getData(), pkg.getSize()))
@@ -245,6 +292,8 @@ bool MaterialCompiler::Run(const CompilerConfig& config)
 	}
 
 	std::cout << "matc: wrote " << matbPath << " (" << pkg.getSize() << " bytes)" << std::endl;
+
+	writeGlslFiles(pkg.getData(), pkg.getSize(), materialName, outputDir);
 	return true;
 }
 
@@ -274,21 +323,7 @@ bool MaterialCompiler::Build(MaterialBuilder& builder, const CompilerConfig& con
 	}
 
 	std::string outputDir = config.outputDir.empty() ? "CompiledMaterials" : config.outputDir;
-	std::string materialName = config.inputFile;
-	{
-		auto pos = materialName.find_last_of("/\\");
-		if (pos != std::string::npos)
-			materialName = materialName.substr(pos + 1);
-		pos = materialName.rfind('.');
-		if (pos != std::string::npos)
-			materialName = materialName.substr(0, pos);
-		while (!materialName.empty() && materialName.front() == '_')
-			materialName.erase(0, 1);
-		while (!materialName.empty() && materialName.back() == '_')
-			materialName.pop_back();
-	}
-	if (materialName.empty())
-		materialName = "material";
+	std::string materialName = resolveMaterialName(config.inputFile);
 
 	std::string matbPath = outputDir + "/" + materialName + ".matb";
 	if (!writeFile(matbPath, pkg.getData(), pkg.getSize()))
@@ -298,6 +333,8 @@ bool MaterialCompiler::Build(MaterialBuilder& builder, const CompilerConfig& con
 	}
 
 	std::cout << "matc: wrote " << matbPath << " (" << pkg.getSize() << " bytes)" << std::endl;
+
+	writeGlslFiles(pkg.getData(), pkg.getSize(), materialName, outputDir);
 	return true;
 }
 

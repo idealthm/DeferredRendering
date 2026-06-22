@@ -50,6 +50,7 @@ enum class ChunkType : uint64_t
     MaterialMaskThreshold           = charTo64bitNum("MAT_THRS"),
     MaterialShadowMultiplier        = charTo64bitNum("MAT_SHML"),
     MaterialDescriptorSetLayout     = charTo64bitNum("MAT_DSL "),
+    MaterialAttributeInputOutput    = charTo64bitNum("MAT_ATIO"),
 };
 
 // ── FArchive (abstract interface) ───────────────────────────────────────────
