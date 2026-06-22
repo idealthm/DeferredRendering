@@ -26,7 +26,7 @@ public:
 	explicit MaterialInstance(const Ref<Material>& material);
 
 	Ref<Material> GetMaterial() const { return m_Material; }
-	Handle<RHI::HwProgram> GetShader() const;
+	Handle<RHI::HwProgram> GetShader(MaterialPass pass) const;
 
 	DescriptorSet&       GetDescriptorSet()       { return m_DescriptorSet; }
 	const DescriptorSet& GetDescriptorSet() const { return m_DescriptorSet; }

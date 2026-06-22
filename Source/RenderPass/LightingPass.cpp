@@ -87,7 +87,7 @@ void LightingPass::Execute(Ref<Scene> scene, RenderContext& ctx)
 	driver.beginRenderPass(m_RenderTarget->GetHandle(), rpParams);
 
 	RHI::PipelineState state;
-	state.program = m_MaterialInstance->GetShader();
+	state.program = m_MaterialInstance->GetShader(MaterialPass::Lighting);
 	if (state.program)
 	{
 		state.vertexBufferInfo = m_ScreenQuad.GetVertexBufferInfoHandle();

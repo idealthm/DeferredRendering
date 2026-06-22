@@ -7,25 +7,17 @@
 
 Material::Material(MaterialParser& parser)
 {
-	ChunkSpirv::Container spirv;
 	parser.Get<ChunkUib>(m_UniformBlock);
 	parser.Get<ChunkSib>(m_SamplerBlock);
-	parser.Get<ChunkSpirv>(spirv);
-	// TODO: multi-pass lookup by pass string
-	if (!spirv.empty()) {
-		m_ShaderData[0] = std::move(spirv[0].vertexSpirv);
-		m_ShaderData[1] = std::move(spirv[0].fragmentSpirv);
-	}
+	parser.Get<ChunkSpirv>(m_ShaderData);
 	parser.Get<ChunkDescriptorSetBindings>(m_DescriptorSetLayouts);
 	parser.Get<ChunkRequiredAttrs>(m_RequiredAttributes);
 
-	// DescriptorSetLayout from .matb
-	std::array<RHI::DescriptorSetLayout, 2> descLayouts;
+	std::array<RHI::DescriptorSetLayout, MAX_DESCRIPTOR_SET_COUNT> descLayouts;
 	if (parser.Get<ChunkDescriptorSetLayout>(descLayouts))
 	{
 		auto& driver = gEngine->GetDriver();
-		m_DescriptorSetLayout = {driver, std::move(descLayouts[0])};
-		// m_PerViewDescriptorSetLayout = {driver, std::move(descLayouts[1])};
+		m_DescriptorSetLayout = { driver, std::move(descLayouts[+DescriptorSetBindingPoints::PER_MATERIAL]) };
 	}
 
 	for (size_t i = 0; i < m_UniformBlock.getFieldInfoList().size(); i++)
@@ -34,16 +26,34 @@ Material::Material(MaterialParser& parser)
 		m_SamplerIndex[m_SamplerBlock.getSamplerInfoList()[i].name] = i;
 }
 
-Handle<RHI::HwProgram> Material::GetProgram() const
+const SpirvEntry* Material::FindPass(MaterialPass pass) const
 {
-	if (m_CachedProgram)
+	for (auto& entry : m_ShaderData)
 	{
-		return m_CachedProgram;
+		if (entry.pass == pass)
+			return &entry;
 	}
-
-	m_CachedProgram = gEngine->GetDriver().CreateProgram(Program{m_ShaderData, m_DescriptorSetLayouts});
-	return m_CachedProgram;
+	return m_ShaderData.empty() ? nullptr : &m_ShaderData[0];
 }
+
+Handle<RHI::HwProgram> Material::GetProgram(MaterialPass pass) const
+{
+	auto it = m_CachedProgram.find(pass);
+	if (it != m_CachedProgram.end())
+		return it->second;
+
+	const SpirvEntry* entry = FindPass(pass);
+	if (!entry || entry->vertexSpirv.empty())
+		return {};
+
+	Program::ShaderSource source = { entry->vertexSpirv, entry->fragmentSpirv };
+	Handle<RHI::HwProgram> program = gEngine->GetDriver().CreateProgram(
+		Program{ source, m_DescriptorSetLayouts });
+
+	m_CachedProgram[pass] = program;
+	return program;
+}
+
 
 const Material::SamplerInfo* Material::FindSampler(const std::string& name) const
 {

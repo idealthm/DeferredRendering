@@ -10,140 +10,318 @@
 #include <utility>
 #include <vector>
 
-struct FlatProperty { std::string name; uint8_t uniformType = 0; uint8_t propertyId = 0; std::string defaultValue; };
-inline FArchive& operator<<(FArchive& ar, FlatProperty& v) { ar << v.name << v.uniformType << v.propertyId << v.defaultValue; return ar; }
+// =============================================================================
+// FlatProperty — used by MatcMain.
+// =============================================================================
+
+struct FlatProperty
+{
+	std::string name;
+	uint8_t     uniformType = 0;
+	uint8_t     propertyId  = 0;
+	std::string defaultValue;
+};
+
+inline FArchive& operator<<(FArchive& ar, FlatProperty& v)
+{
+	ar << v.name << v.uniformType << v.propertyId << v.defaultValue;
+	return ar;
+}
+
+// =============================================================================
+// Element-level operator<<
+// =============================================================================
 
 inline FArchive& operator<<(FArchive& ar, BufferInterfaceBlock::FieldInfo& v)
-{ ar << v.name << v.offset << v.stride << v.type << v.isArray << v.size << v.structName << v.sizeName; return ar; }
+{
+	ar << v.name << v.offset << v.stride << v.type
+	   << v.isArray << v.size << v.structName << v.sizeName;
+	return ar;
+}
 
 inline FArchive& operator<<(FArchive& ar, SamplerInterfaceBlock::SamplerInfo& v)
-{ ar << v.name << v.uniformName << v.binding << v.type << v.format << v.multisample; return ar; }
+{
+	ar << v.name << v.uniformName << v.binding << v.type << v.format << v.multisample;
+	return ar;
+}
 
-inline FArchive& operator<<(FArchive& ar, VariableParam& v) { ar << v.name << v.type << v.location; return ar; }
+inline FArchive& operator<<(FArchive& ar, VariableParam& v)
+{
+	ar << v.name << v.type << v.location;
+	return ar;
+}
 
-// ── Multi-pass chunks ──────────────────────────────────────────────────
+// =============================================================================
+// Multi-pass GLSL entry
+// =============================================================================
 
-struct GlslEntry { std::string pass, vertexGlsl, fragmentGlsl; };
-inline FArchive& operator<<(FArchive& ar, GlslEntry& v) { ar << v.pass << v.vertexGlsl << v.fragmentGlsl; return ar; }
+struct GlslEntry
+{
+	MaterialPass pass;
+	std::string vertexGlsl;
+	std::string fragmentGlsl;
+};
 
-struct ChunkGlsl : Chunk {
+inline FArchive& operator<<(FArchive& ar, GlslEntry& v)
+{
+	ar << v.pass << v.vertexGlsl << v.fragmentGlsl;
+	return ar;
+}
+
+struct ChunkGlsl : Chunk
+{
 	static constexpr ChunkType Tag = ChunkType::MaterialGlsl;
 	using Container = std::vector<GlslEntry>;
-	Container data; explicit ChunkGlsl(Container c) : data(std::move(c)) {}
-	ChunkType GetType() const override { return Tag; }
-	void Serialize(FArchive& ar) override { ar << data; }
-	static bool Serialize(FArchive& ar, Container& obj) { ar << obj; return true; }
+
+	static bool Serialize(FArchive& ar, Container& obj)
+	{
+		ar << obj;
+		return true;
+	}
 };
 
-struct SpirvEntry { std::string pass; std::vector<uint8_t> vertexSpirv, fragmentSpirv; };
-inline FArchive& operator<<(FArchive& ar, SpirvEntry& v) { ar << v.pass << v.vertexSpirv << v.fragmentSpirv; return ar; }
+// =============================================================================
+// Multi-pass SPIR-V entry
+// =============================================================================
 
-struct ChunkSpirv : Chunk {
+struct SpirvEntry
+{
+	MaterialPass pass;
+	std::vector<uint8_t> vertexSpirv;
+	std::vector<uint8_t> fragmentSpirv;
+};
+
+inline FArchive& operator<<(FArchive& ar, SpirvEntry& v)
+{
+	ar << v.pass << v.vertexSpirv << v.fragmentSpirv;
+	return ar;
+}
+
+struct ChunkSpirv : Chunk
+{
 	static constexpr ChunkType Tag = ChunkType::MaterialSpirv;
 	using Container = std::vector<SpirvEntry>;
-	Container data; explicit ChunkSpirv(Container c) : data(std::move(c)) {}
-	ChunkType GetType() const override { return Tag; }
-	void Serialize(FArchive& ar) override { ar << data; }
-	static bool Serialize(FArchive& ar, Container& obj) { ar << obj; return true; }
+
+	static bool Serialize(FArchive& ar, Container& obj)
+	{
+		ar << obj;
+		return true;
+	}
 };
 
-struct ChunkUib : Chunk {
+// =============================================================================
+// UIB — Uniform Interface Block
+// =============================================================================
+
+struct ChunkUib : Chunk
+{
 	static constexpr ChunkType Tag = ChunkType::MaterialUib;
 	using Container = BufferInterfaceBlock;
-	Container data; explicit ChunkUib(Container c) : data(std::move(c)) {}
-	ChunkType GetType() const override { return Tag; }
-	void Serialize(FArchive& ar) override {
-		std::string name = data.getName(); uint32_t sz = (uint32_t)data.getSize(); uint8_t al = (uint8_t)data.getAlignment();
-		ar << name << sz << al;
-		uint32_t n = (uint32_t)data.getFieldInfoList().size(); ar << n;
-		for (auto& f : data.getFieldInfoList()) ar << const_cast<BufferInterfaceBlock::FieldInfo&>(f);
-	}
-	static bool Serialize(FArchive& ar, Container& obj) {
-		std::string name; uint32_t sz = 0; uint8_t al = 0;
-		if (!ar.IsLoading()) { name = obj.getName(); sz = (uint32_t)obj.getSize(); al = (uint8_t)obj.getAlignment(); }
-		ar << name << sz << al;
-		uint32_t n = ar.IsLoading() ? 0 : (uint32_t)obj.getFieldInfoList().size(); ar << n;
-		if (ar.IsLoading()) {
-			BufferInterfaceBlock::Builder b; b.name(name).alignment((BufferInterfaceBlock::Alignment)al);
-			for (uint32_t i = 0; i < n; i++) { BufferInterfaceBlock::FieldInfo f; ar << f; b.add({{f.name,f.size,f.type,f.structName,f.stride,f.sizeName}}); }
-			obj = std::move(b.build());
-		} else { for (auto& f : obj.getFieldInfoList()) ar << const_cast<BufferInterfaceBlock::FieldInfo&>(f); }
+
+	static bool Serialize(FArchive& ar, Container& obj)
+	{
+		std::string name;
+		uint32_t size32 = 0;
+		uint8_t  alignByte = 0;
+
+		if (!ar.IsLoading())
+		{
+			name      = obj.getName();
+			size32    = static_cast<uint32_t>(obj.getSize());
+			alignByte = static_cast<uint8_t>(obj.getAlignment());
+		}
+
+		ar << name << size32 << alignByte;
+
+		uint32_t count = ar.IsLoading()
+			? 0
+			: static_cast<uint32_t>(obj.getFieldInfoList().size());
+		ar << count;
+
+		if (ar.IsLoading())
+		{
+			BufferInterfaceBlock::Builder builder;
+			builder.name(name).alignment(
+				static_cast<BufferInterfaceBlock::Alignment>(alignByte));
+
+			for (uint32_t i = 0; i < count; i++)
+			{
+				BufferInterfaceBlock::FieldInfo f;
+				ar << f;
+				builder.add({{
+					f.name,
+					f.size,
+					f.type,
+					f.structName,
+					f.stride,
+					f.sizeName
+				}});
+			}
+			obj = std::move(builder.build());
+		}
+		else
+		{
+			for (auto& f : obj.getFieldInfoList())
+				ar << const_cast<BufferInterfaceBlock::FieldInfo&>(f);
+		}
+
 		return true;
 	}
 };
 
-struct ChunkSib : Chunk {
+// =============================================================================
+// SIB — Sampler Interface Block
+// =============================================================================
+
+struct ChunkSib : Chunk
+{
 	static constexpr ChunkType Tag = ChunkType::MaterialSib;
 	using Container = SamplerInterfaceBlock;
-	Container data; explicit ChunkSib(Container c) : data(std::move(c)) {}
-	ChunkType GetType() const override { return Tag; }
-	void Serialize(FArchive& ar) override {
-		std::string name = data.getName(); uint8_t sf = (uint8_t)data.getStageFlags();
-		ar << name << sf;
-		uint32_t n = (uint32_t)data.getSamplerInfoList().size(); ar << n;
-		for (auto& s : data.getSamplerInfoList()) ar << const_cast<SamplerInterfaceBlock::SamplerInfo&>(s);
-	}
-	static bool Serialize(FArchive& ar, Container& obj) {
-		std::string name; uint8_t sf = 0;
-		if (!ar.IsLoading()) { name = obj.getName(); sf = (uint8_t)obj.getStageFlags(); }
-		ar << name << sf;
-		uint32_t n = ar.IsLoading() ? 0 : (uint32_t)obj.getSamplerInfoList().size(); ar << n;
-		if (ar.IsLoading()) {
-			SamplerInterfaceBlock::Builder b; b.name(name).stageFlags((RHI::ShaderStageFlags)sf);
-			for (uint32_t i = 0; i < n; i++) { SamplerInterfaceBlock::SamplerInfo s; ar << s; b.add(s.name, s.binding, s.type, s.format, s.multisample); }
-			obj = std::move(b.build());
-		} else { for (auto& s : obj.getSamplerInfoList()) ar << const_cast<SamplerInterfaceBlock::SamplerInfo&>(s); }
+
+	static bool Serialize(FArchive& ar, Container& obj)
+	{
+		std::string name;
+		uint8_t stageFlags = 0;
+
+		if (!ar.IsLoading())
+		{
+			name       = obj.getName();
+			stageFlags = static_cast<uint8_t>(obj.getStageFlags());
+		}
+
+		ar << name << stageFlags;
+
+		uint32_t count = ar.IsLoading()
+			? 0
+			: static_cast<uint32_t>(obj.getSamplerInfoList().size());
+		ar << count;
+
+		if (ar.IsLoading())
+		{
+			SamplerInterfaceBlock::Builder builder;
+			builder.name(name).stageFlags(
+				static_cast<RHI::ShaderStageFlags>(stageFlags));
+
+			for (uint32_t i = 0; i < count; i++)
+			{
+				SamplerInterfaceBlock::SamplerInfo s;
+				ar << s;
+				builder.add(s.name, s.binding, s.type, s.format, s.multisample);
+			}
+			obj = std::move(builder.build());
+		}
+		else
+		{
+			for (auto& s : obj.getSamplerInfoList())
+				ar << const_cast<SamplerInterfaceBlock::SamplerInfo&>(s);
+		}
+
 		return true;
 	}
 };
 
-inline FArchive& operator<<(FArchive& ar, std::pair<std::string, uint8_t>& v) { ar << v.first << v.second; return ar; }
+// =============================================================================
+// Material metadata chunks
+// =============================================================================
 
-struct ChunkMaterialAttributesInfo : Chunk {
+inline FArchive& operator<<(FArchive& ar, std::pair<std::string, uint8_t>& v)
+{
+	ar << v.first << v.second;
+	return ar;
+}
+
+struct ChunkMaterialAttributesInfo : Chunk
+{
 	static constexpr ChunkType Tag = ChunkType::MaterialAttributeInfo;
 	using Container = std::vector<std::pair<std::string, uint8_t>>;
-	Container data; explicit ChunkMaterialAttributesInfo(Container c) : data(std::move(c)) {}
-	ChunkType GetType() const override { return Tag; }
-	void Serialize(FArchive& ar) override { ar << data; }
-	static bool Serialize(FArchive& ar, Container& obj) { ar << obj; return true; }
+
+
+	static bool Serialize(FArchive& ar, Container& obj)
+	{
+		ar << obj;
+		return true;
+	}
 };
 
-inline FArchive& operator<<(FArchive& ar, Descriptor& v) { ar << v.name << v.type << v.binding; return ar; }
+inline FArchive& operator<<(FArchive& ar, Descriptor& v)
+{
+	ar << v.name << v.type << v.binding;
+	return ar;
+}
 
-struct ChunkMaterialDescriptorBindings : Chunk {
+struct ChunkMaterialDescriptorBindings : Chunk
+{
 	static constexpr ChunkType Tag = ChunkType::MaterialDescriptorSetLayoutInfo;
 	using Container = DescriptorSetInfo;
-	Container data; explicit ChunkMaterialDescriptorBindings(Container c) : data(std::move(c)) {}
-	ChunkMaterialDescriptorBindings(const SamplerInterfaceBlock& sib, const RHI::DescriptorSetLayout&) {
-		for (auto& s : sib.getSamplerInfoList()) data[0].push_back({s.name, RHI::DescriptorType::SAMPLER, s.binding});
+
+	static bool Serialize(FArchive& ar, Container& obj)
+	{
+		for (auto& bindings : obj)
+		{
+			uint32_t count = ar.IsLoading()
+				? 0
+				: static_cast<uint32_t>(bindings.size());
+			ar << count;
+			if (ar.IsLoading())
+				bindings.resize(count);
+			for (auto& desc : bindings)
+				ar << desc;
+		}
+		return true;
 	}
-	ChunkType GetType() const override { return Tag; }
-	void Serialize(FArchive& ar) override { for (auto& b : data) { uint32_t n = (uint32_t)b.size(); ar << n; for (auto& d : b) ar << d; } }
-	static bool Serialize(FArchive& ar, Container& obj) { for (auto& b : obj) { uint32_t n = ar.IsLoading()?0:(uint32_t)b.size(); ar << n; if (ar.IsLoading()) b.resize(n); for (auto& d : b) ar << d; } return true; }
 };
 
-inline FArchive& operator<<(FArchive& ar, RHI::DescriptorSetLayoutBinding& v) { ar << v.type << v.stageFlags << v.binding << v.flags << v.count; return ar; }
+inline FArchive& operator<<(FArchive& ar, RHI::DescriptorSetLayoutBinding& v)
+{
+	ar << v.type << v.stageFlags << v.binding << v.flags << v.count;
+	return ar;
+}
 
-struct ChunkMaterialDescriptorSetLayout : Chunk {
+struct ChunkMaterialDescriptorSetLayout : Chunk
+{
 	static constexpr ChunkType Tag = ChunkType::MaterialDescriptorSetLayout;
-	using Container = std::array<RHI::DescriptorSetLayout, 2>;
-	Container data; explicit ChunkMaterialDescriptorSetLayout(Container c) : data(std::move(c)) {}
-	ChunkMaterialDescriptorSetLayout(const SamplerInterfaceBlock& sib, const RHI::DescriptorSetLayout&) {
-		for (auto& s : sib.getSamplerInfoList()) { RHI::DescriptorSetLayoutBinding b{}; b.type = RHI::DescriptorType::SAMPLER; b.binding = s.binding; b.stageFlags = RHI::ShaderStageFlags::ALL_SHADER_STAGE_FLAGS; b.count = 1; data[0].bindings.push_back(b); }
+	using Container = std::array<RHI::DescriptorSetLayout, MAX_DESCRIPTOR_SET_COUNT>;
+
+	static bool Serialize(FArchive& ar, Container& obj)
+	{
+		for (auto& layout : obj)
+		{
+			uint32_t count = ar.IsLoading()
+				? 0
+				: static_cast<uint32_t>(layout.bindings.size());
+			ar << count;
+			if (ar.IsLoading())
+				layout.bindings.resize(count);
+			for (uint32_t i = 0; i < count; i++)
+				ar << layout.bindings[i];
+		}
+		return true;
 	}
-	ChunkType GetType() const override { return Tag; }
-	void Serialize(FArchive& ar) override { for (auto& l : data) { uint32_t n = (uint32_t)l.bindings.size(); ar << n; for (uint32_t i=0;i<n;i++) ar << l.bindings[i]; } }
-	static bool Serialize(FArchive& ar, Container& obj) { for (auto& l : obj) { uint32_t n = ar.IsLoading()?0:(uint32_t)l.bindings.size(); ar << n; if (ar.IsLoading()) l.bindings.resize(n); for (uint32_t i=0;i<n;i++) ar << l.bindings[i]; } return true; }
 };
 
-struct ChunkAttributeInfo : Chunk {
-	static constexpr ChunkType Tag = ChunkType::MaterialAttributeInfo;
-	struct Container { std::vector<VariableParam> inputs, outputs; };
-	Container data; explicit ChunkAttributeInfo(Container c) : data(std::move(c)) {}
-	ChunkType GetType() const override { return Tag; }
-	void Serialize(FArchive& ar) override { ar << data.inputs << data.outputs; }
-	static bool Serialize(FArchive& ar, Container& obj) { ar << obj.inputs << obj.outputs; return true; }
+// =============================================================================
+// AttributeInputOutput — vertex inputs and fragment outputs
+// =============================================================================
+
+struct ChunkAttributeInputOutput : Chunk
+{
+	static constexpr ChunkType Tag = ChunkType::MaterialAttributeInputOutput;
+	struct Container
+	{
+		std::vector<VariableParam> inputs;
+		std::vector<VariableParam> outputs;
+	};
+
+	static bool Serialize(FArchive& ar, Container& obj)
+	{
+		ar << obj.inputs << obj.outputs;
+		return true;
+	}
 };
+
+// =============================================================================
+// Simple chunk aliases
+// =============================================================================
 
 using ChunkName              = TChunk<ChunkType::MaterialName,             std::string>;
 using ChunkVersion           = TChunk<ChunkType::MaterialVersion,          uint32_t>;
@@ -165,7 +343,3 @@ using ChunkShadowMultiplier  = TChunk<ChunkType::MaterialShadowMultiplier, bool>
 
 using ChunkDescriptorSetBindings  = ChunkMaterialDescriptorBindings;
 using ChunkDescriptorSetLayout    = ChunkMaterialDescriptorSetLayout;
-using MaterialAttributesInfoChunk        = ChunkMaterialAttributesInfo;
-using MaterialUniformInterfaceBlockChunk = ChunkUib;
-using MaterialDescriptorBindingsChuck    = ChunkMaterialDescriptorBindings;
-using MaterialDescriptorSetLayoutChunk   = ChunkMaterialDescriptorSetLayout;

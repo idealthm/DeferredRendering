@@ -11,6 +11,7 @@
 #include "Common/Serialization/MaterialChunks.h"
 #include "ShaderCompiler/includes.h"
 #include "ShaderCompiler/ShaderGenerator.h"
+#include "ShaderCompiler/ShaderInputBuilder.h"
 #include "ShaderCompiler/UibGenerator.h"
 
 const MaterialBuilder::AttributeDatabase MaterialBuilder::sAttributeDatabase = {{
@@ -297,37 +298,37 @@ bool MaterialBuilder::generateShaders(ChunkContainer& container, const MaterialI
     ChunkGlsl::Container glslEntries;
     ChunkSpirv::Container spirvEntries;
 
-    auto addPass = [&](const std::string& passName, ShaderGenerator::Pass pass) {
+    auto addPass = [&](MaterialPass pass) {
         std::string vs = sg.GenerateShader(ShaderGenerator::Stage::Vertex, pass, spec, vertCode);
         std::string fs = sg.GenerateShader(ShaderGenerator::Stage::Fragment, pass, spec, fragCode);
-        glslEntries.push_back({passName, vs, fs});
+        glslEntries.push_back({ pass, vs, fs });
 
         if (mSpirvCompiler) {
             std::vector<uint8_t> vertSpv, fragSpv;
             if (mSpirvCompiler(vs, fs, vertSpv, fragSpv))
-                spirvEntries.push_back({passName, std::move(vertSpv), std::move(fragSpv)});
+                spirvEntries.push_back({ pass, std::move(vertSpv), std::move(fragSpv) });
         }
     };
 
     if (mMaterialDomain == MaterialDomain::POST_PROCESS) {
         std::string vs = sg.GeneratePostProcessShader(ShaderGenerator::Stage::Vertex, spec, vertCode);
         std::string fs = sg.GeneratePostProcessShader(ShaderGenerator::Stage::Fragment, spec, fragCode);
-        glslEntries.push_back({"PostProcess", vs, fs});
+        glslEntries.push_back({ MaterialPass::PostProcess, vs, fs });
     } else if (mPipeline == Pipeline::LIGHTING) {
-        addPass("Lighting", ShaderGenerator::Pass::Lighting);
+        addPass(MaterialPass::Lighting);
     } else {
         // Depth pass: vertex shader uses user vertex code, fragment is depth-only (no material eval)
         {
-            std::string vs = sg.GenerateShader(ShaderGenerator::Stage::Vertex, ShaderGenerator::Pass::Depth, spec, vertCode);
-            std::string fs = sg.GenerateShader(ShaderGenerator::Stage::Fragment, ShaderGenerator::Pass::Depth, spec, std::string{});
-            glslEntries.push_back({"Depth", vs, fs});
+            std::string vs = sg.GenerateShader(ShaderGenerator::Stage::Vertex, MaterialPass::Depth, spec, vertCode);
+            std::string fs = sg.GenerateShader(ShaderGenerator::Stage::Fragment, MaterialPass::Depth, spec, std::string{});
+            glslEntries.push_back({ MaterialPass::Depth, vs, fs });
             if (mSpirvCompiler) {
                 std::vector<uint8_t> vertSpv, fragSpv;
                 if (mSpirvCompiler(vs, fs, vertSpv, fragSpv))
-                    spirvEntries.push_back({"Depth", std::move(vertSpv), std::move(fragSpv)});
+                    spirvEntries.push_back({ MaterialPass::Depth, std::move(vertSpv), std::move(fragSpv) });
             }
         }
-        addPass("GBuffer",  ShaderGenerator::Pass::GBuffer);
+        addPass(MaterialPass::Surface);
     }
 
     container.push<ChunkGlsl>(std::move(glslEntries));
@@ -489,16 +490,136 @@ void MaterialBuilder::writeCommonChunks(ChunkContainer& container, MaterialInfo&
         name.append(attribute.name);
         attributes.emplace_back(std::string{ name.data(), name.size() }, attribute.location);
     }
-    container.push<MaterialAttributesInfoChunk>(std::move(attributes));
+    container.push<ChunkMaterialAttributesInfo>(std::move(attributes));
+
+    // Vertex inputs (from required attributes) + fragment outputs
+    {
+        MaterialSpec spec;
+        toMaterialSpec(spec);
+        ChunkAttributeInputOutput::Container attrIO;
+        attrIO.inputs  = BuildVertexInputs(spec);
+        attrIO.outputs = BuildFragmentOutputs(spec);
+        container.push<ChunkAttributeInputOutput>(std::move(attrIO));
+    }
 
     // User parameters (UBO)
-    container.push<MaterialUniformInterfaceBlockChunk>(std::move(info.uib));
+    container.push<ChunkUib>(std::move(info.uib));
 
-    RHI::DescriptorSetLayout const perViewDescriptorSetLayout = DescriptorSets::GetPerViewSetLayout();
+    // Descriptor bindings (name→binding mapping) — all sets
+    {
+        DescriptorSetInfo bindings{};
 
-    // Descriptor layout and descriptor name/binding mapping (const ref, before sib is moved)
-    container.push<MaterialDescriptorBindingsChuck>(info.sib, perViewDescriptorSetLayout);
-    container.push<MaterialDescriptorSetLayoutChunk>(info.sib, perViewDescriptorSetLayout);
+        // PER_VIEW (set 0)
+        auto& setView = bindings[+DescriptorSetBindingPoints::PER_VIEW];
+        setView.push_back({ "FrameUniforms.frameUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
+            +PerViewBindingPoints::FRAME_UNIFORM });
+        setView.push_back({ "LightData.lightData", RHI::DescriptorType::UNIFORM_BUFFER,
+            +PerViewBindingPoints::LIGHT_DATA });
+
+        // PER_RENDERABLE (set 1) — non-lighting pipelines only
+        if (mPipeline != Pipeline::LIGHTING)
+        {
+            auto& setRenderable = bindings[+DescriptorSetBindingPoints::PER_RENDERABLE];
+            setRenderable.push_back({ "ObjectUniforms.objectUniforms", RHI::DescriptorType::UNIFORM_BUFFER,
+                +PerRenderableBindingPoints::OBJECT_UNIFORM });
+        }
+
+        // PER_MATERIAL (set 2)
+        auto& setMat = bindings[+DescriptorSetBindingPoints::PER_MATERIAL];
+        setMat.push_back({ "MaterialParams.materialParams", RHI::DescriptorType::UNIFORM_BUFFER,
+            +PerMaterialBindingPoint::MATERIAL_UNIFORM });
+        for (auto& s : info.sib.getSamplerInfoList())
+            setMat.push_back({ "materialParams_" + s.name, RHI::DescriptorType::SAMPLER, s.binding });
+
+        // G_BUFFER (set 3) — lighting pipeline only
+        if (mPipeline == Pipeline::LIGHTING)
+        {
+            auto& setGBuffer = bindings[+DescriptorSetBindingPoints::G_BUFFER];
+            setGBuffer.push_back({ "gDepth",    RHI::DescriptorType::SAMPLER, +GBufferBindingPoint::G_BUFFER_DEPTH });
+            setGBuffer.push_back({ "gNormal",   RHI::DescriptorType::SAMPLER, +GBufferBindingPoint::G_BUFFER_NORMAL });
+            setGBuffer.push_back({ "gAlbedo",   RHI::DescriptorType::SAMPLER, +GBufferBindingPoint::G_BUFFER_ALBEDO });
+            setGBuffer.push_back({ "gMaterial", RHI::DescriptorType::SAMPLER, +GBufferBindingPoint::G_BUFFER_MATERIAL });
+        }
+
+        container.push<ChunkMaterialDescriptorBindings>(std::move(bindings));
+    }
+
+    // Descriptor set layout (GPU pipeline layout) — all sets
+    {
+        ChunkMaterialDescriptorSetLayout::Container layouts{};
+
+        // PER_VIEW (set 0): FrameUniforms + LightData
+        {
+            auto& layout = layouts[+DescriptorSetBindingPoints::PER_VIEW].bindings;
+            RHI::DescriptorSetLayoutBinding frameUBO{};
+            frameUBO.type = RHI::DescriptorType::UNIFORM_BUFFER;
+            frameUBO.binding = +PerViewBindingPoints::FRAME_UNIFORM;
+            frameUBO.stageFlags = RHI::ShaderStageFlags::VERTEX | RHI::ShaderStageFlags::FRAGMENT;
+            frameUBO.count = 1;
+            layout.push_back(frameUBO);
+
+            RHI::DescriptorSetLayoutBinding lightUBO{};
+            lightUBO.type = RHI::DescriptorType::UNIFORM_BUFFER;
+            lightUBO.binding = +PerViewBindingPoints::LIGHT_DATA;
+            lightUBO.stageFlags = RHI::ShaderStageFlags::FRAGMENT;
+            lightUBO.count = 1;
+            layout.push_back(lightUBO);
+        }
+
+        // PER_RENDERABLE (set 1): ObjectUniforms — non-lighting only
+        if (mPipeline != Pipeline::LIGHTING)
+        {
+            auto& layout = layouts[+DescriptorSetBindingPoints::PER_RENDERABLE].bindings;
+            RHI::DescriptorSetLayoutBinding objUBO{};
+            objUBO.type = RHI::DescriptorType::UNIFORM_BUFFER;
+            objUBO.binding = +PerRenderableBindingPoints::OBJECT_UNIFORM;
+            objUBO.stageFlags = RHI::ShaderStageFlags::VERTEX | RHI::ShaderStageFlags::FRAGMENT;
+            objUBO.count = 1;
+            layout.push_back(objUBO);
+        }
+
+        // PER_MATERIAL (set 2): UBO + samplers
+        {
+            auto& layout = layouts[+DescriptorSetBindingPoints::PER_MATERIAL].bindings;
+            {
+                RHI::DescriptorSetLayoutBinding ubo{};
+                ubo.type = RHI::DescriptorType::UNIFORM_BUFFER;
+                ubo.binding = +PerMaterialBindingPoint::MATERIAL_UNIFORM;
+                ubo.stageFlags = RHI::ShaderStageFlags::ALL_SHADER_STAGE_FLAGS;
+                ubo.count = 1;
+                layout.push_back(ubo);
+            }
+            for (auto& s : info.sib.getSamplerInfoList())
+            {
+                RHI::DescriptorSetLayoutBinding b{};
+                b.type = RHI::DescriptorType::SAMPLER;
+                b.binding = s.binding;
+                b.stageFlags = RHI::ShaderStageFlags::ALL_SHADER_STAGE_FLAGS;
+                b.count = 1;
+                layout.push_back(b);
+            }
+        }
+
+        // G_BUFFER (set 3): GBuffer textures — lighting pipeline only
+        if (mPipeline == Pipeline::LIGHTING)
+        {
+            auto& layout = layouts[+DescriptorSetBindingPoints::G_BUFFER].bindings;
+            auto addSampler = [&](uint8_t binding) {
+                RHI::DescriptorSetLayoutBinding b{};
+                b.type = RHI::DescriptorType::SAMPLER;
+                b.binding = binding;
+                b.stageFlags = RHI::ShaderStageFlags::FRAGMENT;
+                b.count = 1;
+                layout.push_back(b);
+            };
+            addSampler(+GBufferBindingPoint::G_BUFFER_DEPTH);
+            addSampler(+GBufferBindingPoint::G_BUFFER_NORMAL);
+            addSampler(+GBufferBindingPoint::G_BUFFER_ALBEDO);
+            addSampler(+GBufferBindingPoint::G_BUFFER_MATERIAL);
+        }
+
+        container.push<ChunkMaterialDescriptorSetLayout>(std::move(layouts));
+    }
 
     // User texture parameters (moves sib, must be last)
     container.push<ChunkSib>(std::move(info.sib));

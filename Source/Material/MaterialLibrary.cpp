@@ -11,7 +11,7 @@ MaterialLibrary& MaterialLibrary::Get()
 
 Ref<Material> MaterialLibrary::BuildMaterial(const std::string& name)
 {
-	std::string matbPath = "Material/CompiledMaterials/" + name + "/" + name + ".matb";
+	std::string matbPath = "D:/Dev/DeferredRendering/CompiledMaterials/" + name + ".matb";
 
 	MaterialParser parser(matbPath);
 	return CreateRef<Material>(parser);

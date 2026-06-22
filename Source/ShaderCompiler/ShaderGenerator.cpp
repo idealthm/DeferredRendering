@@ -127,28 +127,28 @@ void ShaderGenerator::EmitFragmentOutputs(std::ostringstream& os, const Material
 	os << '\n';
 }
 
-std::string ShaderGenerator::MainTemplate(Stage stage, Pass pass, Pipeline pipeline) const
+std::string ShaderGenerator::MainTemplate(Stage stage, MaterialPass pass, Pipeline pipeline) const
 {
 	if (stage == Stage::Vertex)
 	{
 		switch (pass)
 		{
-		case Pass::Depth:    return "surface_depth_main.vs";
-		case Pass::GBuffer:  return (pipeline == Pipeline::FORWARD)
+		case MaterialPass::Depth:    return "surface_depth_main.vs";
+		case MaterialPass::Surface:  return (pipeline == Pipeline::FORWARD)
 		                            ? "surface_forward_main.vs"
 		                            : "surface_deferred_main.vs";
-		case Pass::Lighting: return "surface_shading_main.vs";
+		case MaterialPass::Lighting: return "surface_shading_main.vs";
 		}
 	}
 	else
 	{
 		switch (pass)
 		{
-		case Pass::Depth:    return "surface_depth_main.fs";
-		case Pass::GBuffer:  return (pipeline == Pipeline::FORWARD)
+		case MaterialPass::Depth:    return "surface_depth_main.fs";
+		case MaterialPass::Surface:  return (pipeline == Pipeline::FORWARD)
 		                            ? "surface_forward_main.fs"
 		                            : "surface_deferred_main.fs";
-		case Pass::Lighting: return "surface_shading_main.fs";
+		case MaterialPass::Lighting: return "surface_shading_main.fs";
 		}
 	}
 	return {};
@@ -204,7 +204,7 @@ ShaderGenerator::ShaderGenerator(MaterialBuilder::PropertyList const& properties
 // Surface-domain dispatch
 // =============================================================================
 
-std::string ShaderGenerator::GenerateShader(Stage stage, Pass pass,
+std::string ShaderGenerator::GenerateShader(Stage stage, MaterialPass pass,
                                             const MaterialSpec& spec,
                                             const std::string& userCode) const
 {
@@ -213,18 +213,18 @@ std::string ShaderGenerator::GenerateShader(Stage stage, Pass pass,
 	case Stage::Vertex:
 		switch (pass)
 		{
-		case Pass::Depth:    return GenDepthVS(spec, userCode);
-		case Pass::GBuffer:  return GenGBufferVS(spec, userCode);
-		case Pass::Lighting: return GenLightingVS(spec, userCode);
+		case MaterialPass::Depth:    return GenDepthVS(spec, userCode);
+		case MaterialPass::Surface:  return GenSurfaceVS(spec, userCode);
+		case MaterialPass::Lighting: return GenLightingVS(spec, userCode);
 		}
 		break;
 
 	case Stage::Fragment:
 		switch (pass)
 		{
-		case Pass::Depth:    return GenDepthFS(spec, userCode);
-		case Pass::GBuffer:  return GenGBufferFS(spec, userCode);
-		case Pass::Lighting: return GenLightingFS(spec, userCode);
+		case MaterialPass::Depth:    return GenDepthFS(spec, userCode);
+		case MaterialPass::Surface:  return GenSurfaceFS(spec, userCode);
+		case MaterialPass::Lighting: return GenLightingFS(spec, userCode);
 		}
 		break;
 
@@ -277,7 +277,7 @@ std::string ShaderGenerator::GenDepthVS(const MaterialSpec& spec, const std::str
 	if (!code.empty())
 		os << "// User vertex code\n" << code << '\n';
 
-	os << LoadTemplate(MainTemplate(Stage::Vertex, Pass::Depth, spec.pipeline)) << '\n';
+	os << LoadTemplate(MainTemplate(Stage::Vertex, MaterialPass::Depth, spec.pipeline)) << '\n';
 	return os.str();
 }
 
@@ -304,7 +304,7 @@ std::string ShaderGenerator::GenDepthFS(const MaterialSpec& spec, const std::str
 	if (!code.empty())
 		os << "// User fragment code\n" << code << '\n';
 
-	os << LoadTemplate(MainTemplate(Stage::Fragment, Pass::Depth, spec.pipeline)) << '\n';
+	os << LoadTemplate(MainTemplate(Stage::Fragment, MaterialPass::Depth, spec.pipeline)) << '\n';
 	return os.str();
 }
 
@@ -312,7 +312,7 @@ std::string ShaderGenerator::GenDepthFS(const MaterialSpec& spec, const std::str
 // GBuffer — Vertex
 // =============================================================================
 
-std::string ShaderGenerator::GenGBufferVS(const MaterialSpec& spec, const std::string& code) const
+std::string ShaderGenerator::GenSurfaceVS(const MaterialSpec& spec, const std::string& code) const
 {
 	std::ostringstream os;
 	CodeGenerator cg;
@@ -339,7 +339,7 @@ std::string ShaderGenerator::GenGBufferVS(const MaterialSpec& spec, const std::s
 	if (!code.empty())
 		os << "// User vertex code\n" << code << '\n';
 
-	os << LoadTemplate(MainTemplate(Stage::Vertex, Pass::GBuffer, spec.pipeline)) << '\n';
+	os << LoadTemplate(MainTemplate(Stage::Vertex, MaterialPass::Surface, spec.pipeline)) << '\n';
 	return os.str();
 }
 
@@ -347,7 +347,7 @@ std::string ShaderGenerator::GenGBufferVS(const MaterialSpec& spec, const std::s
 // GBuffer — Fragment
 // =============================================================================
 
-std::string ShaderGenerator::GenGBufferFS(const MaterialSpec& spec, const std::string& code) const
+std::string ShaderGenerator::GenSurfaceFS(const MaterialSpec& spec, const std::string& code) const
 {
 	std::ostringstream os;
 	CodeGenerator cg;
@@ -382,7 +382,7 @@ std::string ShaderGenerator::GenGBufferFS(const MaterialSpec& spec, const std::s
 		os << "// User fragment code\n" << code << '\n';
 
 	os << LoadTemplate("surface_shading_" + spec.shadingModel + ".fs") << '\n';
-	os << LoadTemplate(MainTemplate(Stage::Fragment, Pass::GBuffer, spec.pipeline)) << '\n';
+	os << LoadTemplate(MainTemplate(Stage::Fragment, MaterialPass::Surface, spec.pipeline)) << '\n';
 	return os.str();
 }
 
@@ -401,7 +401,7 @@ std::string ShaderGenerator::GenLightingVS(const MaterialSpec& spec, const std::
 	os << "#define VERTEX_STAGE\n\n";
 
 	os << LoadTemplate("common_defines.glsl") << '\n';
-	os << LoadTemplate(MainTemplate(Stage::Vertex, Pass::Lighting, spec.pipeline)) << '\n';
+	os << LoadTemplate(MainTemplate(Stage::Vertex, MaterialPass::Lighting, spec.pipeline)) << '\n';
 	return os.str();
 }
 
@@ -433,7 +433,7 @@ std::string ShaderGenerator::GenLightingFS(const MaterialSpec& spec, const std::
 
 	os << LoadTemplate("surface_shading_unlit.fs") << '\n';
 	os << LoadTemplate("surface_shading_lit.fs") << '\n';
-	os << LoadTemplate(MainTemplate(Stage::Fragment, Pass::Lighting, spec.pipeline)) << '\n';
+	os << LoadTemplate(MainTemplate(Stage::Fragment, MaterialPass::Lighting, spec.pipeline)) << '\n';
 	return os.str();
 }
 

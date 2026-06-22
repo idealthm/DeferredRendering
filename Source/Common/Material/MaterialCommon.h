@@ -51,6 +51,17 @@ enum class MaterialDomain : uint8_t {
 };
 
 // =============================================================================
+// Material pass — which rendering pass a shader belongs to.
+// =============================================================================
+enum class MaterialPass : uint8_t {
+    Depth         = 0,
+    Surface       = 1,  // was "GBuffer" — main deferred surface pass
+    Lighting      = 2,
+    PostProcess   = 3,
+    Compute       = 4,
+};
+
+// =============================================================================
 // Uniform property types — map to std140 uniform block members
 // =============================================================================
 enum class UniformType : uint8_t {

@@ -198,7 +198,27 @@ static void DumpMatb(const std::string& path)
 	if (cc.Get<ChunkSpirv>(spv)) {
 		std::cout << "[ChunkSpirv]  " << spv.size() << " entries\n";
 		for (auto& e : spv)
-			std::cout << "  " << e.pass << ": vert=" << e.vertexSpirv.size() << "B  frag=" << e.fragmentSpirv.size() << "B\n";
+			std::cout << "  " << (int)e.pass << ": vert=" << e.vertexSpirv.size() << "B  frag=" << e.fragmentSpirv.size() << "B\n";
+	}
+
+	// Raw hex of first 64 bytes of ChunkSpirv and ChunkGlsl payloads
+	{
+		sep();
+		std::cout << "[Raw payload hex dump]\n";
+		auto dumpHex = [&](const char* label) {
+			// Re-deserialize to get raw data
+			FArchiveRead rawAr(buffer.data(), buffer.size());
+			ChunkContainer rawCc;
+			rawCc.Deserialize(rawAr);
+			std::cout << "  " << label << ":\n  ";
+			int col = 0;
+			for (size_t i = 0; i < min(buffer.size(), (size_t)64); ++i) {
+				printf("%02X ", buffer[i]);
+				if (++col == 16) { std::cout << "\n  "; col = 0; }
+			}
+			std::cout << std::endl;
+		};
+		dumpHex("file header");
 	}
 
 	// UIB
@@ -234,7 +254,14 @@ static void DumpMatb(const std::string& path)
 		for (size_t set = 0; set < dsl.size(); set++)
 		{
 			if (dsl[set].empty()) continue;
-			std::cout << "  set=" << set << '\n';
+			const char* setName = "?";
+			switch (set) {
+			case static_cast<size_t>(DescriptorSetBindingPoints::PER_VIEW):       setName = "PER_VIEW"; break;
+			case static_cast<size_t>(DescriptorSetBindingPoints::PER_RENDERABLE): setName = "PER_RENDERABLE"; break;
+			case static_cast<size_t>(DescriptorSetBindingPoints::PER_MATERIAL):   setName = "PER_MATERIAL"; break;
+			case static_cast<size_t>(DescriptorSetBindingPoints::G_BUFFER):       setName = "G_BUFFER"; break;
+			}
+			std::cout << "  set=" << set << " (" << setName << ")\n";
 			for (auto& d : dsl[set])
 				std::cout << "    " << d.name << "  binding=" << (int)d.binding
 				          << "  type=" << (int)d.type << '\n';
@@ -242,14 +269,22 @@ static void DumpMatb(const std::string& path)
 	}
 
 	// DescriptorSetLayout
-	std::array<RHI::DescriptorSetLayout, 2> descLayouts;
+	std::array<RHI::DescriptorSetLayout, MAX_DESCRIPTOR_SET_COUNT> descLayouts;
 	if (cc.Get<ChunkDescriptorSetLayout>(descLayouts))
 	{
 		sep();
 		std::cout << "[ChunkDescriptorSetLayout]\n";
 		for (size_t li = 0; li < descLayouts.size(); li++)
 		{
-			std::cout << "  layout[" << li << "]\n";
+			if (descLayouts[li].bindings.empty()) continue;
+			const char* setName = "?";
+			switch (li) {
+			case static_cast<size_t>(DescriptorSetBindingPoints::PER_VIEW):       setName = "PER_VIEW"; break;
+			case static_cast<size_t>(DescriptorSetBindingPoints::PER_RENDERABLE): setName = "PER_RENDERABLE"; break;
+			case static_cast<size_t>(DescriptorSetBindingPoints::PER_MATERIAL):   setName = "PER_MATERIAL"; break;
+			case static_cast<size_t>(DescriptorSetBindingPoints::G_BUFFER):       setName = "G_BUFFER"; break;
+			}
+			std::cout << "  layout[" << li << "] (" << setName << ")\n";
 			for (auto& b : descLayouts[li].bindings)
 			{
 				if (b.count == 0) continue;
@@ -261,17 +296,27 @@ static void DumpMatb(const std::string& path)
 		}
 	}
 
-	// AttributeInfo
-	ChunkAttributeInfo::Container attr;
-	if (cc.Get<ChunkAttributeInfo>(attr))
+	// MaterialAttributesInfo — mesh vertex attribute mapping
+	ChunkMaterialAttributesInfo::Container attrInfo;
+	if (cc.Get<ChunkMaterialAttributesInfo>(attrInfo))
 	{
 		sep();
-		std::cout << "[ChunkAttributeInfo]\n";
-		std::cout << "  Inputs:\n";
-		for (auto& v : attr.inputs)
+		std::cout << "[MaterialAttributesInfo]  " << attrInfo.size() << " entries\n";
+		for (auto& [name, loc] : attrInfo)
+			std::cout << "  " << name << "  loc=" << (int)loc << '\n';
+	}
+
+	// AttributeInputOutput — vertex inputs + fragment outputs
+	ChunkAttributeInputOutput::Container attrIO;
+	if (cc.Get<ChunkAttributeInputOutput>(attrIO))
+	{
+		sep();
+		std::cout << "[AttributeInputOutput]\n";
+		std::cout << "  Vertex inputs:\n";
+		for (auto& v : attrIO.inputs)
 			std::cout << "    " << v.name << "  loc=" << (int)v.location << "  type=" << (int)v.type << '\n';
-		std::cout << "  Outputs:\n";
-		for (auto& v : attr.outputs)
+		std::cout << "  Fragment outputs:\n";
+		for (auto& v : attrIO.outputs)
 			std::cout << "    " << v.name << "  loc=" << (int)v.location << "  type=" << (int)v.type << '\n';
 	}
 
@@ -296,6 +341,65 @@ static void DumpMatb(const std::string& path)
 	sep();
 }
 
+static const char* PassName(MaterialPass p)
+{
+	switch (p) {
+	case MaterialPass::Depth:       return "Depth";
+	case MaterialPass::Surface:     return "Surface";
+	case MaterialPass::Lighting:    return "Lighting";
+	case MaterialPass::PostProcess: return "PostProcess";
+	case MaterialPass::Compute:     return "Compute";
+	default: return "Unknown";
+	}
+}
+
+static void DumpGlsl(const std::string& path, const std::string& outDir)
+{
+	std::ifstream file(path, std::ios::binary | std::ios::ate);
+	if (!file.is_open())
+	{
+		std::cerr << "matc: cannot open " << path << '\n';
+		return;
+	}
+	const size_t size = static_cast<size_t>(file.tellg());
+	file.seekg(0);
+	std::vector<uint8_t> buffer(size);
+	file.read(reinterpret_cast<char*>(buffer.data()), size);
+
+	FArchiveRead ar(buffer.data(), buffer.size());
+	ChunkContainer cc;
+	cc.Deserialize(ar);
+
+	std::string name;
+	cc.Get<ChunkName>(name);
+
+	ChunkGlsl::Container glslEntries;
+	if (!cc.Get<ChunkGlsl>(glslEntries) || glslEntries.empty())
+	{
+		std::cerr << "matc: no GLSL data found in " << path << '\n';
+		return;
+	}
+
+	std::string baseName = name.empty() ? "material" : name;
+	std::string dir = outDir.empty() ? "." : outDir;
+
+	for (auto& e : glslEntries)
+	{
+		const char* pn = PassName(e.pass);
+		std::string vertFile = dir + "/" + baseName + "_" + pn + ".vert";
+		std::string fragFile = dir + "/" + baseName + "_" + pn + ".frag";
+
+		{
+			std::ofstream f(vertFile);
+			if (f) { f << e.vertexGlsl; std::cout << "matc: wrote " << vertFile << " (" << e.vertexGlsl.size() << " bytes)\n"; }
+		}
+		{
+			std::ofstream f(fragFile);
+			if (f) { f << e.fragmentGlsl; std::cout << "matc: wrote " << fragFile << " (" << e.fragmentGlsl.size() << " bytes)\n"; }
+		}
+	}
+}
+
 static int BuildLightingMaterial(const CompilerConfig& config)
 {
     MaterialBuilder builder;
@@ -315,6 +419,7 @@ int main(int Argc, char* Argv[])
     CompilerConfig config;
     std::string workDir;
     std::string dumpPath;
+    std::string dumpGlslPath;
     bool codeOnly = false;
 
     { char* vk = nullptr; _dupenv_s(&vk, nullptr, "VULKAN_SDK"); config.glslcPath = vk ? std::string(vk) + "/Bin/glslc.exe" : "glslc.exe"; free(vk); }
@@ -328,6 +433,7 @@ int main(int Argc, char* Argv[])
         else if (arg == "--glslc" && i + 1 < Argc) config.glslcPath = Argv[++i];
         else if (arg == "--include" && i + 1 < Argc) config.includePaths.push_back(Argv[++i]);
         else if (arg == "--dump" && i + 1 < Argc) dumpPath = Argv[++i];
+        else if (arg == "--dump-glsl" && i + 1 < Argc) { dumpGlslPath = Argv[++i]; if (i + 1 < Argc && Argv[i + 1][0] != '-') config.outputDir = Argv[++i]; }
         else if (arg == "--template-dir" && i + 1 < Argc) config.templateDir = Argv[++i];
         else if (arg == "-h" || arg == "--help") { PrintUsage(); return 0; }
         else if (!arg.empty() && arg[0] != '-') config.inputFile = arg;
@@ -335,13 +441,17 @@ int main(int Argc, char* Argv[])
     }
 
     if (!dumpPath.empty()) { DumpMatb(dumpPath); return 0; }
-    if (config.inputFile == "__lighting__") { return BuildLightingMaterial(config); }
+    if (!dumpGlslPath.empty()) { DumpGlsl(dumpGlslPath, config.outputDir); return 0; }
     if (config.inputFile.empty()) { std::cerr << "matc: missing input filename\n"; PrintUsage(); return 1; }
+
+    config.compileSpirv = !codeOnly;
 
     if (workDir.empty()) workDir = GetDirectory(config.inputFile);
     while (!workDir.empty() && (workDir.back() == '/' || workDir.back() == '\\')) workDir.pop_back();
     if (config.includePaths.empty()) { config.includePaths.push_back(workDir + "/Shaders"); config.includePaths.push_back(workDir); }
-    config.compileSpirv = !codeOnly;
+
+    if (config.inputFile == "__lighting__") { return BuildLightingMaterial(config); }
+
     MaterialCompiler compiler;
     return compiler.Run(config) ? 0 : 1;
 }

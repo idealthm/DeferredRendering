@@ -20,9 +20,9 @@ MaterialInstance::MaterialInstance(const Ref<Material>& material)
 	m_DescriptorSet.SetBuffer(0, m_UniformBufferHandle, 0, m_UniformBuffer.GetSize());
 }
 
-Handle<RHI::HwProgram> MaterialInstance::GetShader() const
+Handle<RHI::HwProgram> MaterialInstance::GetShader(MaterialPass pass) const
 {
-	return m_Material->GetProgram();
+	return m_Material->GetProgram(pass);
 }
 
 bool MaterialInstance::SetParameter(const std::string& name, const Ref<Texture>& texture,

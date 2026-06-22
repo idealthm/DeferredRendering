@@ -35,6 +35,8 @@ private:
 	bool parseMaterial(const char* buffer, size_t size, MaterialBuilder& builder, const CompilerConfig& config) const noexcept;
 	bool readFile(const std::string& path, std::string& out) const noexcept;
 	bool writeFile(const std::string& path, const uint8_t* data, size_t size) const noexcept;
+	void writeGlslFiles(const uint8_t* data, size_t size, const std::string& name, const std::string& outputDir) const noexcept;
+	std::string resolveMaterialName(const std::string& inputFile) const noexcept;
 	void configureBuilder(MaterialBuilder& builder, const CompilerConfig& config) const noexcept;
 
 	std::function<bool(const std::string&, IncludeResult&)> makeIncludeCallback(const CompilerConfig& config) const noexcept;
