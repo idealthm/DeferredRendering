@@ -810,7 +810,6 @@ endlocal</Command>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Shaders\Template\" />
-    <Folder Include="Source\ShaderPreprocessor\" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

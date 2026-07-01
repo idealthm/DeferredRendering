@@ -117,12 +117,12 @@ Ref<VertexBuffer> VertexBuffer::Builder::build(RHIDriver& driver) {
 
     ASSERT(attributedBuffers.count() == m_Desc.mBufferCount)
 
-    return CreateRef<VertexBuffer>(driver, std::move(*this));
+    return CreateRef<VertexBuffer>(driver, *this);
 }
 
 
-VertexBuffer::VertexBuffer(RHIDriver& driver, Builder&& builder)
-	: m_Desc(std::move(builder.m_Desc))
+VertexBuffer::VertexBuffer(RHIDriver& driver, const Builder& builder)
+	: m_Desc(builder.m_Desc)
 {
     m_Desc.mAttributes[BONE_INDICES].flags |= Attribute::FLAG_INTEGER_TARGET;
 

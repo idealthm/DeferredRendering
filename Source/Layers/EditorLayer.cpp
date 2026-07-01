@@ -70,8 +70,8 @@ void EditorLayer::LoadScene(std::string path)
 	mi->SetParameter("metallic", 0.1f);
 	mi->SetParameter("ao", 0.1f);
 
-	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/Gun/Gun.json"));
-	// ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.json"));
+	// ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/Gun/Gun.json"));
+	ModelA->SetStaticMesh(Util::MeshLoader::LoadAsset("Assets/objects/backpack/backpack.json"));
 
 	m_ActiveScene->SpawnActor<DirectionLightActor>(glm::vec3(0.f, 5.f, 0.f), glm::vec3(-45.f, 0, 0), glm::vec3(1.f, 1.f, 1.f));
 	m_ActiveScene->SpawnActor<SkyLightActor>();

@@ -68,7 +68,7 @@ public:
         friend class VertexBuffer;
     };
 
-	VertexBuffer(RHIDriver& driver, Builder&& builder);
+	VertexBuffer(RHIDriver& driver, const Builder& builder);
 	virtual ~VertexBuffer();
 
 	bool IsValid() const { return !!m_Handle; }
