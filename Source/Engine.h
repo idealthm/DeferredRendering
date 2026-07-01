@@ -2,9 +2,11 @@
 
 #include <memory>
 
+#include "Material/LightingShaderLibrary.h"
 #include "RHI/RHIDriver.h"
 
 class Material;
+class ScreenQuad;
 
 class Engine
 {
@@ -25,6 +27,10 @@ public:
 	DescriptorSetLayout const& GetPerViewSetLayout();
 	DescriptorSetLayout const& GetGBufferSetLayout();
 
+	LightingShaderLibrary& GetLightingShaderLibrary() { return m_LightingShaderLibrary; }
+
+	ScreenQuad& GetScreenQuad() const { return *m_ScreenQuad; }
+
 private:
 	std::unique_ptr<RHI::RHIDriver> m_Driver;
 	Ref<Material> m_ModelMaterial;
@@ -33,6 +39,9 @@ private:
 	DescriptorSetLayout m_PerRenderableSetLayout;
 	DescriptorSetLayout m_PerViewSetLayout;
 	DescriptorSetLayout m_GBufferSetLayout;
+	LightingShaderLibrary m_LightingShaderLibrary;
+
+	Ref<ScreenQuad> m_ScreenQuad;
 };
 
 extern Engine* gEngine;

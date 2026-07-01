@@ -129,6 +129,21 @@ enum class BlendingMode : uint8_t {
     OPAQUE, TRANSPARENT, ADD, MASKED, FADE, MULTIPLY, SCREEN, CUSTOM
 };
 enum class Shading : uint8_t { UNLIT, LIT, SUBSURFACE, CLOTH, SPECULAR_GLOSSINESS };
+
+inline const char* ShadingToString(Shading s)
+{
+	switch (s) {
+	case Shading::UNLIT: return "unlit";
+	case Shading::LIT:   return "lit";
+	default: return "lit";
+	}
+}
+
+inline Shading ShadingFromString(const std::string& s)
+{
+	if (s == "unlit") return Shading::UNLIT;
+	return Shading::LIT;
+}
 enum class Interpolation : uint8_t { SMOOTH, FLAT };
 enum class VertexDomain : uint8_t { OBJECT, WORLD, VIEW, DEVICE };
 enum class ConstantType : uint8_t { INT, FLOAT, BOOL };

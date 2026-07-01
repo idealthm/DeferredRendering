@@ -7,9 +7,10 @@
 
 #include "RHI/TargetBufferInfo.h"
 #include "RHI/VertexBuffer.h"
-#include "ShaderCompiler/CodeGenerator.h"
+#include "EngineEnum.h"
 #include "ShaderCompiler/IncludeCallbaks.h"
 
+class BufferInterfaceBlock;
 class ChunkContainer;
 class Package;
 struct MaterialInfo;
@@ -43,6 +44,8 @@ public:
 
 	struct PreprocessorDefine { std::string name, value; PreprocessorDefine(std::string n, std::string v) : name(std::move(n)), value(std::move(v)) {} };
 	using PreprocessorDefineList = std::vector<PreprocessorDefine>;
+
+	MaterialBuilder();
 
 	MaterialBuilder& noSamplerValidation(bool enabled) noexcept;
 	MaterialBuilder& name(const std::string& name) noexcept;
@@ -83,7 +86,6 @@ public:
 	MaterialBuilder& groupSize(const glm::uvec3& groupSize) noexcept;
 
 	Package build();
-	void toMaterialSpec(MaterialSpec& spec) const noexcept;
 
 public:
 	struct Parameter {
@@ -104,10 +106,10 @@ public:
 	struct PushConstant { std::string name; ConstantType type; ShaderStage stage; };
 	struct CustomVariable { std::string name; bool hasPrecision = false; };
 
-	static constexpr size_t MATERIAL_PROPERTIES_COUNT = MATERIAL_PROPERTIES_COUNT;
 	using Property = Property;
 	using PropertyList = bool[MATERIAL_PROPERTIES_COUNT];
-	using VariableList = CustomVariable[MATERIAL_VARIABLES_COUNT];
+	static const char* sPropertyNames[MATERIAL_PROPERTIES_COUNT];
+	using VariableList = std::array<CustomVariable,MATERIAL_VARIABLES_COUNT>;
 	using OutputList = std::vector<Output>;
 	static constexpr size_t MAX_COLOR_OUTPUT = MAX_SUPPORTED_RENDER_TARGET_COUNT;
 	static constexpr size_t MAX_DEPTH_OUTPUT = 1;

@@ -5,11 +5,11 @@ material
     shadingModel: lit,
     requires: [POSITION, TANGENTS, UV0],
     parameters: [
-      { type: sampler2d, name: albedo },
+      { type: sampler2d, name: baseColor },
       { type: sampler2d, name: normal },
       { type: sampler2d, name: roughness },
       { type: sampler2d, name: metallic },
-      { type: sampler2d, name: ao }
+      { type: sampler2d, name: ambientOcclusion }
     ],
     domain: surface
 }
@@ -23,11 +23,11 @@ vertex
 fragment
 {
     void material(inout MaterialInputs material) {
-        prepareMaterial(material);
         material.normal            = normalize(texture(materialParams_normal, getUV0().xy).rgb * 2.0 - 1.0);
+        prepareMaterial(material);
         material.roughness         = texture(materialParams_roughness, getUV0().xy).r;
         material.metallic          = texture(materialParams_metallic, getUV0().xy).r;
-        material.ambientOcclusion  = texture(materialParams_ao, getUV0().xy).r;
-        material.baseColor.rgb     = texture(materialParams_albedo, getUV0().xy).rgb;
+        material.ambientOcclusion  = texture(materialParams_ambientOcclusion, getUV0().xy).r;
+        material.baseColor.rgb     = texture(materialParams_baseColor, getUV0().xy).rgb;
     }
 }

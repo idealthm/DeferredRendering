@@ -402,15 +402,9 @@ static void DumpGlsl(const std::string& path, const std::string& outDir)
 
 static int BuildLightingMaterial(const CompilerConfig& config)
 {
-    MaterialBuilder builder;
-    builder.name("Lighting");
-    builder.pipeline(Pipeline::LIGHTING);
-    builder.shading(Shading::LIT);
-    builder.materialDomain(MaterialDomain::SURFACE);
-    builder.variable(MaterialBuilder::Variable::CUSTOM0, "uv");
     std::cout << "matc: building Lighting material" << std::endl;
     MaterialCompiler compiler;
-    return compiler.Build(builder, config) ? 0 : 1;
+    return compiler.CompileLighting(config) ? 0 : 1;
 }
 // ============================================================
 

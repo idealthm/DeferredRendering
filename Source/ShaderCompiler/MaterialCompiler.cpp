@@ -172,7 +172,7 @@ MaterialCompiler::makeIncludeCallback(const CompilerConfig& config) const noexce
 }
 
 // =============================================================================
-// SPIR-V compiler (glslc wrapper)
+// SPIR-V compiler (glslc wrapper, captures stderr on failure)
 // =============================================================================
 
 std::function<bool(const std::string&, const std::string&,
@@ -194,20 +194,34 @@ MaterialCompiler::makeSpirvCompiler(const CompilerConfig& config) const noexcept
 
 			{
 				std::ofstream f(tmpIn);
-				if (!f)
-					return false;
+				if (!f) return false;
 				f << src;
 			}
 
-			std::string cmd = glslcPath + " -fshader-stage=" + stage
-			                + " --target-env=opengl"
-			                + " " + tmpIn + " -o " + tmpOut;
+			std::string errFile = tmpOut + ".err.txt";
+			std::string cmdLine = glslcPath
+			                    + " -fshader-stage=" + stage
+			                    + " --target-env=opengl"
+			                    + " " + tmpIn + " -o " + tmpOut
+			                    + " 2>" + errFile;
 
-			int ret = system(cmd.c_str());
-			if (ret != 0)
-				std::cerr << "glslc[" << stage << "]: compilation failed (exit " << ret << ")" << std::endl;
+			int exitCode = system(cmdLine.c_str());
 
-			if (ret == 0)
+			if (exitCode != 0)
+			{
+				std::cerr << "\nglslc[" << stage << "]: FAILED (exit " << exitCode << ")\n";
+				std::ifstream ef(errFile);
+				if (ef)
+				{
+					std::string errStr((std::istreambuf_iterator<char>(ef)),
+					                    std::istreambuf_iterator<char>());
+					if (!errStr.empty())
+						std::cerr << errStr << '\n';
+				}
+			}
+			std::remove(errFile.c_str());
+
+			if (exitCode == 0)
 			{
 				std::ifstream f(tmpOut, std::ios::binary | std::ios::ate);
 				if (f)
@@ -220,7 +234,7 @@ MaterialCompiler::makeSpirvCompiler(const CompilerConfig& config) const noexcept
 
 			std::remove(tmpIn.c_str());
 			std::remove(tmpOut.c_str());
-			return ret == 0 && !spv.empty();
+			return exitCode == 0 && !spv.empty();
 		};
 
 		return compile(vertSrc, "vert", vertSpv)
@@ -335,6 +349,52 @@ bool MaterialCompiler::Build(MaterialBuilder& builder, const CompilerConfig& con
 	std::cout << "matc: wrote " << matbPath << " (" << pkg.getSize() << " bytes)" << std::endl;
 
 	writeGlslFiles(pkg.getData(), pkg.getSize(), materialName, outputDir);
+	return true;
+}
+
+// =============================================================================
+// CompileLighting — pre-build global lighting ubershader
+// =============================================================================
+
+bool MaterialCompiler::CompileLighting(const CompilerConfig& config)
+{
+	std::string outputDir = config.outputDir.empty() ? "CompiledMaterials" : config.outputDir;
+
+	MaterialBuilder builder;
+	builder.name("Lighting");
+	builder.pipeline(Pipeline::LIGHTING);
+	builder.shading(Shading::LIT);
+	builder.materialDomain(MaterialDomain::SURFACE);
+	builder.variable(MaterialBuilder::Variable::CUSTOM0, "uv");
+
+	configureBuilder(builder, config);
+
+	Package pkg = Package::invalidPackage();
+	try
+	{
+		pkg = builder.build();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "matc: Lighting exception: " << e.what() << std::endl;
+		return false;
+	}
+
+	if (!pkg.isValid())
+	{
+		std::cerr << "matc: failed to build Lighting" << std::endl;
+		return false;
+	}
+
+	std::string matbPath = outputDir + "/Lighting.matb";
+	if (!writeFile(matbPath, pkg.getData(), pkg.getSize()))
+	{
+		std::cerr << "matc: error: cannot write " << matbPath << std::endl;
+		return false;
+	}
+
+	std::cout << "matc: wrote " << matbPath << " (" << pkg.getSize() << " bytes)" << std::endl;
+	writeGlslFiles(pkg.getData(), pkg.getSize(), "Lighting", outputDir);
 	return true;
 }
 

@@ -14,6 +14,15 @@
 #include "ShaderCompiler/ShaderInputBuilder.h"
 #include "ShaderCompiler/UibGenerator.h"
 
+const char* MaterialBuilder::sPropertyNames[MATERIAL_PROPERTIES_COUNT] = {
+    "BASE_COLOR", "ROUGHNESS", "METALLIC", "REFLECTANCE", "AMBIENT_OCCLUSION",
+    "CLEAR_COAT", "CLEAR_COAT_ROUGHNESS", "CLEAR_COAT_NORMAL", "ANISOTROPY", "ANISOTROPY_DIRECTION",
+    "THICKNESS", "SUBSURFACE_POWER", "SUBSURFACE_COLOR", "SHEEN_COLOR", "SHEEN_ROUGHNESS",
+    "SPECULAR_COLOR", "GLOSSINESS", "EMISSIVE", "NORMAL", "POST_LIGHTING_COLOR",
+    "POST_LIGHTING_MIX_FACTOR", "CLIP_SPACE_TRANSFORM", "ABSORPTION", "TRANSMISSION",
+    "IOR", "MICRO_THICKNESS", "BENT_NORMAL", "SPECULAR_FACTOR", "SPECULAR_COLOR_FACTOR"
+};
+
 const MaterialBuilder::AttributeDatabase MaterialBuilder::sAttributeDatabase = {{
     { "position",      AttributeType::FLOAT4, VertexAttribute::POSITION     },
     { "tangents",      AttributeType::FLOAT4, VertexAttribute::TANGENTS     },
@@ -218,6 +227,27 @@ bool MaterialBuilder::hasSamplerType(SamplerType samplerType) const noexcept {
 
 void MaterialBuilder::prepareToBuild(MaterialInfo& info) noexcept {
 
+    // Populate mProperties by matching parameter names against known Property names
+    for (size_t pi = 0; pi < MATERIAL_PROPERTIES_COUNT; pi++)
+    {
+        // Convert UPPER_SNAKE_CASE → camelCase
+        std::string camelCase;
+        bool nextUpper = false;
+        for (char c : std::string(sPropertyNames[pi]))
+        {
+            if (c == '_') { nextUpper = true; continue; }
+            camelCase += camelCase.empty() ? char(std::tolower(c))
+                      : nextUpper ? c : char(std::tolower(c));
+            nextUpper = false;
+        }
+
+        for (size_t i = 0; i < mParameterCount; i++)
+        {
+            if (mParameters[i].name == camelCase)
+                { mProperties[pi] = true; break; }
+        }
+    }
+
     // Build the per-material sampler block and uniform block.
     SamplerInterfaceBlock::Builder sbb;
     BufferInterfaceBlock::Builder ibb;
@@ -283,14 +313,12 @@ bool MaterialBuilder::ShaderCode::resolveIncludes(IncludeCallback callback,
     return true;
 }
 
-bool MaterialBuilder::generateShaders(ChunkContainer& container, const MaterialInfo& /*info*/) const {
-    MaterialSpec spec;
-    toMaterialSpec(spec);
+bool MaterialBuilder::generateShaders(ChunkContainer& container, const MaterialInfo& info) const {
 
-    ShaderGenerator sg(mProperties, mVariables, mOutputs, mDefines, mPushConstants,
+    ShaderGenerator sg(mMaterialName, mPipeline, mShading, mMaterialDomain,
+            info.uib, info.sib, mRequiredAttributes, mProperties, mVariables, mOutputs, mDefines, mPushConstants,
             mMaterialFragmentCode.getResolved(), mMaterialFragmentCode.getLineOffset(),
-            mMaterialVertexCode.getResolved(), mMaterialVertexCode.getLineOffset(),
-            mMaterialDomain);
+            mMaterialVertexCode.getResolved(), mMaterialVertexCode.getLineOffset());
 
     std::string vertCode = mMaterialVertexCode.getResolved();
     std::string fragCode = mMaterialFragmentCode.getResolved();
@@ -299,8 +327,8 @@ bool MaterialBuilder::generateShaders(ChunkContainer& container, const MaterialI
     ChunkSpirv::Container spirvEntries;
 
     auto addPass = [&](MaterialPass pass) {
-        std::string vs = sg.GenerateShader(ShaderGenerator::Stage::Vertex, pass, spec, vertCode);
-        std::string fs = sg.GenerateShader(ShaderGenerator::Stage::Fragment, pass, spec, fragCode);
+        std::string vs = sg.GenerateShader(ShaderGenerator::Stage::Vertex, pass, vertCode);
+        std::string fs = sg.GenerateShader(ShaderGenerator::Stage::Fragment, pass, fragCode);
         glslEntries.push_back({ pass, vs, fs });
 
         if (mSpirvCompiler) {
@@ -311,16 +339,20 @@ bool MaterialBuilder::generateShaders(ChunkContainer& container, const MaterialI
     };
 
     if (mMaterialDomain == MaterialDomain::POST_PROCESS) {
-        std::string vs = sg.GeneratePostProcessShader(ShaderGenerator::Stage::Vertex, spec, vertCode);
-        std::string fs = sg.GeneratePostProcessShader(ShaderGenerator::Stage::Fragment, spec, fragCode);
+        std::string vs = sg.GeneratePostProcessShader(ShaderGenerator::Stage::Vertex, vertCode);
+        std::string fs = sg.GeneratePostProcessShader(ShaderGenerator::Stage::Fragment, fragCode);
         glslEntries.push_back({ MaterialPass::PostProcess, vs, fs });
+        if (mSpirvCompiler) {
+            std::vector<uint8_t> vertSpv, fragSpv;
+            if (mSpirvCompiler(vs, fs, vertSpv, fragSpv))
+                spirvEntries.push_back({ MaterialPass::PostProcess, std::move(vertSpv), std::move(fragSpv) });
+        }
     } else if (mPipeline == Pipeline::LIGHTING) {
         addPass(MaterialPass::Lighting);
     } else {
-        // Depth pass: vertex shader uses user vertex code, fragment is depth-only (no material eval)
         {
-            std::string vs = sg.GenerateShader(ShaderGenerator::Stage::Vertex, MaterialPass::Depth, spec, vertCode);
-            std::string fs = sg.GenerateShader(ShaderGenerator::Stage::Fragment, MaterialPass::Depth, spec, std::string{});
+            std::string vs = sg.GenerateShader(ShaderGenerator::Stage::Vertex, MaterialPass::Depth, vertCode);
+            std::string fs = sg.GenerateShader(ShaderGenerator::Stage::Fragment, MaterialPass::Depth, std::string{});
             glslEntries.push_back({ MaterialPass::Depth, vs, fs });
             if (mSpirvCompiler) {
                 std::vector<uint8_t> vertSpv, fragSpv;
@@ -388,12 +420,6 @@ MaterialBuilder& MaterialBuilder::vertexDomainDeviceJittered(bool enabled) noexc
 Package MaterialBuilder::build() {
     bool success;
 
-    // Force post process materials to be unlit. This prevents imposing a lot of extraneous
-    // data, code, and expectations for materials which do not need them.
-    if (mMaterialDomain == MaterialDomain::POST_PROCESS) {
-        mShading = Shading::UNLIT;
-    }
-
     // Add a default color output.
     if (mMaterialDomain == MaterialDomain::POST_PROCESS && mOutputs.empty()) {
         output(VariableQualifier::OUT,
@@ -418,20 +444,18 @@ Package MaterialBuilder::build() {
         return Package::invalidPackage();
     }
 
-    // prepareToBuild must be called first, to populate mCodeGenPermutations.
     MaterialInfo info{};
     prepareToBuild(info);
 
-    // Create chunk tree.
+    // Generate shaders first — needs info.uib / info.sib intact.
     ChunkContainer container;
+    success = generateShaders(container, info);
+
+    // Write metadata chunks (moves info.uib / info.sib).
     writeCommonChunks(container, info);
     if (mMaterialDomain == MaterialDomain::SURFACE) {
         writeSurfaceChunks(container);
     }
-
-    // Generate all shaders and write the shader chunks.
-
-    success = generateShaders(container, info);
     if (!success) {
         // Return an empty package to signal a failure to build the material.
         return Package::invalidPackage();
@@ -494,11 +518,9 @@ void MaterialBuilder::writeCommonChunks(ChunkContainer& container, MaterialInfo&
 
     // Vertex inputs (from required attributes) + fragment outputs
     {
-        MaterialSpec spec;
-        toMaterialSpec(spec);
         ChunkAttributeInputOutput::Container attrIO;
-        attrIO.inputs  = BuildVertexInputs(spec);
-        attrIO.outputs = BuildFragmentOutputs(spec);
+        attrIO.inputs  = BuildVertexInputs(mMaterialDomain, mRequiredAttributes);
+        attrIO.outputs = BuildFragmentOutputs(mOutputs);
         container.push<ChunkAttributeInputOutput>(std::move(attrIO));
     }
 
@@ -515,6 +537,12 @@ void MaterialBuilder::writeCommonChunks(ChunkContainer& container, MaterialInfo&
             +PerViewBindingPoints::FRAME_UNIFORM });
         setView.push_back({ "LightData.lightData", RHI::DescriptorType::UNIFORM_BUFFER,
             +PerViewBindingPoints::LIGHT_DATA });
+        setView.push_back({ "irradianceMap", RHI::DescriptorType::SAMPLER,
+            +PerViewBindingPoints::IBL_IRRADIANCE });
+        setView.push_back({ "prefilterMap", RHI::DescriptorType::SAMPLER,
+            +PerViewBindingPoints::IBL_PREFILTER });
+        setView.push_back({ "brdfLut", RHI::DescriptorType::SAMPLER,
+            +PerViewBindingPoints::BRDF_LUT });
 
         // PER_RENDERABLE (set 1) — non-lighting pipelines only
         if (mPipeline != Pipeline::LIGHTING)
@@ -564,6 +592,18 @@ void MaterialBuilder::writeCommonChunks(ChunkContainer& container, MaterialInfo&
             lightUBO.stageFlags = RHI::ShaderStageFlags::FRAGMENT;
             lightUBO.count = 1;
             layout.push_back(lightUBO);
+
+            auto addViewSampler = [&](uint8_t binding) {
+                RHI::DescriptorSetLayoutBinding b{};
+                b.type = RHI::DescriptorType::SAMPLER;
+                b.binding = binding;
+                b.stageFlags = RHI::ShaderStageFlags::FRAGMENT;
+                b.count = 1;
+                layout.push_back(b);
+            };
+            addViewSampler(+PerViewBindingPoints::IBL_IRRADIANCE);
+            addViewSampler(+PerViewBindingPoints::IBL_PREFILTER);
+            addViewSampler(+PerViewBindingPoints::BRDF_LUT);
         }
 
         // PER_RENDERABLE (set 1): ObjectUniforms — non-lighting only
@@ -671,97 +711,13 @@ void MaterialBuilder::writeSurfaceChunks(ChunkContainer& container) const noexce
     container.push<ChunkRequiredAttrs>(mRequiredAttributes.getValue());
 }
 
+MaterialBuilder::MaterialBuilder()
+    : mMaterialName("unnamed")
+{
+    std::fill_n(mProperties, MATERIAL_PROPERTIES_COUNT, false);
+}
+
 MaterialBuilder& MaterialBuilder::noSamplerValidation(bool enabled) noexcept {
     mNoSamplerValidation = enabled;
     return *this;
-}
-
-void MaterialBuilder::toMaterialSpec(MaterialSpec& spec) const noexcept
-{
-    spec.name = mMaterialName;
-    spec.pipeline = mPipeline;
-    spec.domain = mMaterialDomain;
-
-    switch (mShading)
-    {
-    case Shading::UNLIT:              spec.shadingModel = "unlit"; break;
-    case Shading::LIT:                spec.shadingModel = "lit"; break;
-    case Shading::SUBSURFACE:         spec.shadingModel = "subsurface"; break;
-    case Shading::CLOTH:              spec.shadingModel = "cloth"; break;
-    case Shading::SPECULAR_GLOSSINESS: spec.shadingModel = "specularGlossiness"; break;
-    }
-
-    mRequiredAttributes.forEachSetBit([&](size_t bit) {
-        spec.requiredAttributes.push_back(static_cast<VertexAttribute>(bit));
-    });
-
-    for (uint8_t i = 0; i < mParameterCount; ++i)
-    {
-        auto& p = mParameters[i];
-        PropertyParam pp;
-        pp.name = p.name;
-        if (p.isSampler())
-        {
-            pp.kind = PropertyParam::Kind::Sampler;
-            pp.samplerType = p.samplerType;
-        }
-        else if (p.isUniform())
-        {
-            pp.kind = PropertyParam::Kind::Uniform;
-            pp.uniformType = p.uniformType;
-        }
-        else continue;
-        spec.properties.push_back(std::move(pp));
-    }
-
-    for (auto& k : mPushConstants)
-    {
-        ConstantParam cp;
-        cp.name = k.name;
-        cp.type = (k.type == ConstantType::INT) ? "int" :
-                  (k.type == ConstantType::FLOAT) ? "float" : "bool";
-        spec.constants.push_back(std::move(cp));
-    }
-
-    for (size_t i = 0; i < MaterialBuilder::MATERIAL_VARIABLES_COUNT; ++i)
-    {
-        if (!mVariables[i].name.empty())
-            spec.variables.push_back({ mVariables[i].name, FieldType::FLOAT4, (uint8_t)i });
-    }
-
-    for (auto& o : mOutputs)
-    {
-        OutputParam op;
-        op.name = o.name;
-        op.type = (o.target == OutputTarget::COLOR) ? "color" : "depth";
-        spec.outputs.push_back(std::move(op));
-    }
-
-    spec.vertexCode   = mMaterialVertexCode.getResolved();
-    spec.fragmentCode = mMaterialFragmentCode.getResolved();
-
-    // Build UIB from uniform parameters
-    {
-        BufferInterfaceBlock::Builder builder;
-        builder.name("MaterialParams").alignment(BufferInterfaceBlock::Alignment::std140);
-        for (uint8_t i = 0; i < mParameterCount; ++i) {
-            auto& p = mParameters[i];
-            if (!p.isUniform()) continue;
-            builder.add({{ p.name, 0, p.uniformType, {}, 0, {} }});
-        }
-        spec.materialUib = std::move(builder.build());
-    }
-
-    // Build SIB from sampler parameters
-    {
-        SamplerInterfaceBlock::Builder builder;
-        builder.name("materialParams");
-        descriptor_binding_t binding = 1;
-        for (uint8_t i = 0; i < mParameterCount; ++i) {
-            auto& p = mParameters[i];
-            if (!p.isSampler()) continue;
-            builder.add(p.name, binding++, p.samplerType, RHI::SamplerFormat::FLOAT, false);
-        }
-        spec.materialSib = std::move(builder.build());
-    }
 }

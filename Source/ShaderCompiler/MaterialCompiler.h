@@ -28,6 +28,7 @@ public:
 	MaterialCompiler();
 	bool Run(const CompilerConfig& config);
 	bool Build(MaterialBuilder& builder, const CompilerConfig& config);
+	bool CompileLighting(const CompilerConfig& config);
 
 private:
 	static bool isValidJsonStart(const char* buffer, size_t size) noexcept;

@@ -1,4 +1,5 @@
 
+
 #ifdef LIGHTING_PASS
 
 float D_GGX(vec3 N, vec3 H, float roughness) {
@@ -47,6 +48,32 @@ vec3 CalculateLighting_PBR(vec3 L, vec3 N, vec3 V, vec3 albedo, float roughness,
     return (kD * albedo / PI + specular) * NdotL * lightColor;
 }
 
+vec3 evaluateIBL(const MaterialInputs material) {
+    vec3 N = normalize(material.normal);
+    vec3 V = normalize(shading_view);
+    vec3 R = reflect(-V, N);
+
+    float metallic  = material.metallic;
+    float roughness = max(material.roughness, 0.045);
+    vec3  albedo    = material.baseColor.rgb;
+    vec3  F0        = mix(vec3(0.04), albedo, metallic);
+    float NdotV     = max(dot(N, V), 1e-4);
+    float mipCount  = frameUniforms.iblParams.x;
+    float ao        = material.ambientOcclusion;
+
+    vec3 irradiance = textureLod(irradianceMap, N, 0.0).rgb;
+    vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * (mipCount - 1.0)).rgb;
+    vec2 envBRDF = textureLod(brdfLut, vec2(NdotV, roughness), 0.0).rg;
+
+    vec3 kS = F_Schlick(NdotV, F0);
+    vec3 kD = mix(vec3(1.0) - kS, vec3(0.0), metallic);
+
+    vec3 diffuse  = kD * irradiance * albedo;
+    vec3 specular = prefilteredColor * (kS * envBRDF.x + envBRDF.y);
+
+    return (diffuse + specular) * ao;
+}
+
 vec3 CalculateLighting(const MaterialInputs material)
 {
     vec3 N = normalize(material.normal);
@@ -66,8 +93,8 @@ vec3 CalculateLighting(const MaterialInputs material)
         color += CalculateLighting_PBR(L, N, shading_view, albedo, roughness, metallic, radiance);
     }
 
-    vec3 ambient = vec3(0.03) * albedo * AO;
-    return color + ambient;
+    color += evaluateIBL(material);
+    return color;
 }
 
 vec4 evaluateMaterialLit(const MaterialInputs material) {

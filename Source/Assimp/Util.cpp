@@ -173,12 +173,45 @@ namespace Util
 		if (!filepath.empty())
 		{
 			Path path(filepath);
-			if (path.exists())
+			// if (path.exists())
 			{
 				int w, h, n;
-				uint8_t *data = stbi_load(path.getAbsolutePath().c_str(), &w, &h, &n, 0);
-				if (data != nullptr)
+				bool isHdr = stbi_is_hdr(path.getAbsolutePath().c_str());
+
+				if (isHdr)
 				{
+					float* fdata = stbi_loadf(path.getAbsolutePath().c_str(), &w, &h, &n, 0);
+					if (fdata == nullptr) return nullptr;
+
+					RHI::PixelDataFormat outputFormat;
+					RHI::Format internalFormat;
+					switch (n) {
+					case 3: internalFormat = RHI::Format::RGB16F;  outputFormat = RHI::PixelDataFormat::RGB;  break;
+					case 4: internalFormat = RHI::Format::RGBA16F; outputFormat = RHI::PixelDataFormat::RGBA; break;
+					default: stbi_image_free(fdata); return nullptr;
+					}
+
+					RHI::TextureDesc desc;
+					desc.Width = w;
+					desc.Height = h;
+					desc.LevelCount = 1;
+					desc.Format = internalFormat;
+					texture = CreateRef<Texture>(desc);
+
+					PixelBufferDescriptor buffer(fdata,
+					        size_t(w * h * n * sizeof(float)),
+					        outputFormat,
+					        RHI::PixelDataType::FLOAT,
+					        (PixelBufferDescriptor::Callback) &stbi_image_free);
+
+					gEngine->GetDriver().update3DImage(texture->GetHandle(), 0, 0, 0, 0, w, h, 1, std::move(buffer));
+					texture->UpdateLodRange(0, 1);
+				}
+				else
+				{
+					uint8_t *data = stbi_load(path.getAbsolutePath().c_str(), &w, &h, &n, 0);
+					if (data == nullptr) return nullptr;
+
 					RHI::Format internalFormat;
 					RHI::PixelDataFormat outputFormat;
 					switch (n) {
@@ -206,15 +239,13 @@ namespace Util
 					if (generateMipmap)
 						texture->GenerateMipmaps();
 					else
-					{
 						texture->UpdateLodRange(0, 1);
-					}
 				}
 			}
-			else
-			{
-				std::cout << "Texture not found: " << filepath << '\n';
-			}
+			// else
+			// {
+			// 	std::cout << "Texture not found: " << filepath << '\n';
+			// }
 		}
 		else
 		{

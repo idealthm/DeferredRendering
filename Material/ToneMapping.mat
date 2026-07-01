@@ -1,13 +1,31 @@
 material
 {
-    name: ToneMapping,
+    name : ToneMapping,
+    parameters : [
+        { type : sampler2d, name : lightMap }
+    ],
+    outputs : [
+        { name : color, target : color, type : float4 }
+    ],
+    variables : [ vertex ],
     pipeline: deferred,
-    shadingModel: unlit,
-    domain: postprocess
+    shadingModel : unlit,
+    domain : postprocess,
+    depthWrite : false,
+    depthCulling : false
 }
 vertex
 {
+    void postProcessVertex(inout PostProcessVertexInputs postProcess) {
+        postProcess.vertex.xy = postProcess.normalizedUV;
+    }
 }
+
 fragment
 {
+    void postProcess(inout PostProcessInputs postProcess) {
+        highp vec4 hdr = texture(materialParams_lightMap, variable_vertex.xy);
+        highp vec3 mapped = hdr.rgb / (hdr.rgb + vec3(1.0));
+        postProcess.color = vec4(mapped, 1.0);
+    }
 }

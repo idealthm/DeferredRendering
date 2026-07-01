@@ -1,14 +1,9 @@
 #include "Texture.h"
 
 #include <iostream>
-#include <string>
-
-#include <glad/glad.h>
 
 #include "Engine.h"
 #include "stb_images/stb_image.h"
-
-DefaultTextures GDefaultTextures;
 
 // --- Texture ---
 

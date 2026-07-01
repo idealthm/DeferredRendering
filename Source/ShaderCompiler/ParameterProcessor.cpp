@@ -271,20 +271,22 @@ namespace
 			auto* obj = arr->getElements()[i]->toJsonObject(); if (!obj) return false;
 			const char* name = JsonString(obj, "name"); if (!name) return false;
 
-			const char* targetStr = JsonString(obj, "target", "color");
-			MaterialBuilder::OutputTarget target = MaterialBuilder::OutputTarget::COLOR;
-			if (std::string(targetStr) == "depth") target = MaterialBuilder::OutputTarget::DEPTH;
-
-			const char* typeStr = JsonString(obj, "type", nullptr);
-			if (!typeStr) typeStr = JsonString(obj, "format", "float4");
-			std::string fmt = typeStr;
 			MaterialBuilder::OutputType otype = MaterialBuilder::OutputType::FLOAT4;
+			MaterialBuilder::OutputTarget target = MaterialBuilder::OutputTarget::COLOR;
+
+			const char* targetStr = JsonString(obj, "target", "color");
+			if (std::string(targetStr) == "depth")
+			{
+				target = MaterialBuilder::OutputTarget::DEPTH;
+				otype = MaterialBuilder::OutputType::FLOAT;
+			}
+
+			const char* typeStr = JsonString(obj, "type", "float4");
+			std::string fmt = typeStr;
 			if (fmt == "float") otype = MaterialBuilder::OutputType::FLOAT;
 			else if (fmt == "float2") otype = MaterialBuilder::OutputType::FLOAT2;
 			else if (fmt == "float3") otype = MaterialBuilder::OutputType::FLOAT3;
 			else if (fmt == "float4") otype = MaterialBuilder::OutputType::FLOAT4;
-			else if (fmt == "color") target = MaterialBuilder::OutputTarget::COLOR;
-			else if (fmt == "depth") { target = MaterialBuilder::OutputTarget::DEPTH; otype = MaterialBuilder::OutputType::FLOAT; }
 			else { std::cerr << "Unknown output format: " << fmt << std::endl; return false; }
 
 			int loc = -1;
