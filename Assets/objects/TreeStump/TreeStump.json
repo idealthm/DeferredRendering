@@ -1,10 +1,10 @@
 {
     "model_path": "TreeStump.fbx",
     "textures": {
-        "albedo": "TreeStump_BaseColor.png",
+        "baseColor": "TreeStump_BaseColor.png",
         "normal": "TreeStump_Normal.png",
         "roughness": "TreeStump_Roughness.png",
         "metallic" : "TreeStump_Metallic.png",
-        "ao": "TreeStump_AO.png"
+        "ambientOcclusion": "TreeStump_AO.png"
     }
 }
