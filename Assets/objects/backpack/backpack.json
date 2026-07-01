@@ -1,10 +1,10 @@
 {
     "model_path": "backpack.obj",
     "textures": {
-        "albedo": "diffuse.jpg",
+        "baseColor": "diffuse.jpg",
         "normal": "normal.png",
         "roughness": "roughness.jpg",
         "metallic" : "specular.jpg",
-        "ao": "ao.jpg"
+        "ambientOcclusion": "ao.jpg"
     }
 }
