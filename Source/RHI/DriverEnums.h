@@ -213,8 +213,8 @@ namespace RHI
 	struct TextureDesc {
 		uint32_t	Width = 1;
 		uint32_t	Height = 1;
-		uint8_t	DepthOrLayers = 1;   // 3D纹理的深度 或 数组纹理的层数
-		uint8_t	LevelCount = 1;
+		uint8_t		DepthOrLayers = 1;   // 3D纹理的深度 或 数组纹理的层数
+		uint8_t		LevelCount = 1;
 		Format  	Format = Format::RGBA8;
 		SamplerType		Target = SamplerType::SAMPLER_2D;
 		TextureUsage Usage = TextureUsage::DEFAULT;

@@ -1,19 +1,41 @@
 material
 {
-    "name": "skyBox",
-    "pipeline": "deferred",
-    "shadingModel": "unlit",
-    "domain": "postprocess"
+    name : skyBox,
+    parameters : [
+        { type : samplerCubemap, name : skybox },
+        { type : sampler2d,   name : depthMap }
+    ],
+    outputs : [
+        { name : color, target : color, type : float4 }
+    ],
+    variables : [ vertex ],
+    pipeline: deferred,
+    shadingModel : unlit,
+    domain : postprocess,
+    depthWrite : false,
+    depthCulling : false
 }
 vertex
 {
     void postProcessVertex(inout PostProcessVertexInputs postProcess) {
-        postProcess.vertex.xy = uvToRenderTargetUV(postProcess.normalizedUV);
+        postProcess.vertex.xy = postProcess.normalizedUV;
     }
 }
+
 fragment
 {
     void postProcess(inout PostProcessInputs postProcess) {
-        postProcess.color = texture(materialParams_skybox, getUV0().xy);
+        highp vec2 uv = variable_vertex.xy;
+
+        // Discard pixels that already have scene geometry
+        float depth = textureLod(materialParams_depthMap, uv, 0.0).r;
+        if (depth < 1.0)
+            discard;
+
+        // Reconstruct view direction from UV for cubemap sampling
+        highp vec2 p = vec2(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);
+        highp vec3 viewDir = normalize(vec3(p, 1.0));
+
+        postProcess.color = textureLod(materialParams_skybox, viewDir, 0.0);
     }
 }

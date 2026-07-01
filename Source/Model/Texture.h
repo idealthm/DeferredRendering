@@ -127,9 +127,9 @@ public:
 
 	const RHI::TextureDesc& GetDesc() const { return m_Desc; }
 
-	uint32_t GetSizeX(int32_t level) const { ASSERT(level < m_Desc.DepthOrLayers);return m_Desc.Width >> level; }
-	uint32_t GetSizeY(int32_t level) const { ASSERT(level < m_Desc.DepthOrLayers);return m_Desc.Height >> level; }
-	uint32_t GetSizeZ(int32_t level) const { ASSERT(level < m_Desc.DepthOrLayers);return m_Desc.DepthOrLayers >> level; }
+	uint32_t GetSizeX(int32_t level) const { ASSERT(level < m_Desc.LevelCount);return m_Desc.Width >> level; }
+	uint32_t GetSizeY(int32_t level) const { ASSERT(level < m_Desc.LevelCount);return m_Desc.Height >> level; }
+	uint32_t GetSizeZ(int32_t level) const { ASSERT(level < m_Desc.LevelCount);return m_Desc.DepthOrLayers >> level; }
 	RHI::Format GetFormat() const { return m_Desc.Format; }
 	RHI::TextureUsage GetUsage() const { return m_Desc.Usage; }
 	RHI::SamplerType GetTarget() const { return m_Desc.Target; }
@@ -154,14 +154,6 @@ protected:
 	RHI::TextureDesc  m_Desc;
 };
 
-struct DefaultTextures
-{
-	Ref<Texture> White;
-	Ref<Texture> Black;
-	Ref<Texture> Normal;
-	Ref<Texture> Gray;
-};
-
 template <typename T>
 void CreateResource(Ref<T>& tex, const RHI::TextureDesc& desc)
 {
@@ -169,4 +161,3 @@ void CreateResource(Ref<T>& tex, const RHI::TextureDesc& desc)
 		tex = CreateRef<T>(desc);
 }
 
-extern DefaultTextures GDefaultTextures;

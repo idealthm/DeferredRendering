@@ -14,8 +14,11 @@ enum class DescriptorSetBindingPoints : uint8_t {
 
 
 enum class PerViewBindingPoints : uint8_t {
-	FRAME_UNIFORM = 0,
-	LIGHT_DATA    = 1,
+	FRAME_UNIFORM  = 0,
+	LIGHT_DATA     = 1,
+	IBL_IRRADIANCE = 2,
+	IBL_PREFILTER  = 3,
+	BRDF_LUT       = 4,
 	NUM_PER_VIEW_BINDING_POINTS,
 };
 

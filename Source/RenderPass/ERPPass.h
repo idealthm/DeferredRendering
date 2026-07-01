@@ -4,19 +4,19 @@
 #include "RenderPass.h"
 #include "Shapes/UnitCube.h"
 
+class RenderTarget;
+class MaterialInstance;
 class Texture;
 
-class ERPPass : public RenderPass
+class ERPPass
 {
 public:
-	ERPPass(const std::string& hdrFilePath, uint32_t size);
-	virtual ~ERPPass();
+	virtual ~ERPPass() = default;
 
-	uint32_t GetRenderTimes() override { return 6;}
-	void Setup(RenderContext& ctx) override;
-	void Execute(Ref<Scene> scene, RenderContext& ctx) override;
+	void Render(Ref<Texture> texture, Ref<Texture>& CubeMap);
+
+	void Setup(RenderContext& ctx);
+	void Execute(Ref<Scene> scene, RenderContext& ctx);
 
 private:
-	Ref<Program>			m_Shader;
-	Ref<Texture>		m_HDRMap;
 };

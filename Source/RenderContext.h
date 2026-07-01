@@ -27,8 +27,6 @@ struct RenderContext
 	Ref<Texture> GBuffer_Material;
 	Ref<Texture> GBuffer_Depth;
 
-	Ref<Texture> Test;
-
 	Ref<Texture> ShadowMap_Depth;
 
 	Ref<Texture> LightMap_SceneColor;

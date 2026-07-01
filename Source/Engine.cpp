@@ -3,6 +3,8 @@
 #include "DescriptorSets.h"
 #include "Material/MaterialLibrary.h"
 #include "RHI/GL/GLDriver.h"
+#include "Shapes/ScreenQuad.h"
+
 
 Engine* gEngine = nullptr;
 
@@ -13,9 +15,13 @@ void Engine::Init()
 	m_ModelMaterial = MaterialLibrary::Get().GetMaterial("Model");
 	m_ShapeMaterial = MaterialLibrary::Get().GetMaterial("Shape");
 
+	m_LightingShaderLibrary.Init("CompiledMaterials");
+
 	m_PerRenderableSetLayout = DescriptorSetLayout(*m_Driver, DescriptorSets::GetPerRenderableSetLayout());
 	m_PerViewSetLayout = DescriptorSetLayout(*m_Driver, DescriptorSets::GetPerViewSetLayout());
 	m_GBufferSetLayout = DescriptorSetLayout(*m_Driver, DescriptorSets::GetGBufferSetLayout());
+
+	m_ScreenQuad = CreateRef<ScreenQuad>();
 }
 
 void Engine::Shutdown()

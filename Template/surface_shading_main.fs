@@ -32,9 +32,10 @@ void main()
 
     // Debug: set frameUniforms.RenderMode to 2..5 to inspect GBuffer data
     if (frameUniforms.RenderMode == 2)   { fragColor = vec4(shading_position, 1.0);          return; }
-    if (frameUniforms.RenderMode == 3)   { fragColor = vec4(shading_view, 1.0); return; }
+    if (frameUniforms.RenderMode == 3)   { fragColor = material.baseColor; return; }
     if (frameUniforms.RenderMode == 4)   { fragColor = vec4(material.normal * 0.5 + 0.5, 1.0);     return; }
-    if (frameUniforms.RenderMode == 5)   { fragColor = vec4(shading_NoV,shading_NoV,shading_NoV, 1.0);               return; }
+    if (frameUniforms.RenderMode == 5)   { fragColor = vec4(vec3(material.metallic), 1.0);               return; }
+    if (frameUniforms.RenderMode == 6)   { fragColor = vec4(vec3(material.ambientOcclusion), 1.0);               return; }
 
     int shadingModel = int(gbuf3.a * 255.0 + 0.5);
 

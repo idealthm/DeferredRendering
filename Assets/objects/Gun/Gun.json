@@ -1,0 +1,10 @@
+{
+    "model_path": "Cerberus_LP.FBX",
+    "textures": {
+        "baseColor": "Cerberus_A.tga",
+        "normal": "Cerberus_N.tga",
+        "roughness": "Cerberus_R.tga",
+        "metallic" : "Cerberus_M.tga",
+        "ambientOcclusion": "Raw/Cerberus_AO.tga"
+    }
+}

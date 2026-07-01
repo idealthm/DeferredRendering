@@ -4,7 +4,6 @@
 #include <cctype>
 
 #include "BufferInterfaceBlock.h"
-#include "MaterialSpec.h"
 #include "common/Core.h"
 
 
@@ -50,11 +49,12 @@ static std::string UpperCase(const std::string& s)
 	return result;
 }
 
-stream& CodeGenerator::generateVaryingDefines(stream& out, const struct MaterialSpec& spec) const
+stream& CodeGenerator::generateVaryingDefines(stream& out, const MaterialBuilder::VariableList& variables) const
 {
-	for (size_t i = 0; i < spec.variables.size(); ++i)
+	for (size_t i = 0; i < variables.size(); ++i)
 	{
-		const auto& v = spec.variables[i];
+		const auto& v = variables[i];
+		if (v.name.empty()) continue;
 		std::string upper = UpperCase(v.name);
 		out << EmitDefine("HAS_VARIABLE_" + upper);
 		out << EmitDefine("VARIABLE_CUSTOM" + std::to_string(i), v.name);
@@ -63,21 +63,24 @@ stream& CodeGenerator::generateVaryingDefines(stream& out, const struct Material
 	return out;
 }
 
-stream& CodeGenerator::generateConstantDefines(stream& out, const struct MaterialSpec& spec) const
+stream& CodeGenerator::generateConstantDefines(stream& out, const MaterialBuilder::PreprocessorDefineList& defines) const
 {
-	for (const auto& c : spec.constants)
-		out << EmitDefine("CONST_" + UpperCase(c.name), c.name);
+	for (const auto& d : defines)
+		out << EmitDefine("CONST_" + UpperCase(d.name), d.value);
 	return out;
 }
 
-stream& CodeGenerator::generatePropertyDefines(stream& out, const struct MaterialSpec& spec) const
+stream& CodeGenerator::generatePropertyDefines(stream& out, const MaterialBuilder::PropertyList& properties) const
 {
-	for (const auto& p : spec.properties)
-		out << EmitDefine("MATERIAL_HAS_" + UpperCase(p.name));
+	for (size_t i = 0; i < MATERIAL_PROPERTIES_COUNT; ++i)
+	{
+		if (properties[i])
+			out << EmitDefine("MATERIAL_HAS_" + std::string(MaterialBuilder::sPropertyNames[i]));
+	}
 	return out;
 }
 
-stream& CodeGenerator::generateAttributeDefines(stream& out, const struct MaterialSpec& spec) const
+stream& CodeGenerator::generateAttributeDefines(stream& out, const RHI::AttributeBitset& requiredAttributes) const
 {
 	auto attrMacro = [](VertexAttribute attr) -> const char* {
 		switch (attr) {
@@ -100,20 +103,24 @@ stream& CodeGenerator::generateAttributeDefines(stream& out, const struct Materi
 		}
 	};
 
-	for (VertexAttribute attr : spec.requiredAttributes)
-		out << EmitDefine("HAS_ATTRIBUTE_" + std::string(attrMacro(attr)));
-
+	requiredAttributes.forEachSetBit([&](size_t bit) {
+		out << EmitDefine("HAS_ATTRIBUTE_" + std::string(attrMacro(static_cast<VertexAttribute>(bit))));
+	});
 
 	return out;
 }
 
-stream& CodeGenerator::generateVaryingDeclarations(stream& out, const struct MaterialSpec& spec, const char* direction) const
+stream& CodeGenerator::generateVaryingDeclarations(stream& out, const MaterialBuilder::VariableList& variables, const char* direction) const
 {
-	if (spec.variables.empty())
-		return out;
+	bool hasAny = false;
+	for (const auto& v : variables) { if (!v.name.empty()) { hasAny = true; break; } }
+	if (!hasAny) return out;
 
-	for (size_t i = 0; i < spec.variables.size(); ++i)
-		out << "LAYOUT_LOCATION(" << (10 + i) << ") " << direction << " vec4 VARIABLE_CUSTOM_AT" << i << ";\n";
+	for (size_t i = 0; i < variables.size(); ++i)
+	{
+		if (!variables[i].name.empty())
+			out << "LAYOUT_LOCATION(" << (10 + i) << ") " << direction << " vec4 VARIABLE_CUSTOM_AT" << i << ";\n";
+	}
 
 	return out;
 }

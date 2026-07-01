@@ -180,6 +180,7 @@ endlocal</Command>
     <ClInclude Include="Source\Material\MaterialParser.h" />
     <ClInclude Include="Source\Material\MaterialInstance.h" />
     <ClInclude Include="Source\Material\MaterialLibrary.h" />
+    <ClInclude Include="Source\Material\LightingShaderLibrary.h" />
     <ClInclude Include="Source\MeshManger.h" />
     <ClInclude Include="Source\Model\MeshSection.h" />
     <ClInclude Include="Source\Model\StaticMesh.h" />
@@ -191,6 +192,7 @@ endlocal</Command>
     <ClInclude Include="Source\RenderContext.h" />
     <ClInclude Include="Source\RenderPipeline.h" />
     <ClInclude Include="Source\RenderPass\CubeMapConvolution.h" />
+    <ClInclude Include="Source\RenderPass\KernelPass.h" />
     <ClInclude Include="Source\RenderPass\EnvPreFilter.h" />
     <ClInclude Include="Source\RenderPass\ERPPass.h" />
     <ClInclude Include="Source\RenderPass\GBufferPass.h" />
@@ -512,6 +514,7 @@ endlocal</Command>
     <ClCompile Include="Source\Material\MaterialInstance.cpp" />
     <ClCompile Include="Source\Material\MaterialParser.cpp" />
     <ClCompile Include="Source\Material\MaterialLibrary.cpp" />
+    <ClCompile Include="Source\Material\LightingShaderLibrary.cpp" />
     <ClCompile Include="Source\MeshManger.cpp" />
     <ClCompile Include="Source\Model\MeshSection.cpp" />
     <ClCompile Include="Source\Model\StaticMesh.cpp" />
@@ -523,6 +526,7 @@ endlocal</Command>
 
     <ClCompile Include="Source\RenderPipeline.cpp" />
     <ClCompile Include="Source\RenderPass\CubeMapConvolution.cpp" />
+    <ClCompile Include="Source\RenderPass\KernelPass.cpp" />
     <ClCompile Include="Source\RenderPass\EnvPreFilter.cpp" />
     <ClCompile Include="Source\RenderPass\ERPPass.cpp" />
     <ClCompile Include="Source\RenderPass\GBufferPass.cpp" />
@@ -592,6 +596,18 @@ endlocal</Command>
     <Content Include="Assets\objects\backpack\normal.png" />
     <Content Include="Assets\objects\backpack\roughness.jpg" />
     <Content Include="Assets\objects\backpack\specular.jpg" />
+    <Content Include="Assets\objects\Gun\Gun.json" />
+    <Content Include="Assets\objects\Gun\Cerberus.tbscene" />
+    <Content Include="Assets\objects\Gun\Cerberus_LP.FBX" />
+    <Content Include="Assets\objects\Gun\Disclaimer.txt" />
+    <Content Include="Assets\objects\Gun\Textures\Cerberus_A.tga" />
+    <Content Include="Assets\objects\Gun\Textures\Cerberus_M.tga" />
+    <Content Include="Assets\objects\Gun\Textures\Cerberus_N.tga" />
+    <Content Include="Assets\objects\Gun\Textures\Cerberus_R.tga" />
+    <Content Include="Assets\objects\Gun\Textures\Raw\Cerberus_AO.tga" />
+    <Content Include="Assets\objects\Gun\Textures\Raw\Cerberus_N.tga" />
+    <Content Include="Assets\objects\Gun\Textures\Raw\Cerberus_UV.tga" />
+    <Content Include="Assets\objects\Gun\Textures\Raw\Masks.psd" />
     <Content Include="Assets\objects\cyborg\cyborg.blend" />
     <Content Include="Assets\objects\cyborg\cyborg.blend1" />
     <Content Include="Assets\objects\cyborg\cyborg.mtl" />
@@ -716,9 +732,9 @@ endlocal</Command>
     <Content Include="Assets\textures\toy_box_normal.png" />
     <Content Include="Assets\textures\window.png" />
     <Content Include="Assets\textures\wood.png" />
-    <Content Include="Material\CubeConvolution.mat" />
     <Content Include="Material\EquirectToCube.mat" />
     <Content Include="Material\IBLPrefilter.mat" />
+    <Content Include="Material\generateKernel.mat" />
     <Content Include="Material\Model.mat" />
     <Content Include="Material\Shape.mat" />
     <Content Include="Material\skyBox.mat" />
@@ -762,6 +778,7 @@ endlocal</Command>
     <Content Include="Template\common_getter.glsl" />
     <Content Include="Template\common_math.glsl" />
     <Content Include="Template\common_shading.glsl" />
+    <Content Include="Template\lighting_uniforms.glsl" />
     <Content Include="Template\post_process_getters.vs" />
     <Content Include="Template\post_process_inputs.vs" />
     <Content Include="Template\post_process_main.vs" />

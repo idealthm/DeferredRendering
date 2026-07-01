@@ -7,19 +7,13 @@ material {
         {   type : float, name : side },
         {   type : float, name : lodOffset },
         {   type : uint, name : sampleCount },
-        {   type : uint, name : attachmentLevel }
+        {   type : bool, name : irradiance },
+        {   type : float, name : attachmentLevel }
     ],
     outputs : [
         {   name : outx, target : color, type : float3 },
         {   name : outy, target : color, type : float3 },
         {   name : outz, target : color, type : float3 }
-    ],
-    constants : [
-        {
-            name : irradiance,
-            type : bool,
-            default : false
-        }
     ],
     variables : [
         vertex
@@ -31,7 +25,7 @@ material {
 
 vertex {
     void postProcessVertex(inout PostProcessVertexInputs postProcess) {
-        postProcess.vertex.xy = uvToRenderTargetUV(postProcess.normalizedUV);
+        postProcess.vertex.xy = postProcess.normalizedUV;
     }
 }
 
@@ -104,7 +98,7 @@ void postProcess(inout PostProcessInputs postProcess) {
 
     float kernelWeight = 0.0;
 
-    if (materialConstants_irradiance) {
+    if (materialParams.irradiance) {
         for (uint i = 0u; i < materialParams.sampleCount; i++) {
             // { L, lod }, with L.z == NoL
             mediump vec4 entry = texelFetch(materialParams_kernel, ivec2(0u, i), 0);

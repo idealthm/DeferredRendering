@@ -28,7 +28,7 @@ namespace
 		const char* message,
 		const void* userParam)
 	{
-		ASSERT(0);
+		// ASSERT(0);
 		std::cout << message << std::endl;
 	}
 }

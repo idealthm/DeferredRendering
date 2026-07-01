@@ -2,6 +2,7 @@
 
 #include "Engine.h"
 #include "EngineEnum.h"
+#include "LightingShaderLibrary.h"
 #include "MaterialParser.h"
 #include "Shader/Program.h"
 
@@ -9,9 +10,14 @@ Material::Material(MaterialParser& parser)
 {
 	parser.Get<ChunkUib>(m_UniformBlock);
 	parser.Get<ChunkSib>(m_SamplerBlock);
-	parser.Get<ChunkSpirv>(m_ShaderData);
+	parser.Get<ChunkSpirv>(m_SpirvData);
+	parser.Get<ChunkGlsl>(m_GlslData);
 	parser.Get<ChunkDescriptorSetBindings>(m_DescriptorSetLayouts);
 	parser.Get<ChunkRequiredAttrs>(m_RequiredAttributes);
+
+	std::string shadingStr;
+	if (parser.Get<ChunkShading>(shadingStr))
+		m_Shading = ShadingFromString(shadingStr);
 
 	std::array<RHI::DescriptorSetLayout, MAX_DESCRIPTOR_SET_COUNT> descLayouts;
 	if (parser.Get<ChunkDescriptorSetLayout>(descLayouts))
@@ -26,32 +32,63 @@ Material::Material(MaterialParser& parser)
 		m_SamplerIndex[m_SamplerBlock.getSamplerInfoList()[i].name] = i;
 }
 
-const SpirvEntry* Material::FindPass(MaterialPass pass) const
+const SpirvEntry* Material::FindSpirvPass(MaterialPass pass) const
 {
-	for (auto& entry : m_ShaderData)
+	for (auto& entry : m_SpirvData)
 	{
 		if (entry.pass == pass)
 			return &entry;
 	}
-	return m_ShaderData.empty() ? nullptr : &m_ShaderData[0];
+	return m_SpirvData.empty() ? nullptr : &m_SpirvData[0];
+}
+
+const GlslEntry* Material::FindGlslPass(MaterialPass pass) const
+{
+	for (auto& entry : m_GlslData)
+	{
+		if (entry.pass == pass)
+			return &entry;
+	}
+	return m_GlslData.empty() ? nullptr : &m_GlslData[0];
 }
 
 Handle<RHI::HwProgram> Material::GetProgram(MaterialPass pass) const
 {
+	if (pass == MaterialPass::Lighting)
+		return gEngine->GetLightingShaderLibrary().GetProgram();
+
 	auto it = m_CachedProgram.find(pass);
 	if (it != m_CachedProgram.end())
 		return it->second;
 
-	const SpirvEntry* entry = FindPass(pass);
-	if (!entry || entry->vertexSpirv.empty())
-		return {};
+	const SpirvEntry* spirvEntry = FindSpirvPass(pass);
+	if (spirvEntry && !spirvEntry->vertexSpirv.empty())
+	{
+		Program::ShaderSource source = { spirvEntry->vertexSpirv, spirvEntry->fragmentSpirv };
+		Handle<RHI::HwProgram> program = gEngine->GetDriver().CreateProgram(
+			Program{ source, m_DescriptorSetLayouts });
+		m_CachedProgram[pass] = program;
+		return program;
+	}
 
-	Program::ShaderSource source = { entry->vertexSpirv, entry->fragmentSpirv };
-	Handle<RHI::HwProgram> program = gEngine->GetDriver().CreateProgram(
-		Program{ source, m_DescriptorSetLayouts });
+	// Fallback: compile from GLSL source
+	const GlslEntry* glslEntry = FindGlslPass(pass);
+	if (glslEntry && !glslEntry->vertexGlsl.empty())
+	{
+		Program::ShaderSource source;
+		auto toBlob = [](const std::string& s) {
+			return std::vector<uint8_t>(s.begin(), s.end());
+		};
+		source[0] = toBlob(glslEntry->vertexGlsl);
+		source[1] = toBlob(glslEntry->fragmentGlsl);
 
-	m_CachedProgram[pass] = program;
-	return program;
+		Handle<RHI::HwProgram> program = gEngine->GetDriver().CreateProgram(
+			Program{ source, m_DescriptorSetLayouts });
+		m_CachedProgram[pass] = program;
+		return program;
+	}
+
+	return {};
 }
 
 

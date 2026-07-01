@@ -2,7 +2,6 @@
 
 #include "Shader/Program.h"
 
-void SkyComponent::SetCubeMapTexture(Ref<TextureCube> cubeMapTexture)
+void SkyComponent::SetCubeMapTexture(Ref<Texture> cubeMapTexture)
 {
-	m_CubeMap = cubeMapTexture;
 }

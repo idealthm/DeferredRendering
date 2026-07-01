@@ -80,6 +80,18 @@ public:
 	const SamplerParams& GetParams() const { return m_Params; }
 
 	// --- chainable setters ----------------------------------------------------
+	TextureSampler& SetMinFilter(SamplerMinFilter filter)
+	{
+		m_Params.filterMin = filter;
+		return *this;
+	}
+
+	TextureSampler& SetMagFilter(SamplerMagFilter filter)
+	{
+		m_Params.filterMag = filter;
+		return *this;
+	}
+
 
 	TextureSampler& SetWrap(SamplerWrapMode s, SamplerWrapMode t)
 	{

@@ -39,17 +39,22 @@ public:
 	RHI::StencilState GetStencilState()      const { return m_StencilState; }
 	uint32_t          GetRequiredAttributes() const { return m_RequiredAttributes; }
 
+	Shading           GetShading()            const { return m_Shading; }
+
 	const DescriptorSetLayout& GetDescriptorSetLayout()          const { return m_DescriptorSetLayout; }
 	const DescriptorSetLayout& GetPerViewDescriptorSetLayout()   const { return m_PerViewDescriptorSetLayout; }
 
 private:
-	const SpirvEntry* FindPass(MaterialPass pass) const;
+	const SpirvEntry* FindSpirvPass(MaterialPass pass) const;
+	const GlslEntry*   FindGlslPass(MaterialPass pass) const;
 
 	RHI::RasterState  m_RasterState;
 	RHI::StencilState m_StencilState;
 	uint32_t          m_RequiredAttributes = 0;
+	Shading           m_Shading = Shading::LIT;
 
-	ChunkSpirv::Container m_ShaderData;
+	ChunkSpirv::Container m_SpirvData;
+	ChunkGlsl::Container  m_GlslData;
 	struct PassHash { size_t operator()(MaterialPass p) const noexcept { return static_cast<size_t>(p); } };
 	mutable std::unordered_map<MaterialPass, Handle<RHI::HwProgram>, PassHash> m_CachedProgram;
 

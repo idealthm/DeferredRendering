@@ -8,6 +8,9 @@ namespace DescriptorSets
 	static RHI::DescriptorSetLayout perViewDescriptorSetLayout = {{
 		{ DescriptorType::UNIFORM_BUFFER, ShaderStageFlags::VERTEX | ShaderStageFlags::FRAGMENT,  +PerViewBindingPoints::FRAME_UNIFORM, DescriptorFlags::DYNAMIC_OFFSET },
 		{ DescriptorType::UNIFORM_BUFFER, ShaderStageFlags::FRAGMENT,                            +PerViewBindingPoints::LIGHT_DATA },
+		{ DescriptorType::SAMPLER,        ShaderStageFlags::FRAGMENT,                            +PerViewBindingPoints::IBL_IRRADIANCE },
+		{ DescriptorType::SAMPLER,        ShaderStageFlags::FRAGMENT,                            +PerViewBindingPoints::IBL_PREFILTER },
+		{ DescriptorType::SAMPLER,        ShaderStageFlags::FRAGMENT,                            +PerViewBindingPoints::BRDF_LUT },
 	}};
 
 	static RHI::DescriptorSetLayout perRenderableDescriptorSetLayout = {{

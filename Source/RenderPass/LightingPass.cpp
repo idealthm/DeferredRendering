@@ -3,12 +3,10 @@
 #include "DescriptorSets.h"
 #include "Engine.h"
 #include "EngineEnum.h"
-#include "Material/MaterialLibrary.h"
 #include "RenderPipeline.h"
 #include "RenderTarget.h"
 #include "Scene.h"
 #include "Lights/Light.h"
-#include "Material/MaterialInstance.h"
 #include "Model/Texture.h"
 #include "RHI/PipelineState.h"
 #include "RHI/TextureSampler.h"
@@ -18,13 +16,11 @@
 LightingPass::LightingPass()
 	: m_GBufferDescriptorSet(gEngine->GetGBufferSetLayout())
 {
-	m_MaterialInstance = CreateRef<MaterialInstance>(
-		MaterialLibrary::Get().GetMaterial("Lighting"));
 }
 
 void LightingPass::Setup(RenderContext& ctx)
 {
-	CreateResource(ctx.Final_SceneColor, RHI::TextureDesc{
+	CreateResource(ctx.LightMap_SceneColor, RHI::TextureDesc{
 		ctx.viewportSize.x, ctx.viewportSize.y, 1, 1,
 		RHI::Format::RGBA16F,
 		RHI::SamplerType::SAMPLER_2D,
@@ -32,7 +28,7 @@ void LightingPass::Setup(RenderContext& ctx)
 	});
 
 	RenderTarget::Builder builder;
-	builder.texture(AttachmentPoint::COLOR0, ctx.Final_SceneColor);
+	builder.texture(AttachmentPoint::COLOR0, ctx.LightMap_SceneColor);
 	m_RenderTarget = builder.Build();
 }
 
@@ -75,9 +71,6 @@ void LightingPass::Execute(Ref<Scene> scene, RenderContext& ctx)
 	m_GBufferDescriptorSet.commit(driver, gEngine->GetGBufferSetLayout());
 	m_GBufferDescriptorSet.bind(driver, DescriptorSetBindingPoints::G_BUFFER);
 
-	m_MaterialInstance->Commit(driver);
-	m_MaterialInstance->Use(driver);
-
 	// Begin render pass
 	RHI::RenderPassParams rpParams{};
 	rpParams.viewport = { 0, 0, ctx.viewportSize.x, ctx.viewportSize.y };
@@ -87,16 +80,14 @@ void LightingPass::Execute(Ref<Scene> scene, RenderContext& ctx)
 	driver.beginRenderPass(m_RenderTarget->GetHandle(), rpParams);
 
 	RHI::PipelineState state;
-	state.program = m_MaterialInstance->GetShader(MaterialPass::Lighting);
+	state.program = gEngine->GetLightingShaderLibrary().GetProgram();
 	if (state.program)
 	{
-		state.vertexBufferInfo = m_ScreenQuad.GetVertexBufferInfoHandle();
-		state.rasterState = m_MaterialInstance->GetMaterial()->GetRasterState();
-		state.stencilState = m_MaterialInstance->GetMaterial()->GetStencilState();
+		state.vertexBufferInfo = gEngine->GetScreenQuad().GetVertexBufferInfoHandle();
 		state.primitiveType = RHI::PrimitiveType::TRIANGLES;
 
-		driver.draw(state, m_ScreenQuad.GetRenderPrimitiveHandle(),
-			m_ScreenQuad.GetIndexOffset(), m_ScreenQuad.GetIndexCount(), 1);
+		driver.draw(state, gEngine->GetScreenQuad().GetRenderPrimitiveHandle(),
+			gEngine->GetScreenQuad().GetIndexOffset(), gEngine->GetScreenQuad().GetIndexCount(), 1);
 	}
 
 	driver.endRenderPass();

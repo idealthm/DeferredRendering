@@ -161,9 +161,9 @@ void GLDescriptorSet::bind(OpenGLContext& gl, HandleAllocatorGL& handleAllocator
     size_t dynamicOffsetIndex = 0;
 
     Util::bitset64 activeDescriptorBindings = p.getActiveDescriptors(set);
-    if (offsetsOnly) {
-        activeDescriptorBindings &= dynamicBuffers;
-    }
+    // if (offsetsOnly) {
+    //     activeDescriptorBindings &= dynamicBuffers;
+    // }
 
     // loop only over the active indices for this program
     activeDescriptorBindings.forEachSetBit(

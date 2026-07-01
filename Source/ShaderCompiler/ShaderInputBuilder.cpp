@@ -3,7 +3,7 @@
 #include <cstring>
 
 #include "CodeGenerator.h"
-#include "MaterialSpec.h"
+#include "Common/Material/MaterialBuilder.h"
 
 FieldType GLSLTypeToFieldType(const char* glslType)
 {
@@ -12,45 +12,47 @@ FieldType GLSLTypeToFieldType(const char* glslType)
 	return FieldType::FLOAT4;
 }
 
-std::vector<VariableParam> BuildVertexInputs(const MaterialSpec& spec)
+std::vector<VariableParam> BuildVertexInputs(MaterialDomain domain,
+	const RHI::AttributeBitset& requiredAttributes)
 {
 	std::vector<VariableParam> inputs;
 
-	// POSITION is always at location 0 for surface domain
-	if (spec.domain == MaterialDomain::SURFACE)
-	{
+	if (domain == MaterialDomain::SURFACE)
 		inputs.push_back({ "mesh_position", FieldType::FLOAT4, 0 });
-	}
 
-	for (VertexAttribute attr : spec.requiredAttributes)
-	{
-		// Skip POSITION if already added for surface domain
-		if (spec.domain == MaterialDomain::SURFACE && attr == VertexAttribute::POSITION)
-			continue;
+	requiredAttributes.forEachSetBit([&](size_t bit) {
+		VertexAttribute attr = static_cast<VertexAttribute>(bit);
+		if (domain == MaterialDomain::SURFACE && attr == VertexAttribute::POSITION)
+			return;
 
 		VariableParam v;
 		v.name     = VertexAttributeToName(attr);
 		v.location = static_cast<uint8_t>(VertexAttributeToLocation(attr));
 		v.type     = GLSLTypeToFieldType(VertexAttributeToGLSLType(attr));
 		inputs.push_back(v);
-	}
+	});
 
 	return inputs;
 }
 
-std::vector<VariableParam> BuildFragmentOutputs(const MaterialSpec& spec)
+std::vector<VariableParam> BuildFragmentOutputs(
+	const MaterialBuilder::OutputList& outputs)
 {
-	std::vector<VariableParam> outputs;
+	std::vector<VariableParam> result;
+	result.push_back({ "fragColor", FieldType::FLOAT4, 0 });
 
-	// Default output
-	outputs.push_back({ "fragColor", FieldType::FLOAT4, 0 });
-
-	for (auto& o : spec.outputs)
+	for (auto& o : outputs)
 	{
-		FieldType ft = (o.type == "color") ? FieldType::FLOAT4 : FieldType::FLOAT;
-		uint8_t location = 0; // spec.outputs don't carry location info currently
-		outputs.push_back({ o.name, ft, location });
+		FieldType ft = FieldType::FLOAT4;
+		switch (o.type)
+		{
+		case MaterialBuilder::OutputType::FLOAT:  ft = FieldType::FLOAT;  break;
+		case MaterialBuilder::OutputType::FLOAT2: ft = FieldType::FLOAT2; break;
+		case MaterialBuilder::OutputType::FLOAT3: ft = FieldType::FLOAT3; break;
+		case MaterialBuilder::OutputType::FLOAT4: ft = FieldType::FLOAT4; break;
+		}
+		result.push_back({ o.name, ft, (uint8_t)o.location });
 	}
 
-	return outputs;
+	return result;
 }

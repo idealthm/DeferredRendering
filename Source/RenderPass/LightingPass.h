@@ -3,7 +3,6 @@
 #include "RenderPass.h"
 #include "Shapes/ScreenQuad.h"
 
-class MaterialInstance;
 class RenderTarget;
 
 class LightingPass : public RenderPass
@@ -17,7 +16,5 @@ public:
 
 private:
 	Ref<RenderTarget> m_RenderTarget;
-	ScreenQuad  m_ScreenQuad;
-	Ref<MaterialInstance> m_MaterialInstance;
 	DescriptorSet m_GBufferDescriptorSet;
 };

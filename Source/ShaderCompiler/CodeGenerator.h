@@ -7,6 +7,7 @@
 #include "BufferInterfaceBlock.h"
 #include "EngineEnum.h"
 #include "SamplerInterfaceBlock.h"
+#include "Common/Material/MaterialBuilder.h"
 #include "RHI/DriverEnums.h"
 
 inline const char* VertexAttributeToGLSLType(VertexAttribute attr)
@@ -53,7 +54,6 @@ inline int VertexAttributeToLocation(VertexAttribute attr)
 }
 
 struct BufferInterfaceBlock;
-struct MaterialSpec;
 
 using stream = std::ostringstream;
 
@@ -64,7 +64,8 @@ public:
 	// ── Sampler ──────────────────────────────────────────────────────
 
 	stream& generateCommonSamplers(stream& out, SamplerInterfaceBlock::SamplerInfoList const& list) const;
-	stream& generateCommonSamplers(stream& out, const SamplerInterfaceBlock& sib) const {
+	stream& generateCommonSamplers(stream& out, const SamplerInterfaceBlock& sib) const
+	{
 		return generateCommonSamplers(out, sib.getSamplerInfoList());
 	}
 
@@ -79,22 +80,14 @@ public:
 
 	// ── Feature macros ───────────────────────────────────────────────
 
-	/// HAS_VARIABLE_xxx / VARIABLE_CUSTOM<i> / VARIABLE_CUSTOM_AT<i>
-	stream& generateVaryingDefines(stream& out, const struct MaterialSpec& spec) const;
-
-	/// CONST_xxx
-	stream& generateConstantDefines(stream& out, const struct MaterialSpec& spec) const;
-
-	/// MATERIAL_HAS_xxx — one for each property
-	stream& generatePropertyDefines(stream& out, const struct MaterialSpec& spec) const;
-
-	/// HAS_ATTRIBUTE_xxx + implied HAS_ATTRIBUTE_POSITION
-	stream& generateAttributeDefines(stream& out, const struct MaterialSpec& spec) const;
+	stream& generateVaryingDefines(stream& out, const MaterialBuilder::VariableList& variables) const;
+	stream& generateConstantDefines(stream& out, const MaterialBuilder::PreprocessorDefineList& defines) const;
+	stream& generatePropertyDefines(stream& out, const MaterialBuilder::PropertyList& paramNames) const;
+	stream& generateAttributeDefines(stream& out, const RHI::AttributeBitset& requiredAttributes) const;
 
 	// ── Stage-specific declarations ──────────────────────────────────
 
-	/// LAYOUT_LOCATION(10+i) <direction> vec4 VARIABLE_CUSTOM_AT<i>
-	stream& generateVaryingDeclarations(stream& out, const struct MaterialSpec& spec, const char* direction) const;
+	stream& generateVaryingDeclarations(stream& out, const MaterialBuilder::VariableList& variables, const char* direction) const;
 
 private:
 	uint8_t getUniqueSamplerBindingPoint() const {return m_UniqueSamplerBindingPoint++;};

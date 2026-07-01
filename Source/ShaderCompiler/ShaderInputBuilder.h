@@ -3,24 +3,23 @@
 #include <string>
 #include <vector>
 
+#include "Common/Material/MaterialBuilder.h"
 #include "Common/Material/MaterialCommon.h"
 #include "Common/Material/MaterialTypes.h"
-
-struct MaterialSpec;
+#include "RHI/VertexBuffer.h"
 
 // =============================================================================
-// Structured input builders — produce std::vector<VariableParam> from
-// MaterialSpec.  Used by both GLSL generation and chunk metadata generation.
+// Structured input builders.
 // =============================================================================
 
-/// Vertex inputs from material's required attributes.
 /// POSITION (location=0) is always included for surface domain.
-std::vector<VariableParam> BuildVertexInputs(const MaterialSpec& spec);
+std::vector<VariableParam> BuildVertexInputs(MaterialDomain domain,
+	const RHI::AttributeBitset& requiredAttributes);
 
-/// Fragment outputs — default fragColor (location=0) + spec.outputs.
-std::vector<VariableParam> BuildFragmentOutputs(const MaterialSpec& spec);
+/// Default fragColor (location=0, float4) + custom outputs.
+std::vector<VariableParam> BuildFragmentOutputs(
+	const MaterialBuilder::OutputList& outputs);
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-/// GLSL type string → FieldType
 FieldType GLSLTypeToFieldType(const char* glslType);

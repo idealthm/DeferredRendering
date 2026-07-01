@@ -1,49 +1,76 @@
 ﻿#include "ERPPass.h"
 
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/ext/matrix_transform.hpp>
-
-#include "Actor.h"
 #include "Engine.h"
+#include "RenderTarget.h"
 #include "Component/ActorComponent.h"
-#include "glad/glad.h"
+#include "Material/MaterialInstance.h"
+#include "Material/MaterialLibrary.h"
 #include "Model/Texture.h"
-#include "Shader/Program.h"
+#include "RHI/PipelineState.h"
+#include "RHI/TextureSampler.h"
+#include "Shapes/ScreenQuad.h"
 
-ERPPass::ERPPass(const std::string& hdrFilePath, uint32_t size)
+void ERPPass::Render(Ref<Texture> texture, Ref<Texture>& CubeMap)
 {
-	// m_HDRMap = CreateRef<Texture>(hdrFilePath, false);
-}
+	auto material = MaterialLibrary::Get().GetMaterial("EquirectToCube");
+	assert(material);
+	Ref<MaterialInstance> mi = CreateRef<MaterialInstance>(material);
 
-ERPPass::~ERPPass()
-{
-}
+	using RHI::TextureCubemapFace;
 
-void ERPPass::Setup(RenderContext& ctx)
-{
-	RHI::TextureDesc desc;
-	desc.Width = 512;
-	desc.Height = 512;
-	desc.LevelCount = 7;
-	desc.Format = RHI::Format::RGBA16F;
-	desc.Target = RHI::SamplerType::SAMPLER_CUBEMAP;
-	CreateResource(ctx.ERP_Cubemap, desc);
-}
-
-void ERPPass::Execute(Ref<Scene> scene, RenderContext& ctx)
-{
-	// 投影矩阵：90度 FOV，1:1 宽高比
-	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-
-	// 6 个方向的 View 矩阵（注意：GL 的 CubeMap 采样比较特殊，Up 向量需要反转）
-	glm::mat4 captureViews[] = {
-		glm::lookAt(glm::vec3(0,0,0), glm::vec3( 1, 0, 0), glm::vec3(0,-1, 0)), // +X
-		glm::lookAt(glm::vec3(0,0,0), glm::vec3(-1, 0, 0), glm::vec3(0,-1, 0)), // -X
-		glm::lookAt(glm::vec3(0,0,0), glm::vec3( 0, 1, 0), glm::vec3(0, 0, 1)), // +Y
-		glm::lookAt(glm::vec3(0,0,0), glm::vec3( 0,-1, 0), glm::vec3(0, 0,-1)), // -Y
-		glm::lookAt(glm::vec3(0,0,0), glm::vec3( 0, 0, 1), glm::vec3(0,-1, 0)), // +Z
-		glm::lookAt(glm::vec3(0,0,0), glm::vec3( 0, 0,-1), glm::vec3(0,-1, 0))  // -Z
+	const TextureCubemapFace faces[2][3] = {
+		{ TextureCubemapFace::POSITIVE_X, TextureCubemapFace::POSITIVE_Y, TextureCubemapFace::POSITIVE_Z },
+		{ TextureCubemapFace::NEGATIVE_X, TextureCubemapFace::NEGATIVE_Y, TextureCubemapFace::NEGATIVE_Z }
 	};
 
-	gEngine->GetDriver().generateMipmap(ctx.ERP_Cubemap->GetHandle());
+	TextureSampler environmentSampler;
+	environmentSampler.SetMagFilter(RHI::SamplerMagFilter::Linear);
+	environmentSampler.SetMinFilter(RHI::SamplerMinFilter::LinearMipmapLinear);
+
+	mi->SetParameter("equirect", texture, environmentSampler);
+
+	texture->GenerateMipmaps();
+
+	RenderTarget::Builder builder;
+	builder.texture(AttachmentPoint::COLOR0, CubeMap);
+	builder.texture(AttachmentPoint::COLOR1, CubeMap);
+	builder.texture(AttachmentPoint::COLOR2, CubeMap);
+
+	mi->SetParameter("mirror", 1.0f);
+
+	RHI::RHIDriver& driver = gEngine->GetDriver();
+
+	RHI::RenderPassParams rpParams{};
+	rpParams.viewport = { 0, 0, 256, 256 };
+	rpParams.flags.clear = RHI::TargetBufferFlags::COLOR0;
+	rpParams.clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	ScreenQuad& quad = gEngine->GetScreenQuad();
+
+	RHI::PipelineState state;
+	state.program = mi->GetShader(MaterialPass::PostProcess);
+	state.vertexBufferInfo = quad.GetVertexBufferInfoHandle();
+	state.primitiveType = RHI::PrimitiveType::TRIANGLES;
+
+	if (!state.program) return;
+
+	for (int i = 0; i < 2; i ++)
+	{
+		mi->SetParameter("side", i == 0 ? 1.0f : -1.0f);
+
+		builder.face(AttachmentPoint::COLOR0, faces[i][0])
+			   .face(AttachmentPoint::COLOR1, faces[i][1])
+			   .face(AttachmentPoint::COLOR2, faces[i][2]);
+
+		Ref<RenderTarget> rt = builder.Build();
+		driver.beginRenderPass(rt->GetHandle(), rpParams);
+
+		mi->Commit(driver);
+		mi->Use(driver);
+
+		driver.draw(state, quad.GetRenderPrimitiveHandle(),
+			quad.GetIndexOffset(), quad.GetIndexCount(), 1);
+
+		driver.endRenderPass();
+	}
 }
