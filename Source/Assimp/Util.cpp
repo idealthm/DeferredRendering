@@ -35,27 +35,36 @@ namespace Util
 
         std::string directory = path.substr(0, path.find_last_of("/\\"));
         std::string modelFile = data["model_path"];
+        bool flipUV = data.value("flip_uv", true);
 
         Ref<MaterialInstance> mi = CreateRef<MaterialInstance>(gEngine->GetDefaultModelMaterial());
         if (data.contains("textures")) {
-            for (auto& [typeStr, fileName] : data["textures"].items()) {
-                std::string texPath = directory + "/" + std::string(fileName);
-				Ref<Texture> texture = LoadTexture(texPath, typeStr == "albedo", true);
-                mi->SetParameter(typeStr, texture, TextureSampler::LinearMipmapRepeat());
+            for (auto& [typeStr, texValue] : data["textures"].items()) {
+                std::string texPath;
+                bool srgb = false, genMipmap = true;
+                if (texValue.is_string()) {
+                    texPath = directory + "/" + std::string(texValue);
+                } else if (texValue.is_object()) {
+                    texPath = directory + "/" + std::string(texValue.value("path", ""));
+                    srgb = texValue.value("srgb", false);
+                    genMipmap = texValue.value("mipmap", true);
+                } else continue;
+                Ref<Texture> texture = LoadTexture(texPath, srgb, genMipmap);
+                if (texture)
+                    mi->SetParameter(typeStr, texture, TextureSampler::LinearMipmapRepeat());
             }
         }
 
-        return LoadAssetInternal(directory + "/" + modelFile, mi);
+        return LoadAssetInternal(directory + "/" + modelFile, mi, flipUV);
     }
 
-    Ref<StaticMesh> MeshLoader::LoadAssetInternal(const std::string& path, Ref<MaterialInstance> material)
+    Ref<StaticMesh> MeshLoader::LoadAssetInternal(const std::string& path, Ref<MaterialInstance> material, bool flipUV)
     {
+        unsigned int flags = aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
+        if (flipUV) flags |= aiProcess_FlipUVs;
+
         Assimp::Importer importer;
-        const aiScene* scene = importer.ReadFile(path,
-                                                aiProcess_Triangulate |
-                                                aiProcess_FlipUVs |
-                                                aiProcess_CalcTangentSpace |
-                                                aiProcess_GenSmoothNormals);
+        const aiScene* scene = importer.ReadFile(path, flags);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
             std::cerr << "Assimp Error: " << importer.GetErrorString() << std::endl;
@@ -173,7 +182,7 @@ namespace Util
 		if (!filepath.empty())
 		{
 			Path path(filepath);
-			// if (path.exists())
+			if (path.exists())
 			{
 				int w, h, n;
 				bool isHdr = stbi_is_hdr(path.getAbsolutePath().c_str());
