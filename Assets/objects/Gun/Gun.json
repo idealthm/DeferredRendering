@@ -1,10 +1,11 @@
 {
+    "flip_uv": false,
     "model_path": "Cerberus_LP.FBX",
     "textures": {
-        "baseColor": "Cerberus_A.tga",
-        "normal": "Cerberus_N.tga",
-        "roughness": "Cerberus_R.tga",
-        "metallic" : "Cerberus_M.tga",
-        "ambientOcclusion": "Raw/Cerberus_AO.tga"
+        "baseColor":        { "path": "Textures/Cerberus_A.tga", "srgb": true },
+        "normal":           { "path": "Textures/Cerberus_N.tga" },
+        "roughness":        { "path": "Textures/Cerberus_R.tga" },
+        "metallic":         { "path": "Textures/Cerberus_M.tga" },
+        "ambientOcclusion": { "path": "Textures/Raw/Cerberus_AO.tga" }
     }
 }
