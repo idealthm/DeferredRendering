@@ -19,7 +19,7 @@ public:
 
 	ShaderGenerator() = default;
 	ShaderGenerator(std::string const& materialName,
-	                Pipeline pipeline, Shading shadingModel, MaterialDomain domain,
+	                Pipeline pipeline, Shading shadingModel, MaterialDomain domain, VertexDomain vertexDomain,
 	                BufferInterfaceBlock const& materialUib, SamplerInterfaceBlock const& materialSib,
 	                RHI::AttributeBitset const& requiredAttributes,
 	                MaterialBuilder::PropertyList const& properties,
@@ -63,7 +63,8 @@ private:
 	Pipeline    m_Pipeline = Pipeline::DEFERRED;
 	Shading		m_ShadingModel = Shading::LIT;
 	MaterialDomain m_MaterialDomain = MaterialDomain::SURFACE;
-	const BufferInterfaceBlock* m_MaterialUib = nullptr;
+	VertexDomain mVertexDomain = VertexDomain::OBJECT;
+		const BufferInterfaceBlock* m_MaterialUib = nullptr;
 	const SamplerInterfaceBlock* m_MaterialSib = nullptr;
 	RHI::AttributeBitset m_RequiredAttributes;
 

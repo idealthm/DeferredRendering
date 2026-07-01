@@ -315,7 +315,7 @@ bool MaterialBuilder::ShaderCode::resolveIncludes(IncludeCallback callback,
 
 bool MaterialBuilder::generateShaders(ChunkContainer& container, const MaterialInfo& info) const {
 
-    ShaderGenerator sg(mMaterialName, mPipeline, mShading, mMaterialDomain,
+    ShaderGenerator sg(mMaterialName, mPipeline, mShading, mMaterialDomain, mVertexDomain,
             info.uib, info.sib, mRequiredAttributes, mProperties, mVariables, mOutputs, mDefines, mPushConstants,
             mMaterialFragmentCode.getResolved(), mMaterialFragmentCode.getLineOffset(),
             mMaterialVertexCode.getResolved(), mMaterialVertexCode.getLineOffset());

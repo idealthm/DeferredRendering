@@ -14,9 +14,17 @@ int getVertexIndex() {
 vec4 getPosition() { return mesh_position; }
 
 vec4 computeWorldPosition() {
+#if defined(VERTEX_DOMAIN_DEVICE)
+    return getPosition();
+#elif defined(VERTEX_DOMAIN_VIEW)
+    return getPosition();
+#elif defined(VERTEX_DOMAIN_WORLD)
+    return getPosition();
+#else
     mat4 transform = getWorldFromModelMatrix();
     vec3 position = getPosition().xyz;
     return mulMat4x4Float3(transform, position);
+#endif
 }
 
 #if defined(HAS_ATTRIBUTE_CUSTOM0)

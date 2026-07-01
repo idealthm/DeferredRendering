@@ -53,7 +53,15 @@
     vertex_worldPosition.xyz = material.worldPosition.xyz;
     vertex_worldNormal = normalize(material.worldNormal);
 
+    #if defined(VERTEX_DOMAIN_DEVICE)
+    gl_Position = getWorldPosition(material);
+#elif defined(VERTEX_DOMAIN_VIEW)
+    gl_Position = getClipFromViewMatrix() * getWorldPosition(material);
+#elif defined(VERTEX_DOMAIN_WORLD)
+    gl_Position = getClipFromViewMatrix() * getViewFromWorldMatrix() * getWorldPosition(material);
+#else
     vec4 position = getClipFromWorldMatrix() * getWorldPosition(material);
     vertex_position = position;
     gl_Position = position;
+#endif
 }
