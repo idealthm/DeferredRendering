@@ -1,167 +1,214 @@
-# DeferredRendering — Material Compiler & Runtime
+# DeferredRendering
 
-## 核心功能
+PBR deferred renderer with material compilation pipeline and IBL environment lighting.
 
-### 1. 材质编译（ShaderCompiler 项目）
-- 读取 `.mat` 材质定义文件，支持两种格式：
-  - **Block 格式**（传统）：`material { ... }` / `vertexCode { ... }` / `fragmentCode { ... }`
-  - **纯 JSON 格式**：`{ "material": {...}, "vertex": "...", "fragment": "..." }`
-- Block 格式自动将无引号 key/value 转为标准 JSON（兼容旧 `.mat` 文件）
-- `ParametersProcessor` 解析 20+ 种材质参数：name, shadingModel, pipeline, blending, culling, parameters(properties), outputs, requires 等
-- `MaterialBuilder` 统一构建流程：解析 → build() → Package
-
-### 2. 着色器生成（ShaderGenerator Stage×Pass 矩阵）
-```
-               Depth     GBuffer    Lighting
-Vertex          ✓          ✓          ✓
-Fragment        ✓          ✓          ✓
-Compute         (stub)
-```
-- PostProcess 独立处理（单 Pass）
-- 基于模板系统生成完整 GLSL，模板列表由 `TemplateProvider` 按 Pass/Stage 管理
-- 生成多 Pass 着色器（Deferred 管线自动生成 Depth + GBuffer 两组）
-
-### 3. SPIR-V 编译
-- 调用 Vulkan SDK `glslc` 将 GLSL 编译为 SPIR-V
-- `MaterialCompiler::makeSpirvCompiler` 创建回调，`MaterialBuilder` 在生成着色器时同步编译
-- `-I codeonly` 跳过 SPIR-V，默认启用
-
-### 4. 二进制序列化（.matb）
-- `ChunkContainer` 基于 `Chunk` 基类 + `push<T>(args...)` 模板
-- 所有 Chunk 类型继承 `Chunk`，通过虚函数 `GetType()`/`Serialize()` 多态
-- 多 Pass GLSL/SPIR-V：`ChunkGlsl`/`ChunkSpirv` 使用 `std::vector<GlslEntry/SpirvEntry>`，通过 `pass` 字段区分
-- `dry-run` 序列化 → 分配 Package → 实际写入
+![Current Scene](Content.png)
 
 ---
 
-## 架构设计
+## Architecture Overview
 
-### 数据流
+Two projects form a pipeline:
+
 ```
-.mat 文件
-  → MaterialCompiler::Run(config)
+┌─────────────────────────────────────────────────────────┐
+│  ShaderCompiler (matc.exe)                              │
+│  .mat → MaterialBuilder → ShaderGenerator → glslc → .matb│
+└──────────────────────────┬──────────────────────────────┘
+                           │ .matb (binary)
+                           ▼
+┌──────────────────────────────────────────────────────────┐
+│  DeferredRendering (runtime)                             │
+│  .matb → Material → MaterialInstance → GPU Program       │
+│                                                          │
+│  Render Pipeline:                                        │
+│  GBuffer → Lighting → Sky → ToneMapping                  │
+│                                                          │
+│  IBL Pipeline (init):                                     │
+│  HDR → ERP → Kernel → Irradiance + Prefilter              │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ShaderCompiler (matc.exe)
+
+### Flow
+
+```
+.mat file (JSON or Block format)
+  → MaterialCompiler::Run()
     → parseMaterial() → MaterialBuilder
     → configureBuilder() → includeCallback + spirvCompiler
     → builder.build()
-        → resolveIncludes (if callback set)
-        → prepareToBuild → writeCommonChunks → writeSurfaceChunks
-        → generateShaders (多 Pass: Depth+GBuffer / Lighting / PostProcess)
-        → glslc 编译 SPIR-V (if callback set)
-        → Serialize → Package
-    → writeFile → .matb
+      → prepareToBuild()     — UIB, SIB, mProperties
+      → generateShaders()    — GLSL generation for each Pass
+      → writeCommonChunks()  — descriptor sets, shading params
+      → Serialize            — → Package (binary)
+    → writeFile() → .matb + .vert/.frag
 ```
 
-### 程序化材质
-```cpp
-MaterialBuilder builder;
-builder.name("Lighting").pipeline(Pipeline::LIGHTING).shading(Shading::LIT)...;
-MaterialCompiler compiler;
-compiler.Build(builder, config);  // 与 Run() 共享输出逻辑
-```
+### Stage × Pass Matrix
 
-### 核心模块
+|             | Depth | Surface | Lighting | PostProcess |
+|-------------|-------|---------|----------|-------------|
+| Vertex      | ✓     | ✓       | ✓        | ✓           |
+| Fragment    | ✓     | ✓       | ✓        | ✓           |
 
-| 模块 | 文件 | 职责 |
+- Deferred materials: **Depth + Surface** (depth prepass + GBuffer write)
+- Lighting materials: **Lighting** only (fullscreen deferred shading)
+- PostProcess materials: **PostProcess** only
+
+### Descriptor Set Layout (per .matb)
+
+| Set | Name | Typical Bindings |
+|-----|------|-----------------|
+| 0 | PER_VIEW | FrameUniforms UBO, LightData UBO, irradianceMap, prefilterMap, brdfLut |
+| 1 | PER_RENDERABLE | ObjectUniforms UBO |
+| 2 | PER_MATERIAL | MaterialParams UBO, material samplers |
+| 3 | G_BUFFER | gDepth, gNormal, gAlbedo, gMaterial (lighting only) |
+
+### Key Modules
+
+| Module | File | Role |
 |---|---|---|
-| MaterialCompiler | `ShaderCompiler/MaterialCompiler.h/cpp` | 编译入口，JSON/Block 双格式解析，Run/Build |
-| MaterialBuilder | `Common/Material/MaterialBuilder.h/cpp` | 构建流程：解析参数 → 生成着色器 → Package |
-| ParameterProcessor | `ShaderCompiler/ParameterProcessor.h/cpp` | JSON → MaterialBuilder 回调，20+ 参数类型 |
-| ShaderGenerator | `ShaderCompiler/ShaderGenerator.h/cpp` | Stage×Pass 3×3 矩阵，8 个 Gen* 方法 |
-| TemplateProvider | `ShaderCompiler/TemplateProvider.h/cpp` | 按 Pass/Stage 管理的模板列表 |
-| ChunkContainer | `Common/Serialization/ChunkContainer.h` | Chunk 基类 + push + Serialize/Deserialize |
-| MaterialChunks | `Common/Serialization/MaterialChunks.h` | 多 Pass ChunkGlsl/ChunkSpirv 等全部 Chunk 类型 |
-| CompilerConfig | `MaterialCompiler.h` | CLI 配置（路径、SPIR-V、include paths 等） |
+| MaterialCompiler | `ShaderCompiler/MaterialCompiler.h/cpp` | Entry point, JSON/Block parsing, Run/Build/CompileLighting |
+| MaterialBuilder | `Common/Material/MaterialBuilder.h/cpp` | Build pipeline: parameters → shaders → Package |
+| ShaderGenerator | `ShaderCompiler/ShaderGenerator.h/cpp` | Stage×Pass GLSL generation with template system |
+| CodeGenerator | `ShaderCompiler/CodeGenerator.h/cpp` | UBO, sampler, varying, macro emission |
+| ParameterProcessor | `ShaderCompiler/ParameterProcessor.cpp` | JSON → MaterialBuilder callbacks (20+ keys) |
+| ChunkContainer | `Common/Serialization/ChunkContainer.h` | Closure-based serialization, push<T>(Container) |
+| MaterialChunks | `Common/Serialization/MaterialChunks.h` | All chunk types: Glsl, Spirv, UIB, SIB, descriptor sets, etc. |
 
-### 共享类型作用域
+### Material Format (.mat)
 
-| 头文件 | 作用域 | 类型 |
-|---|---|---|
-| `MaterialCommon.h` | 全局 | `Pipeline`, `VertexAttribute`, `MaterialDomain`, `UniformType`, `BlendingMode`, `Shading`, `Interpolation`, `VertexDomain`, `ConstantType`, `ShaderStage` |
-| `DriverEnums.h` | `RHI::` | `SamplerType`, `CullingMode`, `BlendFunction`, `SamplerFormat`, `ShaderStageFlags` |
-
----
-
-## CLI
 ```
-matc.exe <filename> [options]
-
-Options:
-  -I codeonly           仅输出 GLSL 源码（跳过 glslc/SPIR-V）
-  -o <outputdir>        输出目录（默认: CompiledMaterials/）
-  -w <workdir>          工作目录
-  --target <env>        目标环境（默认: vulkan1.2）
-  --glslc <path>        glslc 路径（默认: $VULKAN_SDK/Bin/glslc.exe）
-  --include <path>      额外 include 搜索路径
-  --template-dir <path> 模板目录（默认: Template/）
-  --dump <file>         反序列化 .matb 并打印内容
-
-特殊材质:
-  matc.exe __lighting__  编译内置 Lighting 材质（程序化创建，不走文件）
-```
-
-## 编译
-
-### ShaderCompiler（matc.exe）
-```
-MSBuild ShaderCompiler.vcxproj /p:Configuration=Debug /p:Platform=x64
-```
-输出：`Binaries/x64/Debug/ShaderCompiler.exe`
-
-### DeferredRendering（运行时）
-```
-MSBuild DeferredRendering.vcxproj /p:Configuration=Debug /p:Platform=x64
-```
-已知问题：`SpirvReflect/ShaderParse.h` 缺失（MaterialLibrary 依赖，待补充）
-
-## 技术栈
-- C++17（MSVC v143, VS2022）
-- Vulkan SDK（glslc）
-- glm（数学库）
-- 自研 Lexer/Parser（MaterialLexer, JsonishLexer/Parser）
-
-## 材质示例（.mat 文件）
-```
-material
-{
+material {
     name: Model,
     pipeline: deferred,
     shadingModel: lit,
-    require: [POSITION, TANGENTS, UV0],
-    properties: [
-      { type: sampler2d, name: albedo },
+    vertexDomain: object,    // OBJECT | WORLD | VIEW | DEVICE
+    requires: [POSITION, TANGENTS, UV0],
+    parameters: [
+      { type: sampler2d, name: baseColor },
       { type: sampler2d, name: normal }
     ],
     domain: surface
 }
-vertexCode
-{
-    void materialVertex(inout MaterialVertexInputs m) {}
-}
-fragmentCode
-{
-    void material(inout MaterialInputs m) {
-        prepareMaterial(m);
-        m.baseColor.rgb = texture(materialParams_albedo, getUV0().xy).rgb;
-    }
-}
+vertex { ... }
+fragment { ... }
 ```
 
-## 目录
+---
+
+## DeferredRendering (Runtime)
+
+### Render Pipeline
+
 ```
-ShaderCompiler/
-├── Source/ShaderCompiler/
-│   ├── MatcMain.cpp              # CLI 入口
-│   ├── MaterialCompiler.h/cpp    # 编译协调器（新增）
-│   ├── MaterialSpec.h/cpp        # 材质规范
-│   ├── ShaderGenerator.h/cpp     # Stage×Pass 着色器生成
-│   ├── ParameterProcessor.h/cpp  # JSON 参数解析（新增）
-│   ├── TemplateProvider.h/cpp    # 模板列表管理（重构）
-│   ├── CodeGenerator.h/cpp       # GLSL 代码生成辅助
-│   └── IncludeCallbaks.h         # Include 回调类型
-├── Source/Lexer/                 # 词法分析器
-├── Source/Parser/                # 语法解析器
-├── Source/Common/Material/       # MaterialBuilder, MaterialTypes, MaterialCommon
-├── Source/Common/Serialization/  # ChunkContainer, MaterialChunks, FArchive
-├── Template/                     # GLSL 模板文件
-└── Material/                     # 材质示例 (*.mat)
+GBufferPass              LightingPass            SkyLightPass           ToneMappingPass
+  ├─ Albedo (RGBA8)        reads GBuffer           reads GBuffer_Depth    reads LightMap
+  ├─ Normal (RGBA16F)      writes LightMap          writes Sky_SceneColor  writes Final_SceneColor
+  ├─ Material (RGBA8)      (HDR, RGBA16F)
+  └─ Depth (Depth32F)
 ```
+
+### IBL Pipeline (Init Phase)
+
+```
+HDR image (.hdr)
+  → ERPPass              (equirect → cubemap, R11G11B10F)
+  → KernelPass × 2       (irradiance cosine + prefilter GGX kernels)
+  → CubeMapConvolution::RenderIrradiance   → IBL_IrradianceMap (32×32, RGBA16F)
+  → CubeMapConvolution::RenderPrefilter ×5 → IBL_PreFilterMap   (256×256 mip chain, R11G11B10F)
+```
+
+- `BRDF_LUT` loaded from `Assets/textures/ibl_brdf_lut.png`
+- Lighting shader evaluates IBL: `evaluateIBL()` in `surface_shading_lit.fs`
+
+### Runtime Material Loading
+
+```
+CompiledMaterials/*.matb
+  → MaterialLibrary::GetMaterial(name)
+    → MaterialParser  → ChunkContainer::Deserialize
+    → Material::Material(parser)
+      → ChunkSpirv (SPIR-V blobs)
+      → ChunkGlsl  (GLSL fallback)
+      → ChunkDescriptorSetBindings + Layout
+      → ChunkUib / ChunkSib (parameter metadata)
+      → ChunkShading → m_Shading
+
+GetProgram(Pass):
+  1. Check cache
+  2. SPIR-V → CreateProgram
+  3. GLSL fallback → CreateProgram (auto-detected by GLDriver::CompileShader)
+```
+
+### Lighting Shader Architecture
+
+```
+surface_shading_main.fs
+  ├─ GBuffer samplers (CodeGenerator auto-binding)
+  ├─ IBL samplers (generateGlobalSamplers, explicit bindings 16-18)
+  ├─ surface_shading_unlit.fs  → evaluateMaterialUnlit()
+  └─ surface_shading_lit.fs    → evaluateMaterialLit()
+       ├─ CalculateLighting_PBR() (direct lights)
+       └─ evaluateIBL()         (irradiance + prefilter + BRDF LUT)
+```
+
+### Post-Process Pipeline
+
+```
+Material domain: postprocess
+  → ShaderGenerator::GenPostProcessVS/FS
+  → MaterialInstance → SetParameter → Commit → GetShader(PostProcess)
+  → beginRenderPass → draw fullscreen quad → endRenderPass
+```
+
+Examples: ToneMapping, ERPPass, KernelPass, CubeMapConvolution, SkyLightPass
+
+---
+
+## Build
+
+```
+# ShaderCompiler
+MSBuild ShaderCompiler.vcxproj /p:Configuration=Debug /p:Platform=x64
+# Output: Binaries/x64/Debug/ShaderCompiler.exe
+
+# Runtime
+MSBuild DeferredRendering.vcxproj /p:Configuration=Debug /p:Platform=x64
+# PreBuild event: compile all .mat + __lighting__ → CompiledMaterials/
+```
+
+## Directory Layout
+
+```
+├── Material/              .mat material definitions
+├── Template/              GLSL shader templates
+├── CompiledMaterials/     Build output (.matb, .vert, .frag)
+├── Assets/
+│   ├── textures/hdr/      HDR environment maps
+│   ├── textures/          ibl_brdf_lut.png
+│   └── objects/           Model JSON + textures
+├── Source/
+│   ├── ShaderCompiler/    matc (compiler)
+│   ├── Common/Material/   MaterialBuilder, MaterialTypes, MaterialCommon
+│   ├── Common/Serialization/  ChunkContainer, MaterialChunks, FArchive
+│   ├── Material/          Material, MaterialInstance, MaterialLibrary
+│   ├── RenderPass/        GBufferPass, LightingPass, SkyLightPass, ToneMapping
+│   │                      ERPPass, KernelPass, CubeMapConvolution
+│   ├── RHI/               Driver abstraction, GL backend, DescriptorSet
+│   ├── Panel/             ImGui editor panels
+│   └── Layers/            EditorLayer
+├── Binaries/              Build output
+└── Include/               BufferInterfaceBlock, SamplerInterfaceBlock
+```
+
+## Tech Stack
+
+- C++17, MSVC v143, VS2022
+- OpenGL 4.6 + SPIR-V (glslc from Vulkan SDK)
+- Assimp 5.x, stb_image, glm, GLFW, ImGui
+- Custom: Lexer/Parser, ShaderGenerator, ChunkContainer serialization
